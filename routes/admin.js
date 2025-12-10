@@ -86,7 +86,9 @@ router.put(
   '/users/:id',
   [
     body('fullName').optional().trim().notEmpty(),
-    body('isAdmin').optional().isBoolean()
+    body('isAdmin').optional().isBoolean(),
+    body('password').optional().trim().isLength({ min: 6 }),
+    body('role').optional().isIn(['user', 'reader', 'admin'])
   ],
   async (req, res) => {
     try {
@@ -96,7 +98,7 @@ router.put(
       }
 
       const { id } = req.params;
-      const { fullName, isAdmin } = req.body;
+      const { fullName, isAdmin, password, role } = req.body;
 
       const updates = [];
       const values = [];
@@ -109,6 +111,17 @@ router.put(
       if (isAdmin !== undefined) {
         updates.push('is_admin = ?');
         values.push(isAdmin ? 1 : 0);
+      }
+
+      if (role !== undefined) {
+        updates.push('role = ?');
+        values.push(role);
+      }
+
+      if (password !== undefined) {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        updates.push('password = ?');
+        values.push(hashedPassword);
       }
 
       if (updates.length === 0) {
@@ -130,6 +143,28 @@ router.put(
     }
   }
 );
+
+// Toggle block user
+router.put('/users/:id/block', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_blocked } = req.body;
+
+    if (typeof is_blocked !== 'boolean') {
+      return res.status(400).json({ error: 'is_blocked must be a boolean' });
+    }
+
+    await db.run(
+      'UPDATE users SET is_blocked = ? WHERE id = ?',
+      [is_blocked ? 1 : 0, id]
+    );
+
+    res.json({ message: `User ${is_blocked ? 'blocked' : 'unblocked'} successfully` });
+  } catch (error) {
+    console.error('Error toggling block status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Delete user
 router.delete('/users/:id', async (req, res) => {

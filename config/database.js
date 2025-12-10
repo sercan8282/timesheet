@@ -25,6 +25,7 @@ class Database {
           full_name TEXT NOT NULL,
           is_admin INTEGER DEFAULT 0,
           role TEXT DEFAULT 'user',
+          is_blocked INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )

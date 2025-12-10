@@ -97,6 +97,7 @@ function renderAdminUsers(users) {
                         <th>Username</th>
                         <th>Full Name</th>
                         <th>Role</th>
+                        <th>Status</th>
                         <th>Created</th>
                         <th>Actions</th>
                     </tr>
@@ -109,14 +110,25 @@ function renderAdminUsers(users) {
                         else if (role === 'user') badgeClass = 'bg-primary';
                         else if (role === 'reader') badgeClass = 'bg-info';
                         
+                        const isBlocked = user.is_blocked;
+                        const statusBadgeClass = isBlocked ? 'bg-danger' : 'bg-success';
+                        const statusText = isBlocked ? 'Blocked' : 'Active';
+                        
                         return `
-                            <tr>
+                            <tr ${isBlocked ? 'style="opacity: 0.6;"' : ''}>
                                 <td>${user.id}</td>
                                 <td>${user.username}</td>
                                 <td>${user.full_name}</td>
                                 <td><span class="badge ${badgeClass}">${role.charAt(0).toUpperCase() + role.slice(1)}</span></td>
+                                <td><span class="badge ${statusBadgeClass}">${statusText}</span></td>
                                 <td>${new Date(user.created_at).toLocaleDateString()}</td>
                                 <td>
+                                    <button class="btn btn-sm btn-warning" onclick="showEditUserModal(${user.id}, '${user.username}', '${user.full_name}', '${user.role || 'user'}')">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    <button class="btn btn-sm ${isBlocked ? 'btn-success' : 'btn-secondary'}" onclick="toggleBlockUser(${user.id}, ${isBlocked})">
+                                        <i class="bi ${isBlocked ? 'bi-unlock' : 'bi-lock'}"></i> ${isBlocked ? 'Unblock' : 'Block'}
+                                    </button>
                                     <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id}, '${user.username}')">
                                         <i class="bi bi-trash"></i>
                                     </button>
@@ -173,6 +185,54 @@ function renderAdminUsers(users) {
                 </div>
             </div>
         </div>
+
+        <!-- Edit User Modal -->
+        <div class="modal fade" id="editUserModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit User</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="editUserAlert"></div>
+                        <form id="editUserForm">
+                            <input type="hidden" id="editUserId">
+                            <div class="mb-3">
+                                <label class="form-label">Username</label>
+                                <input type="text" class="form-control" id="editUsername" readonly>
+                                <small class="text-muted">Username cannot be changed</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="editFullName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Password (Leave empty to keep current)</label>
+                                <input type="password" class="form-control" id="editPassword" minlength="6">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Role</label>
+                                <select class="form-select" id="editRole" required>
+                                    <option value="user">User (Can submit timesheets)</option>
+                                    <option value="reader">Reader (View only)</option>
+                                    <option value="admin">Admin (Full access)</option>
+                                </select>
+                                <small class="text-muted">
+                                    • User: Can add rows, submit timesheets, manage SMTP settings<br>
+                                    • Reader: Can only view history, no edits allowed<br>
+                                    • Admin: Can access all submissions, view all users, manage system
+                                </small>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="submitEditUser()">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
 }
 
@@ -225,6 +285,77 @@ async function submitAddUser() {
     } catch (error) {
         console.error('Error creating user:', error);
         alertDiv.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${error.message}</div>`;
+    }
+}
+
+function showEditUserModal(userId, username, fullName, role) {
+    document.getElementById('editUserId').value = userId;
+    document.getElementById('editUsername').value = username;
+    document.getElementById('editFullName').value = fullName;
+    document.getElementById('editPassword').value = '';
+    document.getElementById('editRole').value = role;
+    document.getElementById('editUserAlert').innerHTML = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    modal.show();
+}
+
+async function submitEditUser() {
+    const userId = document.getElementById('editUserId').value;
+    const fullName = document.getElementById('editFullName').value.trim();
+    const password = document.getElementById('editPassword').value;
+    const role = document.getElementById('editRole').value;
+    const alertDiv = document.getElementById('editUserAlert');
+
+    // Validation
+    if (!fullName || !role) {
+        alertDiv.innerHTML = `<div class="alert alert-warning">Please fill in all fields</div>`;
+        return;
+    }
+
+    if (password && password.length < 6) {
+        alertDiv.innerHTML = `<div class="alert alert-warning">Password must be at least 6 characters</div>`;
+        return;
+    }
+
+    try {
+        alertDiv.innerHTML = `<div class="alert alert-info">Saving changes...</div>`;
+        
+        const updateData = { fullName, role };
+        if (password) {
+            updateData.password = password;
+        }
+        
+        await api.updateUser(userId, updateData);
+        
+        alertDiv.innerHTML = `<div class="alert alert-success">User updated successfully! Reloading...</div>`;
+        
+        setTimeout(() => {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+            if (modal) {
+                modal.hide();
+            }
+            loadAdminUsers();
+        }, 1500);
+    } catch (error) {
+        console.error('Error updating user:', error);
+        alertDiv.innerHTML = `<div class="alert alert-danger"><strong>Error:</strong> ${error.message}</div>`;
+    }
+}
+
+async function toggleBlockUser(userId, isCurrentlyBlocked) {
+    const action = isCurrentlyBlocked ? 'unblock' : 'block';
+    const message = isCurrentlyBlocked 
+        ? 'Unblock this user? They will regain access to the system.'
+        : 'Block this user? They will be unable to login.';
+    
+    if (!confirm(message)) return;
+
+    try {
+        await api.toggleBlockUser(userId, !isCurrentlyBlocked);
+        loadAdminUsers();
+    } catch (error) {
+        alert('Error: ' + error.message);
     }
 }
 

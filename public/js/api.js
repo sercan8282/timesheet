@@ -233,6 +233,13 @@ class API {
         });
     }
 
+    async toggleBlockUser(id, isBlocked) {
+        return this.request(`/admin/users/${id}/block`, {
+            method: 'PUT',
+            body: JSON.stringify({ is_blocked: isBlocked })
+        });
+    }
+
     async getAdminSubmissions() {
         return this.request('/admin/submissions');
     }
