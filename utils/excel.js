@@ -1,8 +1,8 @@
-const ExcelJS = require('exceljs');
+const ExcelJS = require("exceljs");
 
 async function generateXLSX(timesheets, userName) {
   const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Timesheet');
+  const worksheet = workbook.addWorksheet("Timesheet");
 
   const totals = timesheets.reduce(
     (acc, entry) => {
@@ -34,37 +34,37 @@ async function generateXLSX(timesheets, userName) {
   const totalKm = Number(totals.totalKm.toFixed(2));
   const weekNumbers = Array.from(totals.weeks)
     .sort((a, b) => a - b)
-    .join(', ');
+    .join(", ");
 
   // Define columns
   worksheet.columns = [
-    { header: 'Week Number', key: 'weekNumber', width: 15 },
-    { header: 'Ritnumber', key: 'ritnumber', width: 15 },
-    { header: 'Name', key: 'name', width: 20 },
-    { header: 'Date', key: 'date', width: 12 },
-    { header: 'Start Time', key: 'startTime', width: 12 },
-    { header: 'End Time', key: 'endTime', width: 12 },
-    { header: 'Start KM', key: 'startKm', width: 12 },
-    { header: 'End KM', key: 'endKm', width: 12 },
-    { header: 'Pause Time', key: 'pauseTime', width: 12 },
-    { header: 'Total Hours', key: 'totalHours', width: 12 },
-    { header: 'Total KM', key: 'totalKm', width: 12 }
+    { header: "Week Number", key: "weekNumber", width: 15 },
+    { header: "Ritnumber", key: "ritnumber", width: 15 },
+    { header: "Name", key: "name", width: 20 },
+    { header: "Date", key: "date", width: 12 },
+    { header: "Start Time", key: "startTime", width: 12 },
+    { header: "End Time", key: "endTime", width: 12 },
+    { header: "Start KM", key: "startKm", width: 12 },
+    { header: "End KM", key: "endKm", width: 12 },
+    { header: "Pause Time", key: "pauseTime", width: 12 },
+    { header: "Total Hours", key: "totalHours", width: 12 },
+    { header: "Total KM", key: "totalKm", width: 12 },
   ];
 
   // Style header row
   worksheet.getRow(1).font = { bold: true };
   worksheet.getRow(1).fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FF0066CC' }
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF0066CC" },
   };
-  worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+  worksheet.getRow(1).font = { color: { argb: "FFFFFFFF" }, bold: true };
 
   // Add data rows
-  timesheets.forEach(timesheet => {
+  timesheets.forEach((timesheet) => {
     worksheet.addRow({
       weekNumber: timesheet.week_number,
-      ritnumber: timesheet.ritnumber || '',
+      ritnumber: timesheet.ritnumber || "",
       name: userName,
       date: timesheet.date,
       startTime: timesheet.start_time,
@@ -73,30 +73,30 @@ async function generateXLSX(timesheets, userName) {
       endKm: timesheet.end_km,
       pauseTime: timesheet.pause_time,
       totalHours: timesheet.total_hours,
-      totalKm: timesheet.total_km
+      totalKm: timesheet.total_km,
     });
   });
 
   worksheet.addRow({});
   const totalsRow = worksheet.addRow({
-    weekNumber: `Week(s): ${weekNumbers || '-'}`,
-    name: 'Totals',
+    weekNumber: `Week(s): ${weekNumbers || "-"}`,
+    name: "Totals",
     totalHours: totalHours,
-    totalKm: totalKm
+    totalKm: totalKm,
   });
 
   totalsRow.font = { bold: true };
-  totalsRow.eachCell(cell => {
+  totalsRow.eachCell((cell) => {
     cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE8F0FF' }
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFE8F0FF" },
     };
   });
 
   // Auto-fit columns
-  worksheet.columns.forEach(column => {
-    column.alignment = { vertical: 'middle', horizontal: 'left' };
+  worksheet.columns.forEach((column) => {
+    column.alignment = { vertical: "middle", horizontal: "left" };
   });
 
   // Return buffer
