@@ -32,6 +32,11 @@ router.post(
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
+      // Blocked users cannot login
+      if (user.is_blocked === 1) {
+        return res.status(403).json({ error: 'Your account has been blocked. Contact administrator.' });
+      }
+
       // Verify password
       const isValidPassword = await bcrypt.compare(password, user.password);
 

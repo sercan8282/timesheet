@@ -145,3 +145,12 @@ body {
 .border-primary {
     border-color: var(--primary-color) !important;
 }
+
+/* Force time inputs to use 24-hour format */
+input[type="time"] {
+    font-variant-numeric: tabular-nums;
+}
+
+html[lang="en-GB"] input[type="time"] {
+    /* Chrome, Edge, Safari will use 24-hour format with en-GB locale */
+}

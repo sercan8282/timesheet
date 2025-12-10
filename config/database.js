@@ -1,14 +1,14 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const sqlite3 = require("sqlite3").verbose();
+const path = require("path");
 
 class Database {
   constructor() {
-    const dbPath = process.env.DB_PATH || './database.sqlite';
+    const dbPath = process.env.DB_PATH || "./database.sqlite";
     this.db = new sqlite3.Database(dbPath, (err) => {
       if (err) {
-        console.error('Error opening database:', err.message);
+        console.error("Error opening database:", err.message);
       } else {
-        console.log('Connected to SQLite database');
+        console.log("Connected to SQLite database");
         this.initialize();
       }
     });
@@ -17,7 +17,8 @@ class Database {
   initialize() {
     this.db.serialize(() => {
       // Users table
-      this.db.run(`
+      this.db.run(
+        `
         CREATE TABLE IF NOT EXISTS users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           username TEXT UNIQUE NOT NULL COLLATE NOCASE,
@@ -26,10 +27,34 @@ class Database {
           is_admin INTEGER DEFAULT 0,
           role TEXT DEFAULT 'user',
           is_blocked INTEGER DEFAULT 0,
+          ritnumber TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-      `);
+      `,
+        (err) => {
+          if (!err) {
+            // Add is_blocked column if it doesn't exist (migration for existing databases)
+            this.db.all(`PRAGMA table_info(users)`, [], (err, columns) => {
+              if (!err && columns) {
+                const hasIsBlocked = columns.some(
+                  (col) => col.name === "is_blocked"
+                );
+                if (!hasIsBlocked) {
+                  this.db.run(
+                    `ALTER TABLE users ADD COLUMN is_blocked INTEGER DEFAULT 0`,
+                    (err) => {
+                      if (!err) {
+                        console.log("✓ Added is_blocked column to users table");
+                      }
+                    }
+                  );
+                }
+              }
+            });
+          }
+        }
+      );
 
       // Timesheets table
       this.db.run(`
@@ -100,7 +125,7 @@ class Database {
   // Generic query methods
   run(sql, params = []) {
     return new Promise((resolve, reject) => {
-      this.db.run(sql, params, function(err) {
+      this.db.run(sql, params, function (err) {
         if (err) reject(err);
         else resolve({ id: this.lastID, changes: this.changes });
       });
