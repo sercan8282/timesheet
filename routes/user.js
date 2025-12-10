@@ -78,12 +78,31 @@ router.post(
 // Get user's timesheets
 router.get('/timesheets', async (req, res) => {
   try {
-    const timesheets = await db.all(
+    // Get all submissions for this user to find submitted timesheet IDs
+    const submissions = await db.all(
+      'SELECT timesheet_ids FROM submissions WHERE user_id = ?',
+      [req.user.id]
+    );
+    
+    // Extract all submitted timesheet IDs
+    const submittedIds = new Set();
+    submissions.forEach(sub => {
+      if (sub.timesheet_ids) {
+        const ids = sub.timesheet_ids.split(',').map(id => parseInt(id.trim()));
+        ids.forEach(id => submittedIds.add(id));
+      }
+    });
+    
+    // Get all timesheets for user
+    const allTimesheets = await db.all(
       'SELECT * FROM timesheets WHERE user_id = ? ORDER BY date DESC, start_time DESC',
       [req.user.id]
     );
+    
+    // Filter out submitted timesheets - only return unsumbitted ones
+    const unsubmittedTimesheets = allTimesheets.filter(ts => !submittedIds.has(ts.id));
 
-    res.json(timesheets);
+    res.json(unsubmittedTimesheets);
   } catch (error) {
     console.error('Error fetching timesheets:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -100,11 +119,17 @@ router.post('/timesheets/details', async (req, res) => {
 
     const placeholders = ids.map(() => '?').join(',');
     const timesheets = await db.all(
-      `SELECT id, week_number, date FROM timesheets WHERE id IN (${placeholders}) AND user_id = ? ORDER BY week_number, date`,
+      `SELECT id, week_number, date, start_time, end_time, start_km, end_km, pause_time, ritnumber, user_id FROM timesheets WHERE id IN (${placeholders}) AND user_id = ? ORDER BY week_number, date`,
       [...ids, req.user.id]
     );
 
-    res.json(timesheets);
+    // Enhance with user_name from users table
+    const enrichedTimesheets = timesheets.map(ts => ({
+      ...ts,
+      user_name: req.user.name
+    }));
+
+    res.json(enrichedTimesheets);
   } catch (error) {
     console.error('Error fetching timesheet details:', error);
     res.status(500).json({ error: 'Internal server error' });

@@ -1,5 +1,6 @@
 let timesheets = [];
 let timesheetCounter = 0;
+let deleteConfirmationData = { index: null, timesheet: null };
 
 function renderDashboard() {
     return `
@@ -32,6 +33,28 @@ function renderDashboard() {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteConfirmationLabel">
+                            <i class="bi bi-exclamation-triangle text-warning"></i> Confirm Delete
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to delete this timesheet entry?</p>
+                        <p class="text-muted small">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete Entry</button>
                     </div>
                 </div>
             </div>
@@ -96,18 +119,38 @@ function addTimesheetRow() {
 
 function removeTimesheetRow(index) {
     const timesheet = timesheets[index];
-    if (timesheet.id && confirm('Delete this timesheet entry?')) {
+    if (!timesheet.id) {
+        // If not saved to database, just remove from array
+        timesheets.splice(index, 1);
+        renderTimesheetRows();
+    } else {
+        // Show modal confirmation for saved timesheets
+        deleteConfirmationData = { index: index, timesheet: timesheet };
+        const modal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
+        modal.show();
+    }
+}
+
+function confirmDelete() {
+    const { index, timesheet } = deleteConfirmationData;
+    if (timesheet && timesheet.id) {
         api.deleteTimesheet(timesheet.id)
             .then(() => {
                 timesheets.splice(index, 1);
                 renderTimesheetRows();
                 showAlert('Timesheet deleted', 'success');
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
+                if (modal) modal.hide();
             })
-            .catch(err => showAlert(err.message, 'danger'));
-    } else if (!timesheet.id) {
-        timesheets.splice(index, 1);
-        renderTimesheetRows();
+            .catch(err => {
+                showAlert(err.message, 'danger');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmationModal'));
+                if (modal) modal.hide();
+            });
     }
+    deleteConfirmationData = { index: null, timesheet: null };
 }
 
 function renderTimesheetRows() {
@@ -270,12 +313,21 @@ async function submitTimesheets() {
     try {
         await api.submitTimesheets(timesheetIds);
         
-        showAlert('Timesheets submitted and sent successfully!', 'success');
-        
         // Clear all timesheets from the display and start fresh
         timesheets = [];
         timesheetCounter = 0;
-        addTimesheetRow();  // Add one empty row for new entries
+        addTimesheetRow();  // Add one empty row for new entries - also calls renderTimesheetRows()
+        
+        // Show success message
+        showAlert('Timesheets submitted and sent successfully!', 'success');
+        
+        // Clear alert after 3 seconds
+        setTimeout(() => {
+            const alertDiv = document.getElementById('timesheetAlert');
+            if (alertDiv) {
+                alertDiv.innerHTML = '';
+            }
+        }, 3000);
     } catch (error) {
         showAlert(error.message, 'danger');
     }
