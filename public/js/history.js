@@ -372,15 +372,39 @@ async function saveHistoryEdit(timesheetId, submissionId) {
 }
 
 async function resendSubmissionEmail(submissionId) {
-    if (!confirm('Send this submission via email?')) {
-        return;
+    showConfirmModal(
+        'Send Email',
+        'Send this submission via email?',
+        async () => {
+            try {
+                await api.resendSubmissionEmail(submissionId);
+                showAlert('Email sent successfully!', 'success');
+                initHistory(); // Reload to update status
+            } catch (error) {
+                showAlert('Failed to send email: ' + error.message, 'danger');
+            }
+        }
+    );
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Find the history content container and prepend alert
+    const container = document.getElementById('historyContent');
+    if (container) {
+        container.insertBefore(alertDiv, container.firstChild);
     }
     
-    try {
-        await api.resendSubmissionEmail(submissionId);
-        alert('Email sent successfully!');
-        initHistory(); // Reload to update status
-    } catch (error) {
-        alert('Failed to send email: ' + error.message);
-    }
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }

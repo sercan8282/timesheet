@@ -122,13 +122,72 @@ class App {
     }
 
     logout() {
-        if (confirm('Are you sure you want to logout?')) {
-            api.clearToken();
-            localStorage.removeItem('user');
-            this.user = null;
-            this.showLogin();
-        }
+        showConfirmModal(
+            'Logout',
+            'Are you sure you want to logout?',
+            () => {
+                api.clearToken();
+                localStorage.removeItem('user');
+                this.user = null;
+                this.showLogin();
+            }
+        );
     }
+}
+
+// Global confirmation modal system
+let globalConfirmCallback = null;
+
+function showConfirmModal(title, message, onConfirm, onCancel = null) {
+    globalConfirmCallback = onConfirm;
+    
+    // Create or update modal
+    let modal = document.getElementById('globalConfirmModal');
+    if (!modal) {
+        const modalHTML = `
+            <div class="modal fade" id="globalConfirmModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="confirmModalTitle">
+                                <i class="bi bi-question-circle text-warning"></i> Confirm
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="confirmModalMessage"></div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-danger" id="confirmModalConfirmBtn" onclick="executeConfirm()">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        modal = document.getElementById('globalConfirmModal');
+    }
+    
+    // Update modal content
+    document.getElementById('confirmModalTitle').innerHTML = `<i class="bi bi-question-circle text-warning"></i> ${title}`;
+    document.getElementById('confirmModalMessage').textContent = message;
+    
+    // Show modal
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Handle cancel
+    if (onCancel) {
+        modal.addEventListener('hidden.bs.modal', onCancel, { once: true });
+    }
+}
+
+function executeConfirm() {
+    if (globalConfirmCallback) {
+        globalConfirmCallback();
+        const modal = bootstrap.Modal.getInstance(document.getElementById('globalConfirmModal'));
+        if (modal) modal.hide();
+    }
+    globalConfirmCallback = null;
 }
 
 // Initialize app when DOM is ready

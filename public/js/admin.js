@@ -349,25 +349,33 @@ async function toggleBlockUser(userId, isCurrentlyBlocked) {
         ? 'Unblock this user? They will regain access to the system.'
         : 'Block this user? They will be unable to login.';
     
-    if (!confirm(message)) return;
-
-    try {
-        await api.toggleBlockUser(userId, !isCurrentlyBlocked);
-        loadAdminUsers();
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
+    showConfirmModal(
+        `${action.charAt(0).toUpperCase() + action.slice(1)} User`,
+        message,
+        async () => {
+            try {
+                await api.toggleBlockUser(userId, !isCurrentlyBlocked);
+                loadAdminUsers();
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'danger');
+            }
+        }
+    );
 }
 
 async function deleteUser(id, username) {
-    if (!confirm(`Delete user "${username}"?`)) return;
-
-    try {
-        await api.deleteUser(id);
-        loadAdminUsers();
-    } catch (error) {
-        alert(error.message);
-    }
+    showConfirmModal(
+        'Delete User',
+        `Delete user "${username}"? This action cannot be undone.`,
+        async () => {
+            try {
+                await api.deleteUser(id);
+                loadAdminUsers();
+            } catch (error) {
+                showAlert(error.message, 'danger');
+            }
+        }
+    );
 }
 
 async function loadAdminSubmissions() {
@@ -530,17 +538,19 @@ async function downloadAdminSubmissionXLSX(submissionId) {
 }
 
 async function deleteAdminSubmission(submissionId) {
-    if (!confirm('Are you sure you want to delete this submission? This action cannot be undone.')) {
-        return;
-    }
-
-    try {
-        await api.deleteSubmission(submissionId);
-        alert('Submission deleted successfully');
-        await loadAdminSubmissions();
-    } catch (error) {
-        alert('Failed to delete submission: ' + error.message);
-    }
+    showConfirmModal(
+        'Delete Submission',
+        'Are you sure you want to delete this submission? This action cannot be undone.',
+        async () => {
+            try {
+                await api.deleteSubmission(submissionId);
+                showAlert('Submission deleted successfully', 'success');
+                await loadAdminSubmissions();
+            } catch (error) {
+                showAlert('Failed to delete submission: ' + error.message, 'danger');
+            }
+        }
+    );
 }
 
 function showSendEmailModal(submissionId) {
@@ -1379,4 +1389,26 @@ async function uploadLogo() {
             </div>
         `;
     }
+}
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Find the admin content container and prepend alert
+    const container = document.getElementById('adminContent');
+    if (container) {
+        container.insertBefore(alertDiv, container.firstChild);
+    }
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
 }

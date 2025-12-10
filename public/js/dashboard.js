@@ -306,31 +306,33 @@ async function submitTimesheets() {
         return;
     }
 
-    if (!confirm(`Submit ${timesheetIds.length} timesheet(s) via email?`)) {
-        return;
-    }
-
-    try {
-        await api.submitTimesheets(timesheetIds);
-        
-        // Clear all timesheets from the display and start fresh
-        timesheets = [];
-        timesheetCounter = 0;
-        addTimesheetRow();  // Add one empty row for new entries - also calls renderTimesheetRows()
-        
-        // Show success message
-        showAlert('Timesheets submitted and sent successfully!', 'success');
-        
-        // Clear alert after 3 seconds
-        setTimeout(() => {
-            const alertDiv = document.getElementById('timesheetAlert');
-            if (alertDiv) {
-                alertDiv.innerHTML = '';
+    showConfirmModal(
+        'Submit Timesheets',
+        `Submit ${timesheetIds.length} timesheet(s) via email?`,
+        async () => {
+            try {
+                await api.submitTimesheets(timesheetIds);
+                
+                // Clear all timesheets from the display and start fresh
+                timesheets = [];
+                timesheetCounter = 0;
+                addTimesheetRow();  // Add one empty row for new entries - also calls renderTimesheetRows()
+                
+                // Show success message
+                showAlert('Timesheets submitted and sent successfully!', 'success');
+                
+                // Clear alert after 3 seconds
+                setTimeout(() => {
+                    const alertDiv = document.getElementById('timesheetAlert');
+                    if (alertDiv) {
+                        alertDiv.innerHTML = '';
+                    }
+                }, 3000);
+            } catch (error) {
+                showAlert(error.message, 'danger');
             }
-        }, 3000);
-    } catch (error) {
-        showAlert(error.message, 'danger');
-    }
+        }
+    );
 }
 
 async function previewPDF() {
