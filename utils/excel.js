@@ -4,6 +4,38 @@ async function generateXLSX(timesheets, userName) {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Timesheet');
 
+  const totals = timesheets.reduce(
+    (acc, entry) => {
+      const hours = parseFloat(entry.total_hours);
+      const km = parseFloat(entry.total_km);
+
+      acc.totalHours += Number.isFinite(hours) ? hours : 0;
+
+      if (Number.isFinite(km)) {
+        acc.totalKm += km;
+      } else {
+        const startKm = parseFloat(entry.start_km);
+        const endKm = parseFloat(entry.end_km);
+        if (Number.isFinite(startKm) && Number.isFinite(endKm)) {
+          acc.totalKm += endKm - startKm;
+        }
+      }
+
+      if (entry.week_number !== undefined && entry.week_number !== null) {
+        acc.weeks.add(entry.week_number);
+      }
+
+      return acc;
+    },
+    { totalHours: 0, totalKm: 0, weeks: new Set() }
+  );
+
+  const totalHours = Number(totals.totalHours.toFixed(2));
+  const totalKm = Number(totals.totalKm.toFixed(2));
+  const weekNumbers = Array.from(totals.weeks)
+    .sort((a, b) => a - b)
+    .join(', ');
+
   // Define columns
   worksheet.columns = [
     { header: 'Week Number', key: 'weekNumber', width: 15 },
@@ -43,6 +75,23 @@ async function generateXLSX(timesheets, userName) {
       totalHours: timesheet.total_hours,
       totalKm: timesheet.total_km
     });
+  });
+
+  worksheet.addRow({});
+  const totalsRow = worksheet.addRow({
+    weekNumber: `Week(s): ${weekNumbers || '-'}`,
+    name: 'Totals',
+    totalHours: totalHours,
+    totalKm: totalKm
+  });
+
+  totalsRow.font = { bold: true };
+  totalsRow.eachCell(cell => {
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE8F0FF' }
+    };
   });
 
   // Auto-fit columns

@@ -10,6 +10,39 @@ const router = express.Router();
 
 router.use(authMiddleware);
 
+function summarizeTotals(timesheets) {
+  const totalHours = timesheets.reduce((sum, entry) => {
+    const hours = parseFloat(entry.total_hours);
+    return sum + (Number.isFinite(hours) ? hours : 0);
+  }, 0);
+
+  const totalKm = timesheets.reduce((sum, entry) => {
+    const km = parseFloat(entry.total_km);
+    if (Number.isFinite(km)) {
+      return sum + km;
+    }
+
+    const startKm = parseFloat(entry.start_km);
+    const endKm = parseFloat(entry.end_km);
+    if (Number.isFinite(startKm) && Number.isFinite(endKm)) {
+      return sum + (endKm - startKm);
+    }
+
+    return sum;
+  }, 0);
+
+  const weekNumbers = Array.from(new Set(timesheets.map(ts => ts.week_number)))
+    .filter(week => week !== undefined && week !== null)
+    .sort((a, b) => a - b)
+    .join(', ');
+
+  return {
+    totalHours,
+    totalKm,
+    weekNumbers: weekNumbers || '-'
+  };
+}
+
 // Submit timesheets
 router.post(
   '/submit',
@@ -36,6 +69,8 @@ router.post(
         return res.status(400).json({ error: 'Invalid timesheet selection' });
       }
 
+      const summary = summarizeTotals(timesheets);
+
       // Generate XLSX file
       const xlsxBuffer = await generateXLSX(timesheets, req.user.fullName);
       const fileName = `timesheet_${req.user.username}_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -47,7 +82,7 @@ router.post(
       try {
         await sendEmail(
           `Timesheet Submission - ${req.user.fullName}`,
-          `Timesheet submission from ${req.user.fullName}\n\nDate: ${new Date().toLocaleString()}\nTotal entries: ${timesheets.length}`,
+          `Timesheet submission from ${req.user.fullName}\n\nDate: ${new Date().toLocaleString()}\nWeek(s): ${summary.weekNumbers}\nTotal entries: ${timesheets.length}\nTotal hours: ${summary.totalHours.toFixed(2)}\nTotal kilometers: ${summary.totalKm.toFixed(2)}`,
           [
             {
               filename: fileName,
@@ -255,6 +290,8 @@ router.post('/submissions/:id/resend', async (req, res) => {
       timesheetIds
     );
 
+    const summary = summarizeTotals(timesheets);
+
     // Generate XLSX file
     const xlsxBuffer = await generateXLSX(timesheets, req.user.fullName);
     const fileName = `timesheet_${req.user.username}_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -266,7 +303,7 @@ router.post('/submissions/:id/resend', async (req, res) => {
     try {
       await sendEmail(
         `Timesheet Submission - ${req.user.fullName}`,
-        `Timesheet submission from ${req.user.fullName}\n\nDate: ${new Date().toLocaleString()}\nTotal entries: ${timesheets.length}`,
+        `Timesheet submission from ${req.user.fullName}\n\nDate: ${new Date().toLocaleString()}\nWeek(s): ${summary.weekNumbers}\nTotal entries: ${timesheets.length}\nTotal hours: ${summary.totalHours.toFixed(2)}\nTotal kilometers: ${summary.totalKm.toFixed(2)}`,
         [
           {
             filename: fileName,

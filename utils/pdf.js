@@ -19,6 +19,38 @@ async function generatePDF(timesheets, userName) {
     console.log("Using default branding for PDF");
   }
 
+  const totals = timesheets.reduce(
+    (acc, entry) => {
+      const hours = parseFloat(entry.total_hours);
+      const km = parseFloat(entry.total_km);
+
+      acc.totalHours += Number.isFinite(hours) ? hours : 0;
+
+      if (Number.isFinite(km)) {
+        acc.totalKm += km;
+      } else {
+        const startKm = parseFloat(entry.start_km);
+        const endKm = parseFloat(entry.end_km);
+        if (Number.isFinite(startKm) && Number.isFinite(endKm)) {
+          acc.totalKm += endKm - startKm;
+        }
+      }
+
+      if (entry.week_number !== undefined && entry.week_number !== null) {
+        acc.weeks.add(entry.week_number);
+      }
+
+      return acc;
+    },
+    { totalHours: 0, totalKm: 0, weeks: new Set() }
+  );
+
+  const totalHours = Number(totals.totalHours.toFixed(2));
+  const totalKm = Number(totals.totalKm.toFixed(2));
+  const weekNumbers = Array.from(totals.weeks)
+    .sort((a, b) => a - b)
+    .join(", ");
+
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
@@ -194,6 +226,43 @@ async function generatePDF(timesheets, userName) {
 
         yPos += 16;
       });
+
+      const summaryHeight = 40;
+      let summaryTop = yPos + 8;
+
+      if (summaryTop + summaryHeight > maxYPos) {
+        doc.addPage();
+        summaryTop = 40;
+        yPos = summaryTop;
+      }
+
+      doc
+        .rect(40, summaryTop, totalColWidth + 20, summaryHeight)
+        .fillAndStroke("#F0F6FF", "#D0D0D0");
+
+      doc.fillColor("#000000").fontSize(9);
+      doc.text("Totals", 45, summaryTop + 6, { width: 120, align: "left" });
+
+      doc.fontSize(8);
+      doc.text(`Week(s): ${weekNumbers || "-"}`, 45, summaryTop + 22, {
+        width: 200,
+        align: "left",
+      });
+      doc.text(`Total Hours: ${totalHours.toFixed(2)}`, 270, summaryTop + 6, {
+        width: 200,
+        align: "left",
+      });
+      doc.text(
+        `Total Kilometers: ${totalKm.toFixed(2)}`,
+        270,
+        summaryTop + 22,
+        {
+          width: 200,
+          align: "left",
+        }
+      );
+
+      yPos = summaryTop + summaryHeight;
 
       // Add footer on the same page if there's space, otherwise on last page
       const footerY = Math.max(yPos + 10, pageHeight - 30);
