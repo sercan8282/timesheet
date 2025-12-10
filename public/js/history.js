@@ -184,70 +184,69 @@ function renderSubmissionTimesheets(timesheets, submissionId) {
                 const isEditing = window.editingTimesheetId === ts.id;
 
                 return `
-                    <div class="timesheet-row row g-2 mb-2 p-2 border rounded" style="background-color: ${isEditing ? '#f8f9fa' : 'white'}">
-                        <div class="col-md-1">
-                            <label class="form-label small">Week</label>
+                    <div class="timesheet-row row g-1 mb-2 p-2 border rounded align-items-end" style="background-color: ${isEditing ? '#f8f9fa' : 'white'}">
+                        <div class="col-auto" style="width: 60px;">
+                            <label class="form-label small mb-1">Week</label>
                             <input type="text" class="form-control form-control-sm" value="${ts.week_number}" readonly>
                         </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">Ritnumber</label>
+                        <div class="col-auto" style="width: 90px;">
+                            <label class="form-label small mb-1">Ritnumber</label>
                             <input type="text" class="form-control form-control-sm history-ritnumber-${ts.id}" value="${ts.ritnumber || ''}" 
                                    ${isEditing ? '' : 'readonly'}>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">Name</label>
+                        <div class="col-auto" style="width: 130px;">
+                            <label class="form-label small mb-1">Name</label>
                             <input type="text" class="form-control form-control-sm" value="${ts.user_name || 'Unknown'}" readonly>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">Date</label>
+                        <div class="col-auto" style="width: 130px;">
+                            <label class="form-label small mb-1">Date</label>
                             <input type="date" class="form-control form-control-sm history-date-${ts.id}" value="${ts.date}" 
                                    ${isEditing ? '' : 'readonly'}>
                         </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">Start</label>
+                        <div class="col-auto" style="width: 85px;">
+                            <label class="form-label small mb-1">Start</label>
                             <input type="time" class="form-control form-control-sm history-starttime-${ts.id}" value="${ts.start_time}" 
                                    ${isEditing ? '' : 'readonly'}>
                         </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">End</label>
+                        <div class="col-auto" style="width: 85px;">
+                            <label class="form-label small mb-1">End</label>
                             <input type="time" class="form-control form-control-sm history-endtime-${ts.id}" value="${ts.end_time}" 
                                    ${isEditing ? '' : 'readonly'}>
                         </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">Start KM</label>
+                        <div class="col-auto" style="width: 80px;">
+                            <label class="form-label small mb-1">Start KM</label>
                             <input type="number" class="form-control form-control-sm history-startkm-${ts.id}" value="${ts.start_km}" step="0.1"
                                    ${isEditing ? '' : 'readonly'}>
                         </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">End KM</label>
+                        <div class="col-auto" style="width: 80px;">
+                            <label class="form-label small mb-1">End KM</label>
                             <input type="number" class="form-control form-control-sm history-endkm-${ts.id}" value="${ts.end_km}" step="0.1"
                                    ${isEditing ? '' : 'readonly'}>
                         </div>
-                        <div class="col-md-1">
-                            <label class="form-label small">Pause</label>
+                        <div class="col-auto" style="width: 85px;">
+                            <label class="form-label small mb-1">Pause</label>
                             <input type="time" class="form-control form-control-sm history-pausetime-${ts.id}" value="${ts.pause_time}" 
                                    ${isEditing ? '' : 'readonly'}>
                         </div>
-                        <div class="col-md-0.8">
-                            <label class="form-label small">Hours</label>
+                        <div class="col-auto" style="width: 70px;">
+                            <label class="form-label small mb-1">Hours</label>
                             <input type="text" class="form-control form-control-sm" value="${totalHours}" readonly>
                         </div>
-                        <div class="col-md-0.8">
-                            <label class="form-label small">KM</label>
+                        <div class="col-auto" style="width: 70px;">
+                            <label class="form-label small mb-1">KM</label>
                             <input type="text" class="form-control form-control-sm" value="${totalKm}" readonly>
                         </div>
-                        <div class="col-md-auto">
-                            <label class="form-label small">&nbsp;</label>
-                            <div class="btn-group" role="group">
+                        <div class="col-auto">
+                            <div class="btn-group" role="group" style="margin-top: 2px;">
                                 ${isEditing ? `
-                                    <button class="btn btn-sm btn-success" onclick="saveHistoryEdit(${ts.id}, ${submissionId})" title="Save">
+                                    <button class="btn btn-sm btn-success" onclick="saveHistoryEdit(${ts.id}, ${submissionId}); event.stopPropagation(); return false;" title="Save">
                                         <i class="bi bi-check"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-secondary" onclick="cancelHistoryEdit(${submissionId})" title="Cancel">
+                                    <button class="btn btn-sm btn-secondary" onclick="cancelHistoryEdit(${submissionId}); event.stopPropagation(); return false;" title="Cancel">
                                         <i class="bi bi-x"></i>
                                     </button>
                                 ` : `
-                                    <button class="btn btn-sm btn-primary" onclick="startHistoryEdit(${ts.id}, ${submissionId})" title="Edit">
+                                    <button class="btn btn-sm btn-primary" onclick="startHistoryEdit(${ts.id}, ${submissionId}); event.stopPropagation(); return false;" title="Edit">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                 `}
@@ -291,17 +290,39 @@ window.editingTimesheetId = null;
 
 function startHistoryEdit(timesheetId, submissionId) {
     window.editingTimesheetId = timesheetId;
-    const container = document.getElementById(`timesheet-rows-${submissionId}`);
-    if (container) {
-        // Re-render with edit mode on
-        const submissions = [];  // Will be populated from DOM
-        initHistory();  // Reload to show edit mode
-    }
+    window.currentSubmissionId = submissionId;
+    
+    // Re-render just this submission's timesheets without closing accordion
+    api.getSubmissions().then(submissions => {
+        const sub = submissions.find(s => s.id === submissionId);
+        if (sub && sub.timesheet_ids) {
+            const timesheetIds = sub.timesheet_ids.split(',').map(id => parseInt(id));
+            api.getTimesheetDetails(timesheetIds).then(timesheetDetails => {
+                const container = document.getElementById(`timesheet-rows-${submissionId}`);
+                if (container) {
+                    container.innerHTML = renderSubmissionTimesheets(timesheetDetails, submissionId);
+                }
+            });
+        }
+    });
 }
 
 function cancelHistoryEdit(submissionId) {
     window.editingTimesheetId = null;
-    initHistory();  // Reload to cancel editing
+    
+    // Re-render just this submission's timesheets without closing accordion
+    api.getSubmissions().then(submissions => {
+        const sub = submissions.find(s => s.id === submissionId);
+        if (sub && sub.timesheet_ids) {
+            const timesheetIds = sub.timesheet_ids.split(',').map(id => parseInt(id));
+            api.getTimesheetDetails(timesheetIds).then(timesheetDetails => {
+                const container = document.getElementById(`timesheet-rows-${submissionId}`);
+                if (container) {
+                    container.innerHTML = renderSubmissionTimesheets(timesheetDetails, submissionId);
+                }
+            });
+        }
+    });
 }
 
 async function saveHistoryEdit(timesheetId, submissionId) {
@@ -319,18 +340,32 @@ async function saveHistoryEdit(timesheetId, submissionId) {
         await api.updateTimesheet(timesheetId, data);
         window.editingTimesheetId = null;
         
-        // Show success message and reload
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-success alert-dismissible fade show';
-        alertDiv.innerHTML = `
-            <i class="bi bi-check-circle"></i> Row updated successfully!
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        document.getElementById('historyContent').insertBefore(alertDiv, document.getElementById('historyContent').firstChild);
-        
-        setTimeout(() => {
-            initHistory();
-        }, 1000);
+        // Re-render just this submission's timesheets without closing accordion
+        const submissions = await api.getSubmissions();
+        const sub = submissions.find(s => s.id === submissionId);
+        if (sub && sub.timesheet_ids) {
+            const timesheetIds = sub.timesheet_ids.split(',').map(id => parseInt(id));
+            const timesheetDetails = await api.getTimesheetDetails(timesheetIds);
+            const container = document.getElementById(`timesheet-rows-${submissionId}`);
+            if (container) {
+                container.innerHTML = renderSubmissionTimesheets(timesheetDetails, submissionId);
+                
+                // Show success message inline
+                const successMsg = document.createElement('div');
+                successMsg.className = 'alert alert-success alert-dismissible fade show mt-2';
+                successMsg.innerHTML = `
+                    <i class="bi bi-check-circle"></i> Row updated successfully!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                container.insertBefore(successMsg, container.firstChild);
+                
+                setTimeout(() => {
+                    if (successMsg.parentNode) {
+                        successMsg.remove();
+                    }
+                }, 3000);
+            }
+        }
     } catch (error) {
         alert('Error updating timesheet: ' + error.message);
     }

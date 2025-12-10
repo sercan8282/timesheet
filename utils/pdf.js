@@ -35,8 +35,8 @@ async function generatePDF(timesheets, userName) {
         const logoPath = path.join(__dirname, '../public', branding.logo_path);
         if (fs.existsSync(logoPath)) {
           try {
-            doc.image(logoPath, 50, 40, { height: 40 });
-            doc.moveDown(1);
+            doc.image(logoPath, 50, 40, { height: 50 });
+            doc.moveDown(4);
           } catch (err) {
             console.log('Could not load logo for PDF:', err);
           }
@@ -55,39 +55,36 @@ async function generatePDF(timesheets, userName) {
       };
       const rgb = hexToRgb(primaryColor);
       
-      doc.fontSize(16).fillColor(rgb.r, rgb.g, rgb.b).text('Timesheet Report', { align: 'center' });
-      doc.moveDown(0.5);
+      doc.fontSize(20).fillColor(rgb.r, rgb.g, rgb.b).text('Timesheet Report', { align: 'center' });
+      doc.moveDown();
 
       // User info
-      doc.fontSize(10).fillColor('#000000').text(`Employee: ${userName}`, { align: 'left' });
+      doc.fontSize(12).fillColor('#000000').text(`Employee: ${userName}`, { align: 'left' });
       doc.text(`Report Date: ${new Date().toLocaleDateString()}`, { align: 'left' });
       if (branding.company_name !== 'Timesheet System') {
         doc.text(`Company: ${branding.company_name}`, { align: 'left' });
       }
-      doc.moveDown(0.3);
+      doc.moveDown();
 
       // Table headers
       const tableTop = doc.y;
       const colWidths = {
-        weekNumber: 60,
-        name: 100,
-        date: 80,
-        startTime: 70,
-        endTime: 70,
-        startKm: 65,
-        endKm: 65,
-        pauseTime: 70,
-        totalHours: 70,
-        totalKm: 60
+        weekNumber: 50,
+        name: 80,
+        date: 70,
+        startTime: 60,
+        endTime: 60,
+        startKm: 50,
+        endKm: 50,
+        pauseTime: 60,
+        totalHours: 60,
+        totalKm: 50
       };
 
       let xPos = 50;
 
-      // Calculate total width
-      const totalWidth = Object.values(colWidths).reduce((sum, width) => sum + width, 0);
-
       // Header background (use branding color)
-      doc.rect(50, tableTop, totalWidth, 18).fillAndStroke(rgb.r, rgb.g, rgb.b, rgb.r, rgb.g, rgb.b);
+      doc.rect(50, tableTop, 495, 20).fillAndStroke(rgb.r, rgb.g, rgb.b, rgb.r, rgb.g, rgb.b);
 
       // Header text
       doc.fillColor('#FFFFFF').fontSize(9);
@@ -107,27 +104,27 @@ async function generatePDF(timesheets, userName) {
 
       xPos = 50;
       headers.forEach(header => {
-        doc.text(header.text, xPos + 2, tableTop + 4, { width: header.width, align: 'left' });
+        doc.text(header.text, xPos + 2, tableTop + 5, { width: header.width, align: 'left' });
         xPos += header.width;
       });
 
       doc.moveDown();
-      let yPos = tableTop + 22;
+      let yPos = tableTop + 25;
 
       // Data rows
       doc.fillColor('#000000').fontSize(8);
 
       timesheets.forEach((timesheet, index) => {
-        if (yPos > 505) {
+        if (yPos > 700) {
           doc.addPage();
           yPos = 50;
         }
 
         // Alternating row colors
         if (index % 2 === 0) {
-          doc.rect(50, yPos, totalWidth, 15).fillAndStroke('#F0F0F0', '#E0E0E0');
+          doc.rect(50, yPos, 495, 18).fillAndStroke('#F0F0F0', '#E0E0E0');
         } else {
-          doc.rect(50, yPos, totalWidth, 15).stroke('#E0E0E0');
+          doc.rect(50, yPos, 495, 18).stroke('#E0E0E0');
         }
 
         xPos = 50;
@@ -146,22 +143,21 @@ async function generatePDF(timesheets, userName) {
 
         doc.fillColor('#000000');
         rowData.forEach(cell => {
-          doc.text(cell.text, xPos + 2, yPos + 3, { width: cell.width, align: 'left' });
+          doc.text(cell.text, xPos + 2, yPos + 4, { width: cell.width, align: 'left' });
           xPos += cell.width;
         });
 
-        yPos += 15;
+        yPos += 18;
       });
 
-      // Footer - only add if there's space on current page
-      if (yPos < 530) {
-        doc.fontSize(8).fillColor('#666666').text(
-          `Generated on ${new Date().toLocaleString()}`,
-          50,
-          530,
-          { align: 'center' }
-        );
-      }
+      // Footer
+      doc.moveDown(2);
+      doc.fontSize(8).fillColor('#666666').text(
+        `Generated on ${new Date().toLocaleString()}`,
+        50,
+        doc.page.height - 50,
+        { align: 'center' }
+      );
 
       doc.end();
     } catch (error) {

@@ -93,15 +93,15 @@ class API {
         return this.request('/user/submissions');
     }
 
+    async getWeeklySummary(page = 1) {
+        return this.request(`/user/weekly-summary?page=${page}`);
+    }
+
     async getTimesheetDetails(timesheetIds) {
         return this.request('/user/timesheets/details', {
             method: 'POST',
             body: JSON.stringify({ ids: timesheetIds })
         });
-    }
-
-    async getWeeklySummary(page = 1) {
-        return this.request(`/user/weekly-summary?page=${page}`);
     }
 
     // Submission endpoints
@@ -237,8 +237,19 @@ class API {
         return this.request('/admin/submissions');
     }
 
+    async getHoursReport(userId = '') {
+        return this.request(`/admin/hours-report${userId ? '?userId=' + userId : ''}`);
+    }
+
     async getSubmissionTimesheets(submissionId) {
         return this.request(`/admin/submissions/${submissionId}/timesheets`);
+    }
+
+    async updateAdminTimesheet(timesheetId, data) {
+        return this.request(`/admin/timesheets/${timesheetId}`, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
     }
 
     async deleteSubmission(submissionId) {
@@ -247,12 +258,11 @@ class API {
         });
     }
 
-    async getHoursReport(page = 1, userId = null) {
-        let url = `/admin/hours-report?page=${page}`;
-        if (userId) {
-            url += `&userId=${userId}`;
-        }
-        return this.request(url);
+    async sendCustomSubmissionEmail(submissionId, recipient, format) {
+        return this.request(`/admin/submissions/${submissionId}/send-email`, {
+            method: 'POST',
+            body: JSON.stringify({ recipient, format })
+        });
     }
 
     async updateSubmission(submissionId, data) {

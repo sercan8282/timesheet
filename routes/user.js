@@ -267,6 +267,57 @@ router.get('/submissions', async (req, res) => {
   }
 });
 
+// Get weekly summary with pagination
+router.get('/weekly-summary', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    // Get weekly summary data - only count submitted timesheets
+    const weeklySummary = await db.all(`
+      SELECT 
+        t.week_number,
+        COUNT(*) as work_days,
+        SUM(CAST(t.total_hours AS REAL)) as total_hours
+      FROM timesheets t
+      INNER JOIN submissions s ON (',' || s.timesheet_ids || ',') LIKE ('%,' || t.id || ',%')
+      WHERE t.user_id = ?
+      GROUP BY t.week_number
+      ORDER BY t.week_number DESC
+      LIMIT ? OFFSET ?
+    `, [req.user.id, limit, offset]);
+
+    // Get total count for pagination
+    const totalResult = await db.get(`
+      SELECT COUNT(DISTINCT t.week_number) as total
+      FROM timesheets t
+      INNER JOIN submissions s ON (',' || s.timesheet_ids || ',') LIKE ('%,' || t.id || ',%')
+      WHERE t.user_id = ?
+    `, [req.user.id]);
+
+    // Calculate overworked hours (assuming 40 hours per week is standard)
+    const summary = weeklySummary.map(week => ({
+      ...week,
+      total_hours: parseFloat(week.total_hours || 0).toFixed(2),
+      overworked: (parseFloat(week.total_hours || 0) - 40).toFixed(2)
+    }));
+
+    res.json({
+      data: summary,
+      pagination: {
+        page,
+        limit,
+        total: totalResult.total,
+        totalPages: Math.ceil(totalResult.total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching weekly summary:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Helper function to calculate week number
 function getWeekNumber(date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -277,66 +328,6 @@ function getWeekNumber(date) {
 }
 
 // Helper function to calculate total hours
-// Get weekly summary (aggregated hours per week)
-router.get('/weekly-summary', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = 10; // 10 rows per page = 20 weeks max
-    const offset = (page - 1) * limit;
-
-    // Get all timesheets for this user grouped by week
-    const timesheets = await db.all(
-      `SELECT 
-        week_number,
-        SUM(total_hours) as total_hours_worked,
-        COUNT(*) as entries_count,
-        MIN(date) as week_start_date
-      FROM timesheets 
-      WHERE user_id = ? 
-      GROUP BY week_number 
-      ORDER BY week_number DESC
-      LIMIT ? OFFSET ?`,
-      [req.user.id, limit, offset]
-    );
-
-    // Count total weeks for pagination
-    const countResult = await db.get(
-      `SELECT COUNT(DISTINCT week_number) as total_weeks 
-       FROM timesheets 
-       WHERE user_id = ?`,
-      [req.user.id]
-    );
-
-    const totalWeeks = countResult?.total_weeks || 0;
-    const totalPages = Math.ceil(totalWeeks / limit);
-
-    // Calculate working hours per week (8 hours)
-    const WORKING_HOURS_PER_WEEK = 40;
-
-    const weekSummary = timesheets.map(week => ({
-      weekNumber: week.week_number,
-      workingHours: WORKING_HOURS_PER_WEEK,
-      totalHours: parseFloat(week.total_hours_worked) || 0,
-      overworked: Math.max(0, (parseFloat(week.total_hours_worked) || 0) - WORKING_HOURS_PER_WEEK),
-      entriesCount: week.entries_count,
-      weekStartDate: week.week_start_date
-    }));
-
-    res.json({
-      data: weekSummary,
-      pagination: {
-        page,
-        limit,
-        totalWeeks,
-        totalPages
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching weekly summary:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 function calculateTotalHours(startTime, endTime, pauseTime) {
   if (!startTime || !endTime || !pauseTime) {
     return '0.00';

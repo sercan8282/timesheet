@@ -115,23 +115,6 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* Timesheet row layout */
-.timesheet-row {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-}
-
-.timesheet-row .form-control-sm {
-    font-size: 0.8rem;
-    padding: 0.25rem 0.4rem;
-}
-
-.timesheet-row .form-label {
-    font-size: 0.75rem;
-    margin-bottom: 0.1rem;
-}
-
 @media (max-width: 768px) {
     .table-responsive {
         font-size: 0.875rem;
@@ -143,7 +126,6 @@ body {
 
     .timesheet-row {
         padding: 10px;
-        overflow-x: auto;
     }
 }
 

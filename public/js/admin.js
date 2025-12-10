@@ -1,6 +1,4 @@
 let currentAdminTab = 'users';
-let currentHoursReportPage = 1;
-let currentHoursReportUserId = null;
 
 function renderAdmin() {
     return `
@@ -65,7 +63,7 @@ function switchAdminTab(tab) {
     // Load content
     if (tab === 'users') loadAdminUsers();
     else if (tab === 'submissions') loadAdminSubmissions();
-    else if (tab === 'hours-report') loadHoursReport(1);
+    else if (tab === 'hours-report') loadHoursReport();
     else if (tab === 'smtp') loadSMTPSettings();
     else if (tab === 'branding') loadBrandingSettings();
 }
@@ -247,13 +245,14 @@ async function loadAdminSubmissions() {
 
     try {
         const submissions = await api.getAdminSubmissions();
-        renderAdminSubmissions(submissions);
+        const users = await api.getUsers();
+        renderAdminSubmissions(submissions, users);
     } catch (error) {
         container.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
     }
 }
 
-function renderAdminSubmissions(submissions) {
+function renderAdminSubmissions(submissions, users) {
     const container = document.getElementById('adminContent');
 
     if (submissions.length === 0) {
@@ -261,16 +260,38 @@ function renderAdminSubmissions(submissions) {
         return;
     }
 
+    // Store all submissions globally for filtering
+    window.allSubmissions = submissions;
+
     container.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Filter by User:</label>
+            <select class="form-select" id="submissionUserFilter" onchange="filterAdminSubmissions()">
+                <option value="">All Users</option>
+                ${users.map(u => `<option value="${u.id}">${u.full_name} (${u.username})</option>`).join('')}
+            </select>
+        </div>
+        <div id="submissionsTableContainer">
+            ${renderSubmissionsTable(submissions)}
+        </div>
+    `;
+}
+
+function renderSubmissionsTable(submissions) {
+    if (submissions.length === 0) {
+        return '<div class="alert alert-info">No submissions found for this filter</div>';
+    }
+
+    return `
         <div class="table-responsive">
-            <table class="table table-striped">
+            <table class="table table-striped table-sm">
                 <thead>
                     <tr>
-                        <th>ID</th>
-                        <th>User</th>
-                        <th>Submission Date</th>
-                        <th>Entries</th>
-                        <th>Status</th>
+                        <th style="width: 50px;">ID</th>
+                        <th style="width: 180px;">User</th>
+                        <th style="width: 150px;">Date</th>
+                        <th style="width: 70px;">Entries</th>
+                        <th style="width: 80px;">Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -279,25 +300,28 @@ function renderAdminSubmissions(submissions) {
                         <tr>
                             <td>${sub.id}</td>
                             <td>
-                                <div>${sub.full_name} (${sub.username})</div>
-                                <small class="text-muted">${sub.user_name || 'N/A'}</small>
+                                <div class="small">${sub.full_name}</div>
+                                <small class="text-muted">${sub.username}</small>
                             </td>
-                            <td>${new Date(sub.submission_date).toLocaleString()}</td>
-                            <td>${sub.timesheet_ids ? sub.timesheet_ids.split(',').length : 0}</td>
+                            <td class="small">${new Date(sub.submission_date).toLocaleString('nl-NL', {dateStyle: 'short', timeStyle: 'short'})}</td>
+                            <td class="text-center">${sub.timesheet_ids ? sub.timesheet_ids.split(',').length : 0}</td>
                             <td><span class="badge bg-success">${sub.status}</span></td>
                             <td>
                                 <div class="btn-group" role="group">
-                                    <button class="btn btn-sm btn-warning" onclick="showEditSubmissionModal(${sub.id})">
-                                        <i class="bi bi-pencil"></i> Edit
+                                    <button class="btn btn-sm btn-warning" onclick="showEditSubmissionModal(${sub.id}); return false;">
+                                        <i class="bi bi-pencil"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-info" onclick="viewAdminSubmissionPDF(${sub.id})">
-                                        <i class="bi bi-file-pdf"></i> PDF
+                                    <button class="btn btn-sm btn-info" onclick="viewAdminSubmissionPDF(${sub.id}); return false;">
+                                        <i class="bi bi-file-pdf"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-success" onclick="downloadAdminSubmissionXLSX(${sub.id})">
-                                        <i class="bi bi-file-earmark-excel"></i> Excel
+                                    <button class="btn btn-sm btn-success" onclick="downloadAdminSubmissionXLSX(${sub.id}); return false;">
+                                        <i class="bi bi-file-earmark-excel"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteAdminSubmission(${sub.id})">
-                                        <i class="bi bi-trash"></i> Delete
+                                    <button class="btn btn-sm btn-primary" onclick="showSendEmailModal(${sub.id}); return false;">
+                                        <i class="bi bi-envelope"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteAdminSubmission(${sub.id}); return false;">
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 </div>
                             </td>
@@ -307,6 +331,12 @@ function renderAdminSubmissions(submissions) {
             </table>
         </div>
     `;
+}
+
+function filterAdminSubmissions() {
+    const userId = document.getElementById('submissionUserFilter').value;
+    const filtered = userId ? window.allSubmissions.filter(s => s.user_id == userId) : window.allSubmissions;
+    document.getElementById('submissionsTableContainer').innerHTML = renderSubmissionsTable(filtered);
 }
 
 async function viewAdminSubmissionPDF(submissionId) {
@@ -346,6 +376,91 @@ async function deleteAdminSubmission(submissionId) {
         await loadAdminSubmissions();
     } catch (error) {
         alert('Failed to delete submission: ' + error.message);
+    }
+}
+
+function showSendEmailModal(submissionId) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('sendEmailModal');
+    if (!modal) {
+        createSendEmailModal();
+    }
+    
+    // Store current submission ID
+    window.currentEmailSubmissionId = submissionId;
+    
+    // Show modal
+    const sendEmailModal = new bootstrap.Modal(document.getElementById('sendEmailModal'));
+    sendEmailModal.show();
+}
+
+function createSendEmailModal() {
+    const modalHtml = `
+        <div class="modal fade" id="sendEmailModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-envelope"></i> Send Submission via Email</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="sendEmailAlert"></div>
+                        <div class="mb-3">
+                            <label for="emailRecipient" class="form-label">Send to:</label>
+                            <input type="email" class="form-control" id="emailRecipient" 
+                                   placeholder="recipient@example.com" required>
+                            <small class="text-muted">Leave empty to use default email from SMTP settings</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">File format:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="fileFormat" id="formatPDF" value="pdf">
+                                <label class="form-check-label" for="formatPDF">
+                                    <i class="bi bi-file-pdf text-danger"></i> PDF
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="fileFormat" id="formatExcel" value="excel" checked>
+                                <label class="form-check-label" for="formatExcel">
+                                    <i class="bi bi-file-earmark-excel text-success"></i> Excel
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="sendSubmissionEmail()">
+                            <i class="bi bi-send"></i> Send Email
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+async function sendSubmissionEmail() {
+    const submissionId = window.currentEmailSubmissionId;
+    const recipient = document.getElementById('emailRecipient').value.trim();
+    const format = document.querySelector('input[name="fileFormat"]:checked').value;
+    
+    const alertDiv = document.getElementById('sendEmailAlert');
+    alertDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Sending email...</div>';
+    
+    try {
+        await api.sendCustomSubmissionEmail(submissionId, recipient, format);
+        
+        alertDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle"></i> Email sent successfully!</div>';
+        
+        setTimeout(() => {
+            bootstrap.Modal.getInstance(document.getElementById('sendEmailModal')).hide();
+            alertDiv.innerHTML = '';
+        }, 2000);
+        
+    } catch (error) {
+        alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
     }
 }
 
@@ -617,6 +732,83 @@ async function testSMTP() {
     }
 }
 
+// Hours Report Functions
+async function loadHoursReport() {
+    const container = document.getElementById('adminContent');
+    container.innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
+
+    try {
+        const users = await api.getUsers();
+        const report = await api.getHoursReport();
+        renderHoursReport(users, report);
+    } catch (error) {
+        container.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    }
+}
+
+function renderHoursReport(users, report) {
+    const container = document.getElementById('adminContent');
+    
+    container.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Filter by User:</label>
+            <select class="form-select" id="userFilter" onchange="filterHoursReport()">
+                <option value="">All Users</option>
+                ${users.map(u => `<option value="${u.id}">${u.full_name}</option>`).join('')}
+            </select>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Week Number</th>
+                        <th>Work Days</th>
+                        <th>Total Hours</th>
+                        <th>Overworked</th>
+                    </tr>
+                </thead>
+                <tbody id="hoursReportTableBody">
+                    ${renderHoursReportRows(report)}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+function renderHoursReportRows(report) {
+    if (report.length === 0 || !report[0].week_number) {
+        return '<tr><td colspan="5" class="text-center text-muted">No hours data available</td></tr>';
+    }
+    
+    return report.map(row => {
+        const overworkedClass = parseFloat(row.overworked) > 0 ? 'text-danger fw-bold' : 
+                               parseFloat(row.overworked) < 0 ? 'text-success' : '';
+        return `
+            <tr>
+                <td>${row.full_name}</td>
+                <td>Week ${row.week_number || '-'}</td>
+                <td>${row.work_days || 0}</td>
+                <td>${row.total_hours}h</td>
+                <td class="${overworkedClass}">
+                    ${parseFloat(row.overworked) > 0 ? '+' : ''}${row.overworked}h
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function filterHoursReport() {
+    const userId = document.getElementById('userFilter').value;
+    try {
+        const report = await api.getHoursReport(userId);
+        document.getElementById('hoursReportTableBody').innerHTML = renderHoursReportRows(report);
+    } catch (error) {
+        document.getElementById('hoursReportTableBody').innerHTML = 
+            `<tr><td colspan="5" class="text-center text-danger">${error.message}</td></tr>`;
+    }
+}
+
 // Branding Settings Functions
 async function loadBrandingSettings() {
     const container = document.getElementById('adminContent');
@@ -774,36 +966,39 @@ function showEditSubmissionModal(submissionId) {
 
 function createEditSubmissionModal() {
     const modalHtml = `
-        <div class="modal fade" id="editSubmissionModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
+        <div class="modal fade" id="editSubmissionModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-xl">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Edit Submission</h5>
+                        <h5 class="modal-title">Edit Submission Timesheets</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                         <div id="editSubmissionAlert"></div>
                         <div class="mb-3">
-                            <label class="form-label">Submission ID</label>
-                            <input type="text" class="form-control" id="editSubmissionId" disabled>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Submission ID:</strong> <span id="editSubmissionId"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>User:</strong> <span id="editSubmissionUser"></span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Date:</strong> <span id="editSubmissionDate"></span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">User</label>
-                            <input type="text" class="form-control" id="editSubmissionUser" disabled>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Submission Date</label>
-                            <input type="text" class="form-control" id="editSubmissionDate" disabled>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Timesheet IDs (comma-separated)</label>
-                            <textarea class="form-control" id="editSubmissionTimesheetIds" rows="3" required></textarea>
-                            <small class="text-muted">Enter the timesheet IDs separated by commas</small>
+                        <hr>
+                        <div id="editTimesheetsList">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary"></div>
+                                <p>Loading timesheets...</p>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="submitEditSubmission()">Save Changes</button>
+                        <button type="button" class="btn btn-primary" onclick="submitEditSubmission()">Save All Changes</button>
                     </div>
                 </div>
             </div>
@@ -823,38 +1018,166 @@ async function loadEditSubmissionData(submissionId) {
             return;
         }
         
-        document.getElementById('editSubmissionId').value = submission.id;
-        document.getElementById('editSubmissionUser').value = `${submission.full_name} (${submission.username})`;
-        document.getElementById('editSubmissionDate').value = new Date(submission.submission_date).toLocaleString();
-        document.getElementById('editSubmissionTimesheetIds').value = submission.timesheet_ids;
+        document.getElementById('editSubmissionId').textContent = submission.id;
+        document.getElementById('editSubmissionUser').textContent = `${submission.full_name} (${submission.username})`;
+        document.getElementById('editSubmissionDate').textContent = new Date(submission.submission_date).toLocaleString();
+        
+        // Load individual timesheets
+        const timesheets = await api.getSubmissionTimesheets(submissionId);
+        renderEditableTimesheets(timesheets);
     } catch (error) {
         const alertDiv = document.getElementById('editSubmissionAlert');
         alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
     }
 }
 
+function renderEditableTimesheets(timesheets) {
+    const container = document.getElementById('editTimesheetsList');
+    
+    if (!timesheets || timesheets.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No timesheets found</div>';
+        return;
+    }
+    
+    let html = `
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 60px;">Week</th>
+                        <th style="width: 80px;">Ritnr</th>
+                        <th style="width: 120px;">Date</th>
+                        <th style="width: 80px;">Start</th>
+                        <th style="width: 80px;">End</th>
+                        <th style="width: 90px;">Start KM</th>
+                        <th style="width: 90px;">End KM</th>
+                        <th style="width: 80px;">Pause</th>
+                        <th style="width: 80px;">Hours</th>
+                        <th style="width: 70px;">KM</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    timesheets.forEach((ts, index) => {
+        const totalHours = parseFloat(ts.total_hours || 0).toFixed(2);
+        const totalKm = parseFloat(ts.total_km || 0).toFixed(2);
+        
+        html += `
+            <tr>
+                <td><input type="number" class="form-control form-control-sm" value="${ts.week_number}" 
+                    onchange="updateEditTimesheet(${index}, 'week_number', this.value)" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${ts.ritnumber || ''}" 
+                    onchange="updateEditTimesheet(${index}, 'ritnumber', this.value)"></td>
+                <td><input type="date" class="form-control form-control-sm" value="${ts.date}" 
+                    onchange="updateEditTimesheet(${index}, 'date', this.value)"></td>
+                <td><input type="time" class="form-control form-control-sm" value="${ts.start_time}" 
+                    onchange="updateEditTimesheet(${index}, 'start_time', this.value)"></td>
+                <td><input type="time" class="form-control form-control-sm" value="${ts.end_time}" 
+                    onchange="updateEditTimesheet(${index}, 'end_time', this.value)"></td>
+                <td><input type="number" class="form-control form-control-sm" value="${ts.start_km}" step="0.1"
+                    onchange="updateEditTimesheet(${index}, 'start_km', parseFloat(this.value))"></td>
+                <td><input type="number" class="form-control form-control-sm" value="${ts.end_km}" step="0.1"
+                    onchange="updateEditTimesheet(${index}, 'end_km', parseFloat(this.value))"></td>
+                <td><input type="time" class="form-control form-control-sm" value="${ts.pause_time}" 
+                    onchange="updateEditTimesheet(${index}, 'pause_time', this.value)"></td>
+                <td><input type="text" class="form-control form-control-sm" value="${totalHours}" readonly></td>
+                <td><input type="text" class="form-control form-control-sm" value="${totalKm}" readonly></td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+        <small class="text-muted">
+            <i class="bi bi-info-circle"></i> Edit the fields above to update timesheet entries. 
+            Hours and KM are auto-calculated. Click "Save All Changes" to apply.
+        </small>
+    `;
+    
+    container.innerHTML = html;
+    
+    // Store timesheets in global variable for editing
+    window.editingTimesheets = JSON.parse(JSON.stringify(timesheets));
+}
+
+function updateEditTimesheet(index, field, value) {
+    if (!window.editingTimesheets) return;
+    
+    window.editingTimesheets[index][field] = value;
+    
+    // Recalculate if needed
+    const ts = window.editingTimesheets[index];
+    if (field === 'start_time' || field === 'end_time' || field === 'pause_time') {
+        ts.total_hours = calculateHours(ts.start_time, ts.end_time, ts.pause_time);
+    }
+    if (field === 'start_km' || field === 'end_km') {
+        ts.total_km = (parseFloat(ts.end_km) - parseFloat(ts.start_km)).toFixed(2);
+    }
+    if (field === 'date') {
+        ts.week_number = getWeekNumber(new Date(value));
+    }
+    
+    // Re-render to update calculated fields
+    renderEditableTimesheets(window.editingTimesheets);
+}
+
+function calculateHours(startTime, endTime, pauseTime) {
+    if (!startTime || !endTime || !pauseTime) return '0.00';
+    
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    const [pauseHour, pauseMinute] = pauseTime.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMinute;
+    const endMinutes = endHour * 60 + endMinute;
+    const pauseMinutes = pauseHour * 60 + pauseMinute;
+    
+    const totalMinutes = endMinutes - startMinutes - pauseMinutes;
+    return (totalMinutes / 60).toFixed(2);
+}
+
+function getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
 async function submitEditSubmission() {
-    const submissionId = currentEditSubmissionId;
-    const timesheetIds = document.getElementById('editSubmissionTimesheetIds').value.trim();
     const alertDiv = document.getElementById('editSubmissionAlert');
     
-    if (!timesheetIds) {
-        alertDiv.innerHTML = `<div class="alert alert-warning">Please enter at least one timesheet ID</div>`;
+    if (!window.editingTimesheets || window.editingTimesheets.length === 0) {
+        alertDiv.innerHTML = `<div class="alert alert-warning">No timesheets to save</div>`;
         return;
     }
     
     try {
-        await api.updateSubmission(submissionId, {
-            timesheet_ids: timesheetIds
-        });
+        alertDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Saving changes...</div>';
         
-        alertDiv.innerHTML = `<div class="alert alert-success">Submission updated successfully</div>`;
+        // Update each timesheet
+        for (const ts of window.editingTimesheets) {
+            await api.updateAdminTimesheet(ts.id, {
+                date: ts.date,
+                startTime: ts.start_time,
+                endTime: ts.end_time,
+                startKm: parseFloat(ts.start_km),
+                endKm: parseFloat(ts.end_km),
+                pauseTime: ts.pause_time,
+                ritnumber: ts.ritnumber || ''
+            });
+        }
+        
+        alertDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle"></i> All changes saved successfully!</div>`;
         setTimeout(() => {
             bootstrap.Modal.getInstance(document.getElementById('editSubmissionModal')).hide();
             loadAdminSubmissions();
-        }, 1000);
+        }, 1500);
     } catch (error) {
-        alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
     }
 }
 async function uploadLogo() {
@@ -892,190 +1215,4 @@ async function uploadLogo() {
             </div>
         `;
     }
-}
-
-// Hours Report Functions
-async function loadHoursReport(page = 1, userId = null) {
-    const container = document.getElementById('adminContent');
-    container.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div></div>';
-
-    try {
-        const data = await api.getHoursReport(page, userId);
-        renderHoursReport(data);
-    } catch (error) {
-        container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
-    }
-}
-
-function renderHoursReport(data) {
-    const container = document.getElementById('adminContent');
-    const { data: records, users, pagination } = data;
-
-    let html = `
-        <div class="mb-3">
-            <div class="row">
-                <div class="col-md-4">
-                    <label class="form-label">Filter by Employee:</label>
-                    <select class="form-select" id="userFilter" onchange="filterHoursReport()">
-                        <option value="">All Employees</option>
-    `;
-
-    users.forEach(user => {
-        html += `<option value="${user.id}">${user.full_name} (${user.username})</option>`;
-    });
-
-    html += `
-                    </select>
-                </div>
-            </div>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Employee</th>
-                        <th>Week #</th>
-                        <th>Date Range</th>
-                        <th>Worked Hours</th>
-                        <th>Expected Hours</th>
-                        <th>Overworked</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    if (records.length === 0) {
-        html += `
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No data available</td>
-                </tr>
-        `;
-    } else {
-        records.forEach(record => {
-            const workingHours = record.workingHours || 40;
-            const totalHours = record.totalHours || 0;
-            const overworked = record.overworked || 0;
-
-            // Calculate date range for the week
-            const dateRange = getWeekDateRangeAdmin(record.weekNumber, new Date(record.weekStartDate).getFullYear());
-            const startStr = dateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const endStr = dateRange.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-            const overworkedClass = overworked > 0 ? 'text-success' : '';
-            const hoursStatus = totalHours >= workingHours ? 'text-success fw-bold' : totalHours < workingHours * 0.8 ? 'text-danger' : 'text-warning';
-
-            html += `
-                <tr>
-                    <td><strong>${record.fullName}</strong><br><small class="text-muted">${record.username}</small></td>
-                    <td>Week ${record.weekNumber}</td>
-                    <td>${startStr} - ${endStr}</td>
-                    <td class="${hoursStatus}">${totalHours.toFixed(2)}h</td>
-                    <td>${workingHours}h</td>
-                    <td class="${overworkedClass}">${overworked > 0 ? '+' : ''}${overworked.toFixed(2)}h</td>
-                </tr>
-            `;
-        });
-    }
-
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
-
-    // Add pagination controls
-    if (pagination.totalPages > 1) {
-        html += `
-            <nav aria-label="Page navigation" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item ${pagination.page === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadHoursReport(1, getCurrentFilterUserId()); return false;">
-                            <i class="bi bi-chevron-double-left"></i> First
-                        </a>
-                    </li>
-                    <li class="page-item ${pagination.page === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadHoursReport(${pagination.page - 1}, getCurrentFilterUserId()); return false;">
-                            <i class="bi bi-chevron-left"></i> Previous
-                        </a>
-                    </li>
-        `;
-
-        // Show page numbers
-        const startPage = Math.max(1, pagination.page - 2);
-        const endPage = Math.min(pagination.totalPages, pagination.page + 2);
-
-        if (startPage > 1) {
-            html += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            html += `
-                <li class="page-item ${i === pagination.page ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="loadHoursReport(${i}, getCurrentFilterUserId()); return false;">${i}</a>
-                </li>
-            `;
-        }
-
-        if (endPage < pagination.totalPages) {
-            html += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
-        }
-
-        html += `
-                    <li class="page-item ${pagination.page === pagination.totalPages ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadHoursReport(${pagination.page + 1}, getCurrentFilterUserId()); return false;">
-                            Next <i class="bi bi-chevron-right"></i>
-                        </a>
-                    </li>
-                    <li class="page-item ${pagination.page === pagination.totalPages ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadHoursReport(${pagination.totalPages}, getCurrentFilterUserId()); return false;">
-                            Last <i class="bi bi-chevron-double-right"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        `;
-    }
-
-    html += `
-        <div class="alert alert-info mt-3">
-            <small>
-                <i class="bi bi-info-circle"></i> 
-                Showing ${records.length} records (Page ${pagination.page} of ${pagination.totalPages}).
-                Total records available: ${pagination.totalRecords}
-            </small>
-        </div>
-    `;
-
-    container.innerHTML = html;
-    currentHoursReportPage = pagination.page;
-}
-
-function getCurrentFilterUserId() {
-    const filter = document.getElementById('userFilter');
-    return filter ? (filter.value ? parseInt(filter.value) : null) : null;
-}
-
-function filterHoursReport() {
-    const userId = getCurrentFilterUserId();
-    loadHoursReport(1, userId);
-}
-
-function getWeekDateRangeAdmin(weekNumber, year) {
-    // ISO 8601 week date calculation
-    const simple = new Date(year, 0, 1 + (weekNumber - 1) * 7);
-    const dow = simple.getDay();
-    const ISOweekStart = simple;
-    if (dow <= 4)
-        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-    else
-        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-
-    const weekEnd = new Date(ISOweekStart);
-    weekEnd.setDate(ISOweekStart.getDate() + 6);
-
-    return {
-        start: ISOweekStart,
-        end: weekEnd
-    };
 }

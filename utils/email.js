@@ -98,7 +98,7 @@ async function buildTransporter(settings) {
   });
 }
 
-async function sendEmail(subject, text, attachments = []) {
+async function sendEmail(subject, text, attachments = [], customRecipient = null) {
   try {
     const settings = await db.get('SELECT * FROM smtp_settings LIMIT 1');
 
@@ -110,7 +110,7 @@ async function sendEmail(subject, text, attachments = []) {
 
     const info = await transporter.sendMail({
       from: settings.email_from,
-      to: settings.email_to,
+      to: customRecipient || settings.email_to,
       subject,
       text,
       attachments

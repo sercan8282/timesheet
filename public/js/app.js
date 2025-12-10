@@ -100,7 +100,7 @@ class App {
                 document.getElementById('app').innerHTML = renderHistory();
                 initHistory();
                 break;
-            case 'weekly-summary':
+            case 'weekly-hours':
                 document.getElementById('app').innerHTML = renderWeeklySummary();
                 initWeeklySummary();
                 break;

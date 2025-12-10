@@ -1,4 +1,4 @@
-let currentWeeklySummaryPage = 1;
+let currentPage = 1;
 
 function renderWeeklySummary() {
     return `
@@ -7,17 +7,32 @@ function renderWeeklySummary() {
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Weekly Summary</h5>
-                            <small class="text-muted">Total hours worked per week</small>
+                            <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Weekly Hours Summary</h5>
                         </div>
                         <div class="card-body">
-                            <div id="weeklySummaryContent">
-                                <div class="text-center">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                </div>
+                            <div id="weeklySummaryAlert"></div>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Week Number</th>
+                                            <th>Work Days</th>
+                                            <th>Total Hours</th>
+                                            <th>Overworked</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="weeklySummaryTableBody">
+                                        <tr>
+                                            <td colspan="4" class="text-center">
+                                                <div class="spinner-border spinner-border-sm" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
+                            <div id="weeklySummaryPagination" class="d-flex justify-content-center mt-3"></div>
                         </div>
                     </div>
                 </div>
@@ -27,162 +42,79 @@ function renderWeeklySummary() {
 }
 
 async function initWeeklySummary() {
-    currentWeeklySummaryPage = 1;
-    await loadWeeklySummary(1);
+    currentPage = 1;
+    await loadWeeklySummary();
 }
 
 async function loadWeeklySummary(page = 1) {
-    const container = document.getElementById('weeklySummaryContent');
-    container.innerHTML = '<div class="text-center"><div class="spinner-border text-primary"></div></div>';
-
     try {
+        currentPage = page;
         const data = await api.getWeeklySummary(page);
-        renderWeeklySummaryTable(data);
-    } catch (error) {
-        container.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
-    }
-}
-
-function renderWeeklySummaryTable(data) {
-    const container = document.getElementById('weeklySummaryContent');
-    const { data: weeks, pagination } = data;
-
-    if (!weeks || weeks.length === 0) {
-        container.innerHTML = `
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> No timesheet data available yet
-            </div>
-        `;
-        return;
-    }
-
-    let html = `
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Week #</th>
-                        <th>Date Range</th>
-                        <th>Worked Hours</th>
-                        <th>Expected Hours</th>
-                        <th>Overworked</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-
-    weeks.forEach(week => {
-        const workingHours = week.workingHours || 40;
-        const totalHours = week.totalHours || 0;
-        const overworked = week.overworked || 0;
         
-        // Calculate date range for the week
-        const dateRange = getWeekDateRange(week.weekNumber, new Date(week.weekStartDate).getFullYear());
-        const startStr = dateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const endStr = dateRange.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-
-        const overworkedClass = overworked > 0 ? 'text-success' : '';
-        const hoursStatus = totalHours >= workingHours ? 'text-success fw-bold' : totalHours < workingHours * 0.8 ? 'text-danger' : 'text-warning';
-
-        html += `
-            <tr>
-                <td><strong>Week ${week.weekNumber}</strong></td>
-                <td>${startStr} - ${endStr}</td>
-                <td class="${hoursStatus}">${totalHours.toFixed(2)}h</td>
-                <td>${workingHours}h</td>
-                <td class="${overworkedClass}">${overworked > 0 ? '+' : ''}${overworked.toFixed(2)}h</td>
-            </tr>
-        `;
-    });
-
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
-
-    // Add pagination controls
-    if (pagination.totalPages > 1) {
-        html += `
-            <nav aria-label="Page navigation" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    <li class="page-item ${pagination.page === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadWeeklySummary(1); return false;">
-                            <i class="bi bi-chevron-double-left"></i> First
-                        </a>
-                    </li>
-                    <li class="page-item ${pagination.page === 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadWeeklySummary(${pagination.page - 1}); return false;">
-                            <i class="bi bi-chevron-left"></i> Previous
-                        </a>
-                    </li>
-        `;
-
-        // Show page numbers
-        const startPage = Math.max(1, pagination.page - 2);
-        const endPage = Math.min(pagination.totalPages, pagination.page + 2);
-
-        if (startPage > 1) {
-            html += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            html += `
-                <li class="page-item ${i === pagination.page ? 'active' : ''}">
-                    <a class="page-link" href="#" onclick="loadWeeklySummary(${i}); return false;">${i}</a>
-                </li>
+        const tbody = document.getElementById('weeklySummaryTableBody');
+        const paginationDiv = document.getElementById('weeklySummaryPagination');
+        
+        if (data.data.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-muted">
+                        <i class="bi bi-inbox"></i> No weekly data available yet
+                    </td>
+                </tr>
             `;
+            paginationDiv.innerHTML = '';
+            return;
         }
 
-        if (endPage < pagination.totalPages) {
-            html += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
-        }
+        tbody.innerHTML = data.data.map(week => {
+            const overworkedClass = parseFloat(week.overworked) > 0 ? 'text-danger fw-bold' : 
+                                   parseFloat(week.overworked) < 0 ? 'text-success' : '';
+            return `
+                <tr>
+                    <td>Week ${week.week_number}</td>
+                    <td>${week.work_days}</td>
+                    <td>${week.total_hours}h</td>
+                    <td class="${overworkedClass}">
+                        ${parseFloat(week.overworked) > 0 ? '+' : ''}${week.overworked}h
+                    </td>
+                </tr>
+            `;
+        }).join('');
 
-        html += `
-                    <li class="page-item ${pagination.page === pagination.totalPages ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadWeeklySummary(${pagination.page + 1}); return false;">
-                            Next <i class="bi bi-chevron-right"></i>
-                        </a>
-                    </li>
-                    <li class="page-item ${pagination.page === pagination.totalPages ? 'disabled' : ''}">
-                        <a class="page-link" href="#" onclick="loadWeeklySummary(${pagination.totalPages}); return false;">
-                            Last <i class="bi bi-chevron-double-right"></i>
-                        </a>
-                    </li>
-                </ul>
-            </nav>
-        `;
+        // Render pagination
+        if (data.pagination.totalPages > 1) {
+            paginationDiv.innerHTML = `
+                <nav>
+                    <ul class="pagination">
+                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="loadWeeklySummary(${currentPage - 1}); return false;">Previous</a>
+                        </li>
+                        ${Array.from({ length: data.pagination.totalPages }, (_, i) => i + 1)
+                            .map(p => `
+                                <li class="page-item ${p === currentPage ? 'active' : ''}">
+                                    <a class="page-link" href="#" onclick="loadWeeklySummary(${p}); return false;">${p}</a>
+                                </li>
+                            `).join('')}
+                        <li class="page-item ${currentPage === data.pagination.totalPages ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="loadWeeklySummary(${currentPage + 1}); return false;">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+            `;
+        } else {
+            paginationDiv.innerHTML = '';
+        }
+    } catch (error) {
+        showWeeklySummaryAlert(error.message, 'danger');
     }
-
-    html += `
-        <div class="alert alert-info mt-3">
-            <small>
-                <i class="bi bi-info-circle"></i> 
-                Showing ${weeks.length} weeks (Page ${pagination.page} of ${pagination.totalPages}).
-                Total weeks available: ${pagination.totalWeeks}
-            </small>
-        </div>
-    `;
-
-    container.innerHTML = html;
-    currentWeeklySummaryPage = pagination.page;
 }
 
-function getWeekDateRange(weekNumber, year) {
-    // ISO 8601 week date calculation
-    const simple = new Date(year, 0, 1 + (weekNumber - 1) * 7);
-    const dow = simple.getDay();
-    const ISOweekStart = simple;
-    if (dow <= 4)
-        ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-    else
-        ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-
-    const weekEnd = new Date(ISOweekStart);
-    weekEnd.setDate(ISOweekStart.getDate() + 6);
-
-    return {
-        start: ISOweekStart,
-        end: weekEnd
-    };
+function showWeeklySummaryAlert(message, type) {
+    const alertDiv = document.getElementById('weeklySummaryAlert');
+    alertDiv.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
 }

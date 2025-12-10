@@ -122,58 +122,58 @@ function renderTimesheetRows() {
         return `
             <div class="timesheet-row row g-1 mb-2 align-items-end">
                 <div class="col-auto" style="width: 60px;">
-                    <label class="form-label small mb-0">Week</label>
+                    <label class="form-label small mb-1">Week</label>
                     <input type="text" class="form-control form-control-sm" value="${weekNumber}" readonly>
                 </div>
-                <div class="col-auto" style="width: 80px;">
-                    <label class="form-label small mb-0">Ritnr</label>
+                <div class="col-auto" style="width: 90px;">
+                    <label class="form-label small mb-1">Ritnumber</label>
                     <input type="text" class="form-control form-control-sm" value="${ts.ritnumber || ''}" 
                            onchange="updateTimesheet(${index}, 'ritnumber', this.value)">
                 </div>
-                <div class="col-auto" style="width: 120px;">
-                    <label class="form-label small mb-0">Name</label>
+                <div class="col-auto" style="width: 140px;">
+                    <label class="form-label small mb-1">Name</label>
                     <input type="text" class="form-control form-control-sm" value="${user.fullName}" readonly>
                 </div>
                 <div class="col-auto" style="width: 130px;">
-                    <label class="form-label small mb-0">Date</label>
+                    <label class="form-label small mb-1">Date</label>
                     <input type="date" class="form-control form-control-sm" value="${ts.date}" 
                            onchange="updateTimesheet(${index}, 'date', this.value)">
                 </div>
-                <div class="col-auto" style="width: 80px;">
-                    <label class="form-label small mb-0">Start</label>
+                <div class="col-auto" style="width: 85px;">
+                    <label class="form-label small mb-1">Start</label>
                     <input type="time" class="form-control form-control-sm" value="${ts.startTime}" 
                            onchange="updateTimesheet(${index}, 'startTime', this.value)">
                 </div>
-                <div class="col-auto" style="width: 80px;">
-                    <label class="form-label small mb-0">End</label>
+                <div class="col-auto" style="width: 85px;">
+                    <label class="form-label small mb-1">End</label>
                     <input type="time" class="form-control form-control-sm" value="${ts.endTime}" 
                            onchange="updateTimesheet(${index}, 'endTime', this.value)">
                 </div>
-                <div class="col-auto" style="width: 90px;">
-                    <label class="form-label small mb-0">Start KM</label>
+                <div class="col-auto" style="width: 80px;">
+                    <label class="form-label small mb-1">Start KM</label>
                     <input type="number" class="form-control form-control-sm" value="${ts.startKm}" step="0.1"
                            onchange="updateTimesheet(${index}, 'startKm', parseFloat(this.value))">
                 </div>
-                <div class="col-auto" style="width: 90px;">
-                    <label class="form-label small mb-0">End KM</label>
+                <div class="col-auto" style="width: 80px;">
+                    <label class="form-label small mb-1">End KM</label>
                     <input type="number" class="form-control form-control-sm" value="${ts.endKm}" step="0.1"
                            onchange="updateTimesheet(${index}, 'endKm', parseFloat(this.value))">
                 </div>
-                <div class="col-auto" style="width: 80px;">
-                    <label class="form-label small mb-0">Pause</label>
+                <div class="col-auto" style="width: 85px;">
+                    <label class="form-label small mb-1">Pause</label>
                     <input type="time" class="form-control form-control-sm" value="${ts.pauseTime}" 
                            onchange="updateTimesheet(${index}, 'pauseTime', this.value)">
                 </div>
                 <div class="col-auto" style="width: 70px;">
-                    <label class="form-label small mb-0">Hours</label>
+                    <label class="form-label small mb-1">Hours</label>
                     <input type="text" class="form-control form-control-sm" value="${totalHours}" readonly>
                 </div>
                 <div class="col-auto" style="width: 70px;">
-                    <label class="form-label small mb-0">KM</label>
+                    <label class="form-label small mb-1">KM</label>
                     <input type="text" class="form-control form-control-sm" value="${totalKm}" readonly>
                 </div>
                 <div class="col-auto">
-                    <button class="btn btn-sm btn-danger" onclick="removeTimesheetRow(${index})" title="Delete row">
+                    <button class="btn btn-sm btn-danger" onclick="removeTimesheetRow(${index})" style="margin-top: 2px;">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
@@ -275,9 +275,7 @@ async function submitTimesheets() {
         // Clear all timesheets from the display and start fresh
         timesheets = [];
         timesheetCounter = 0;
-        editingIndex = null;
-        addTimesheetRow();  // Add empty row for new entries
-        renderTimesheetRows();
+        addTimesheetRow();  // Add one empty row for new entries
     } catch (error) {
         showAlert(error.message, 'danger');
     }

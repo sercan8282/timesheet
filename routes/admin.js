@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { authMiddleware, adminMiddleware } = require('../middleware/auth');
-const { testSMTPConnection } = require('../utils/email');
+const { testSMTPConnection, sendEmail } = require('../utils/email');
 const { generatePDF } = require('../utils/pdf');
 const { generateXLSX } = require('../utils/excel');
 const multer = require('multer');
@@ -205,6 +205,48 @@ router.get('/submissions/:id/timesheets', async (req, res) => {
   }
 });
 
+// Update timesheet entry (admin can edit any timesheet)
+router.put('/timesheets/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, startTime, endTime, startKm, endKm, pauseTime, ritnumber } = req.body;
+
+    // Check if timesheet exists
+    const existing = await db.get('SELECT * FROM timesheets WHERE id = ?', [id]);
+    if (!existing) {
+      return res.status(404).json({ error: 'Timesheet not found' });
+    }
+
+    // Calculate week number
+    const dateObj = new Date(date);
+    const weekNumber = getWeekNumber(dateObj);
+
+    // Calculate total hours
+    const totalHours = calculateTotalHours(startTime, endTime, pauseTime);
+
+    // Calculate total km
+    const totalKm = endKm - startKm;
+
+    await db.run(
+      `UPDATE timesheets 
+       SET week_number = ?, date = ?, start_time = ?, end_time = ?, 
+           start_km = ?, end_km = ?, pause_time = ?, total_hours = ?, total_km = ?, ritnumber = ?
+       WHERE id = ?`,
+      [weekNumber, date, startTime, endTime, startKm, endKm, pauseTime, totalHours, totalKm, ritnumber || '', id]
+    );
+
+    res.json({ 
+      message: 'Timesheet updated successfully',
+      id,
+      totalHours,
+      totalKm
+    });
+  } catch (error) {
+    console.error('Error updating timesheet:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get PDF for a specific submission (admin)
 router.get('/submissions/:id/pdf', async (req, res) => {
   try {
@@ -293,6 +335,80 @@ router.delete('/submissions/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting submission:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Send submission email with custom recipient and format
+router.post('/submissions/:id/send-email', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { recipient, format } = req.body;
+
+    // Get submission
+    const submission = await db.get(`
+      SELECT s.*, u.full_name, u.username
+      FROM submissions s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.id = ?
+    `, [id]);
+
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+
+    if (!submission.timesheet_ids) {
+      return res.status(400).json({ error: 'No timesheets in this submission' });
+    }
+
+    // Get timesheets for this submission
+    const timesheetIds = submission.timesheet_ids.split(',');
+    const placeholders = timesheetIds.map(() => '?').join(',');
+
+    const timesheets = await db.all(
+      `SELECT * FROM timesheets WHERE id IN (${placeholders}) ORDER BY date, start_time`,
+      timesheetIds
+    );
+
+    // Get SMTP settings
+    const smtpSettings = await db.get('SELECT * FROM smtp_settings LIMIT 1');
+    const emailTo = recipient || smtpSettings.email_to;
+
+    // Generate file based on format
+    let fileBuffer, fileName, mimeType;
+    
+    if (format === 'pdf') {
+      fileBuffer = await generatePDF(timesheets, submission.full_name);
+      fileName = `timesheet_${submission.username}_${new Date().toISOString().split('T')[0]}.pdf`;
+      mimeType = 'application/pdf';
+    } else {
+      fileBuffer = await generateXLSX(timesheets, submission.full_name);
+      fileName = `timesheet_${submission.username}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    }
+
+    // Send email
+    await sendEmail(
+      `Timesheet Submission - ${submission.full_name}`,
+      `Timesheet submission from ${submission.full_name}\n\nDate: ${new Date(submission.submission_date).toLocaleString()}\nTotal entries: ${timesheets.length}\n\nSent by admin.`,
+      [
+        {
+          filename: fileName,
+          content: fileBuffer
+        }
+      ],
+      emailTo
+    );
+
+    // Update submission status
+    await db.run(
+      'UPDATE submissions SET status = ?, submission_date = CURRENT_TIMESTAMP WHERE id = ?',
+      ['sent', id]
+    );
+
+    res.json({ message: 'Email sent successfully' });
+  } catch (error) {
+    console.error('Error sending submission email:', error);
+    res.status(500).json({ error: 'Failed to send email: ' + error.message });
   }
 });
 
@@ -550,100 +666,6 @@ const upload = multer({
   }
 });
 
-// Get hours report for all users per week
-router.get('/hours-report', async (req, res) => {
-  try {
-    const userId = req.query.userId ? parseInt(req.query.userId) : null;
-    const page = parseInt(req.query.page) || 1;
-    const limit = 10; // 10 weeks per page
-    const offset = (page - 1) * limit;
-
-    let query = `
-      SELECT 
-        u.id as user_id,
-        u.username,
-        u.full_name,
-        t.week_number,
-        SUM(t.total_hours) as total_hours_worked,
-        COUNT(t.id) as entries_count,
-        MIN(t.date) as week_start_date
-      FROM timesheets t
-      JOIN users u ON t.user_id = u.id
-    `;
-
-    let params = [];
-
-    if (userId) {
-      query += ` WHERE u.id = ?`;
-      params.push(userId);
-    }
-
-    query += `
-      GROUP BY u.id, t.week_number
-      ORDER BY u.full_name ASC, t.week_number DESC
-      LIMIT ? OFFSET ?
-    `;
-    params.push(limit, offset);
-
-    const report = await db.all(query, params);
-
-    // Get total count for pagination
-    let countQuery = `
-      SELECT COUNT(*) as total_records FROM (
-        SELECT DISTINCT u.id, t.week_number
-        FROM timesheets t
-        JOIN users u ON t.user_id = u.id
-    `;
-
-    if (userId) {
-      countQuery += ` WHERE u.id = ?`;
-      countQuery += `)`;
-      const countResult = await db.get(countQuery, [userId]);
-      var totalRecords = countResult?.total_records || 0;
-    } else {
-      countQuery += `)`;
-      const countResult = await db.get(countQuery);
-      var totalRecords = countResult?.total_records || 0;
-    }
-
-    const totalPages = Math.ceil(totalRecords / limit);
-
-    // Get list of all users for dropdown
-    const users = await db.all(
-      'SELECT id, username, full_name FROM users WHERE role = ? OR is_admin = ? ORDER BY full_name',
-      ['user', 1]
-    );
-
-    const WORKING_HOURS_PER_WEEK = 40;
-
-    const formattedReport = report.map(row => ({
-      userId: row.user_id,
-      username: row.username,
-      fullName: row.full_name,
-      weekNumber: row.week_number,
-      workingHours: WORKING_HOURS_PER_WEEK,
-      totalHours: parseFloat(row.total_hours_worked) || 0,
-      overworked: Math.max(0, (parseFloat(row.total_hours_worked) || 0) - WORKING_HOURS_PER_WEEK),
-      entriesCount: row.entries_count,
-      weekStartDate: row.week_start_date
-    }));
-
-    res.json({
-      data: formattedReport,
-      users,
-      pagination: {
-        page,
-        limit,
-        totalRecords,
-        totalPages
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching hours report:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // Upload logo
 router.post('/branding-settings/logo', upload.single('logo'), async (req, res) => {
   try {
@@ -674,5 +696,75 @@ router.post('/branding-settings/logo', upload.single('logo'), async (req, res) =
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
+
+// Get hours report for all users or specific user
+router.get('/hours-report', async (req, res) => {
+  try {
+    const userId = req.query.userId;
+    
+    let query = `
+      SELECT 
+        u.id as user_id,
+        u.full_name,
+        t.week_number,
+        COUNT(*) as work_days,
+        SUM(CAST(t.total_hours AS REAL)) as total_hours
+      FROM users u
+      LEFT JOIN timesheets t ON u.id = t.user_id
+      LEFT JOIN submissions s ON (',' || s.timesheet_ids || ',') LIKE ('%,' || t.id || ',%')
+      WHERE 1=1 AND s.id IS NOT NULL
+    `;
+    
+    const params = [];
+    if (userId) {
+      query += ' AND u.id = ?';
+      params.push(userId);
+    }
+    
+    query += `
+      GROUP BY u.id, u.full_name, t.week_number
+      ORDER BY u.full_name, t.week_number DESC
+    `;
+
+    const results = await db.all(query, params);
+
+    // Calculate overworked hours
+    const report = results.map(row => ({
+      ...row,
+      total_hours: parseFloat(row.total_hours || 0).toFixed(2),
+      overworked: row.week_number ? (parseFloat(row.total_hours || 0) - 40).toFixed(2) : '0.00'
+    }));
+
+    res.json(report);
+  } catch (error) {
+    console.error('Error fetching hours report:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Helper functions
+function getWeekNumber(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+function calculateTotalHours(startTime, endTime, pauseTime) {
+  if (!startTime || !endTime || !pauseTime) {
+    return '0.00';
+  }
+  const [startHour, startMinute] = startTime.split(':').map(Number);
+  const [endHour, endMinute] = endTime.split(':').map(Number);
+  const [pauseHour, pauseMinute] = pauseTime.split(':').map(Number);
+
+  const startMinutes = startHour * 60 + startMinute;
+  const endMinutes = endHour * 60 + endMinute;
+  const pauseMinutes = pauseHour * 60 + pauseMinute;
+
+  const totalMinutes = endMinutes - startMinutes - pauseMinutes;
+  return (totalMinutes / 60).toFixed(2);
+}
 
 module.exports = router;
