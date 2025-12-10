@@ -18,7 +18,7 @@ async function generatePDF(timesheets, userName) {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ 
-        margin: 50,
+        margin: 40,
         size: 'A4',
         layout: 'landscape'
       });
@@ -35,8 +35,8 @@ async function generatePDF(timesheets, userName) {
         const logoPath = path.join(__dirname, '../public', branding.logo_path);
         if (fs.existsSync(logoPath)) {
           try {
-            doc.image(logoPath, 50, 40, { height: 50 });
-            doc.moveDown(4);
+            doc.image(logoPath, 40, 30, { height: 40 });
+            doc.moveDown(3);
           } catch (err) {
             console.log('Could not load logo for PDF:', err);
           }
@@ -55,42 +55,48 @@ async function generatePDF(timesheets, userName) {
       };
       const rgb = hexToRgb(primaryColor);
       
-      doc.fontSize(20).fillColor(rgb.r, rgb.g, rgb.b).text('Timesheet Report', { align: 'center' });
-      doc.moveDown();
+      doc.fontSize(18).fillColor(rgb.r, rgb.g, rgb.b).text('Timesheet Report', { align: 'center' });
+      doc.moveDown(0.5);
 
       // User info
-      doc.fontSize(12).fillColor('#000000').text(`Employee: ${userName}`, { align: 'left' });
+      doc.fontSize(10).fillColor('#000000').text(`Employee: ${userName}`, { align: 'left' });
       doc.text(`Report Date: ${new Date().toLocaleDateString()}`, { align: 'left' });
       if (branding.company_name !== 'Timesheet System') {
         doc.text(`Company: ${branding.company_name}`, { align: 'left' });
       }
-      doc.moveDown();
+      doc.moveDown(0.5);
 
-      // Table headers
+      // Calculate available width for table (landscape: ~750 pixels after margins)
+      const pageWidth = doc.page.width - 80; // 40px margins on each side
       const tableTop = doc.y;
+      
+      // Optimize column widths for landscape layout
       const colWidths = {
-        weekNumber: 50,
-        name: 80,
-        date: 70,
-        startTime: 60,
-        endTime: 60,
+        weekNumber: 45,
+        name: 70,
+        date: 65,
+        startTime: 55,
+        endTime: 55,
         startKm: 50,
         endKm: 50,
-        pauseTime: 60,
-        totalHours: 60,
-        totalKm: 50
+        pauseTime: 55,
+        totalHours: 55,
+        totalKm: 45,
+        ritnumber: 50
       };
 
-      let xPos = 50;
+      const totalColWidth = Object.values(colWidths).reduce((a, b) => a + b, 0);
+      let xPos = 40;
 
       // Header background (use branding color)
-      doc.rect(50, tableTop, 495, 20).fillAndStroke(rgb.r, rgb.g, rgb.b, rgb.r, rgb.g, rgb.b);
+      doc.rect(40, tableTop, totalColWidth + 20, 20).fillAndStroke(rgb.r, rgb.g, rgb.b, rgb.r, rgb.g, rgb.b);
 
       // Header text
-      doc.fillColor('#FFFFFF').fontSize(9);
+      doc.fillColor('#FFFFFF').fontSize(8);
       
       const headers = [
         { text: 'Week', width: colWidths.weekNumber },
+        { text: 'Ritnumber', width: colWidths.ritnumber },
         { text: 'Name', width: colWidths.name },
         { text: 'Date', width: colWidths.date },
         { text: 'Start', width: colWidths.startTime },
@@ -102,61 +108,65 @@ async function generatePDF(timesheets, userName) {
         { text: 'KM', width: colWidths.totalKm }
       ];
 
-      xPos = 50;
+      xPos = 40;
       headers.forEach(header => {
-        doc.text(header.text, xPos + 2, tableTop + 5, { width: header.width, align: 'left' });
+        doc.text(header.text, xPos + 3, tableTop + 5, { width: header.width - 6, align: 'center', fontSize: 8 });
         xPos += header.width;
       });
 
-      doc.moveDown();
-      let yPos = tableTop + 25;
+      let yPos = tableTop + 22;
+      const pageHeight = doc.page.height;
+      const footerSpace = 40;
+      const maxYPos = pageHeight - footerSpace;
 
       // Data rows
-      doc.fillColor('#000000').fontSize(8);
+      doc.fillColor('#000000').fontSize(7);
 
       timesheets.forEach((timesheet, index) => {
-        if (yPos > 700) {
+        // Check if we need a new page (leaving room for footer)
+        if (yPos > maxYPos) {
           doc.addPage();
-          yPos = 50;
+          yPos = 40;
         }
 
         // Alternating row colors
         if (index % 2 === 0) {
-          doc.rect(50, yPos, 495, 18).fillAndStroke('#F0F0F0', '#E0E0E0');
+          doc.rect(40, yPos, totalColWidth + 20, 16).fillAndStroke('#F5F5F5', '#D0D0D0');
         } else {
-          doc.rect(50, yPos, 495, 18).stroke('#E0E0E0');
+          doc.rect(40, yPos, totalColWidth + 20, 16).stroke('#D0D0D0');
         }
 
-        xPos = 50;
+        xPos = 40;
         const rowData = [
           { text: timesheet.week_number.toString(), width: colWidths.weekNumber },
+          { text: (timesheet.ritnumber || '-').toString(), width: colWidths.ritnumber },
           { text: userName, width: colWidths.name },
           { text: timesheet.date, width: colWidths.date },
           { text: timesheet.start_time, width: colWidths.startTime },
           { text: timesheet.end_time, width: colWidths.endTime },
-          { text: timesheet.start_km.toString(), width: colWidths.startKm },
-          { text: timesheet.end_km.toString(), width: colWidths.endKm },
+          { text: timesheet.start_km.toFixed(2), width: colWidths.startKm },
+          { text: timesheet.end_km.toFixed(2), width: colWidths.endKm },
           { text: timesheet.pause_time, width: colWidths.pauseTime },
-          { text: timesheet.total_hours.toString(), width: colWidths.totalHours },
-          { text: timesheet.total_km.toString(), width: colWidths.totalKm }
+          { text: timesheet.total_hours.toFixed(2), width: colWidths.totalHours },
+          { text: timesheet.total_km.toFixed(2), width: colWidths.totalKm }
         ];
 
         doc.fillColor('#000000');
         rowData.forEach(cell => {
-          doc.text(cell.text, xPos + 2, yPos + 4, { width: cell.width, align: 'left' });
+          doc.text(cell.text, xPos + 3, yPos + 2, { width: cell.width - 6, align: 'center', fontSize: 7 });
           xPos += cell.width;
         });
 
-        yPos += 18;
+        yPos += 16;
       });
 
-      // Footer
-      doc.moveDown(2);
-      doc.fontSize(8).fillColor('#666666').text(
+      // Add footer on the same page if there's space, otherwise on last page
+      const footerY = Math.max(yPos + 10, pageHeight - 30);
+      doc.fontSize(7).fillColor('#999999').text(
         `Generated on ${new Date().toLocaleString()}`,
-        50,
-        doc.page.height - 50,
-        { align: 'center' }
+        40,
+        footerY,
+        { align: 'center', width: pageWidth }
       );
 
       doc.end();
