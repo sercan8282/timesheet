@@ -289,6 +289,7 @@ function renderSubmissionsTable(submissions) {
                     <tr>
                         <th style="width: 50px;">ID</th>
                         <th style="width: 180px;">User</th>
+                        <th style="width: 100px;">Week(s)</th>
                         <th style="width: 150px;">Date</th>
                         <th style="width: 70px;">Entries</th>
                         <th style="width: 80px;">Status</th>
@@ -303,6 +304,7 @@ function renderSubmissionsTable(submissions) {
                                 <div class="small">${sub.full_name}</div>
                                 <small class="text-muted">${sub.username}</small>
                             </td>
+                            <td class="small"><span class="badge bg-info">${getWeekNumbersForSubmission(sub.timesheet_ids)}</span></td>
                             <td class="small">${new Date(sub.submission_date).toLocaleString('nl-NL', {dateStyle: 'short', timeStyle: 'short'})}</td>
                             <td class="text-center">${sub.timesheet_ids ? sub.timesheet_ids.split(',').length : 0}</td>
                             <td><span class="badge bg-success">${sub.status}</span></td>
@@ -337,6 +339,37 @@ function filterAdminSubmissions() {
     const userId = document.getElementById('submissionUserFilter').value;
     const filtered = userId ? window.allSubmissions.filter(s => s.user_id == userId) : window.allSubmissions;
     document.getElementById('submissionsTableContainer').innerHTML = renderSubmissionsTable(filtered);
+}
+
+function getWeekNumbersForSubmission(timesheetIdsString) {
+    if (!timesheetIdsString) return '-';
+    
+    // Since we don't have access to week numbers from the submission object directly,
+    // we'll show a loading state and fetch the week numbers asynchronously
+    const timesheetIds = timesheetIdsString.split(',').map(id => parseInt(id.trim()));
+    
+    // Fetch week numbers from the API
+    api.getTimesheetDetails(timesheetIds)
+        .then(timesheets => {
+            if (timesheets && timesheets.length > 0) {
+                const weekNumbers = [...new Set(timesheets.map(ts => ts.week_number))].sort((a, b) => a - b);
+                const displayText = weekNumbers.length === 1 ? `Week ${weekNumbers[0]}` : `Weeks ${weekNumbers.join(', ')}`;
+                
+                // Find and update all badges for this submission's week number display
+                // This is done by finding the element by content since we don't have an ID at this point
+                const badges = document.querySelectorAll('.badge.bg-info');
+                badges.forEach(badge => {
+                    if (badge.textContent.trim() === 'Loading...') {
+                        badge.textContent = displayText;
+                    }
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching week numbers:', err);
+        });
+    
+    return 'Loading...';
 }
 
 async function viewAdminSubmissionPDF(submissionId) {
