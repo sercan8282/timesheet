@@ -183,7 +183,10 @@ function showConfirmModal(title, message, onConfirm, onCancel = null) {
 }
 
 function executeConfirm() {
-  console.log("executeConfirm called, globalConfirmCallback:", globalConfirmCallback ? "exists" : "null");
+  console.log(
+    "executeConfirm called, globalConfirmCallback:",
+    globalConfirmCallback ? "exists" : "null"
+  );
   if (globalConfirmCallback) {
     try {
       globalConfirmCallback();

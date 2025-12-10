@@ -1,156 +1,160 @@
 :root {
-    --primary-color: #0066CC;
-    --primary-dark: #0052A3;
-    --secondary-color: #FFFFFF;
-    --text-color: #333333;
-    --border-color: #E0E0E0;
-    --bg-light: #F8F9FA;
+  --primary-color: #0066cc;
+  --primary-dark: #0052a3;
+  --secondary-color: #ffffff;
+  --text-color: #333333;
+  --border-color: #e0e0e0;
+  --bg-light: #f8f9fa;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-light);
-    color: var(--text-color);
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-color);
 }
 
 .navbar-dark {
-    background-color: var(--primary-color) !important;
+  background-color: var(--primary-color) !important;
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-dark);
-    border-color: var(--primary-dark);
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
 }
 
 .card {
-    border: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
 }
 
 .card-header {
-    background-color: var(--primary-color);
-    color: white;
-    font-weight: 600;
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: 600;
 }
 
 .table {
-    background-color: white;
+  background-color: white;
 }
 
 .table thead {
-    background-color: var(--primary-color);
-    color: white;
+  background-color: var(--primary-color);
+  color: white;
 }
 
 .login-container {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    var(--primary-color) 0%,
+    var(--primary-dark) 100%
+  );
 }
 
 .login-card {
-    width: 100%;
-    max-width: 400px;
-    border-radius: 10px;
-    overflow: hidden;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 .login-header {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 30px;
-    text-align: center;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 30px;
+  text-align: center;
 }
 
 .login-body {
-    padding: 30px;
-    background-color: white;
+  padding: 30px;
+  background-color: white;
 }
 
 .form-control:focus {
-    border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
 }
 
 .alert {
-    border-radius: 5px;
+  border-radius: 5px;
 }
 
 .timesheet-row {
-    background-color: white;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    padding: 15px;
-    margin-bottom: 10px;
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 10px;
 }
 
 .timesheet-row input,
 .timesheet-row select {
-    margin-bottom: 5px;
+  margin-bottom: 5px;
 }
 
 .badge-admin {
-    background-color: #dc3545;
+  background-color: #dc3545;
 }
 
 .badge-user {
-    background-color: #28a745;
+  background-color: #28a745;
 }
 
 .submission-card {
-    cursor: pointer;
-    transition: transform 0.2s;
+  cursor: pointer;
+  transition: transform 0.2s;
 }
 
 .submission-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 @media (max-width: 768px) {
-    .table-responsive {
-        font-size: 0.875rem;
-    }
+  .table-responsive {
+    font-size: 0.875rem;
+  }
 
-    .card {
-        margin-bottom: 15px;
-    }
+  .card {
+    margin-bottom: 15px;
+  }
 
-    .timesheet-row {
-        padding: 10px;
-    }
+  .timesheet-row {
+    padding: 10px;
+  }
 }
 
 .spinner-border-sm {
-    width: 1rem;
-    height: 1rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 .text-primary {
-    color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
 }
 
 .bg-primary {
-    background-color: var(--primary-color) !important;
+  background-color: var(--primary-color) !important;
 }
 
 .border-primary {
-    border-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
 }
 
 /* Force time inputs to use 24-hour format */
 input[type="time"] {
-    font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums;
 }
 
 html[lang="en-GB"] input[type="time"] {
-    /* Chrome, Edge, Safari will use 24-hour format with en-GB locale */
+  /* Chrome, Edge, Safari will use 24-hour format with en-GB locale */
 }

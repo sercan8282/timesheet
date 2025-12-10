@@ -494,9 +494,12 @@ function renderSubmissionsTable(submissions) {
                                   sub.username
                                 }</small>
                             </td>
-                            <td class="small"><span class="badge bg-info">${getWeekNumbersForSubmission(
-                              sub.timesheet_ids
-                            )}</span></td>
+                            <td class="small"><span class="badge bg-info" id="week-badge-${
+                              sub.id
+                            }">${getWeekNumbersForSubmission(
+                          sub.id,
+                          sub.timesheet_ids
+                        )}</span></td>
                             <td class="small">${new Date(
                               sub.submission_date
                             ).toLocaleString("nl-NL", {
@@ -559,16 +562,19 @@ function filterAdminSubmissions() {
     renderSubmissionsTable(filtered);
 }
 
-function getWeekNumbersForSubmission(timesheetIdsString) {
+function getWeekNumbersForSubmission(submissionId, timesheetIdsString) {
   if (!timesheetIdsString) return "-";
 
-  // Since we don't have access to week numbers from the submission object directly,
-  // we'll show a loading state and fetch the week numbers asynchronously
   const timesheetIds = timesheetIdsString
     .split(",")
-    .map((id) => parseInt(id.trim()));
+    .map((id) => parseInt(id.trim()))
+    .filter((id) => !Number.isNaN(id));
 
-  // Fetch week numbers from the API
+  const badgeEl = document.getElementById(`week-badge-${submissionId}`);
+  if (badgeEl) {
+    badgeEl.textContent = "Loading...";
+  }
+
   api
     .getTimesheetDetails(timesheetIds)
     .then((timesheets) => {
@@ -581,18 +587,20 @@ function getWeekNumbersForSubmission(timesheetIdsString) {
             ? `Week ${weekNumbers[0]}`
             : `Weeks ${weekNumbers.join(", ")}`;
 
-        // Find and update all badges for this submission's week number display
-        // This is done by finding the element by content since we don't have an ID at this point
-        const badges = document.querySelectorAll(".badge.bg-info");
-        badges.forEach((badge) => {
-          if (badge.textContent.trim() === "Loading...") {
-            badge.textContent = displayText;
-          }
-        });
+        const target =
+          document.getElementById(`week-badge-${submissionId}`) || badgeEl;
+        if (target) {
+          target.textContent = displayText;
+        }
       }
     })
     .catch((err) => {
       console.error("Error fetching week numbers:", err);
+      const target =
+        document.getElementById(`week-badge-${submissionId}`) || badgeEl;
+      if (target) {
+        target.textContent = "-";
+      }
     });
 
   return "Loading...";
