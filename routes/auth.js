@@ -24,7 +24,10 @@ router.post(
 
       // Find user (case-insensitive)
       const user = await db.get(
-        "SELECT * FROM users WHERE LOWER(username) = LOWER(?)",
+        `SELECT u.*, c.name AS company_name, c.pause_time AS company_pause_time
+         FROM users u
+         LEFT JOIN companies c ON c.id = u.company_id
+         WHERE LOWER(u.username) = LOWER(?)`,
         [username]
       );
 
@@ -48,13 +51,39 @@ router.post(
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      // Get all companies for this user
+      const userCompanies = await db.all(
+        `SELECT c.id, c.name, c.pause_time, uc.is_primary
+         FROM user_companies uc
+         JOIN companies c ON c.id = uc.company_id
+         WHERE uc.user_id = ?
+         ORDER BY uc.is_primary DESC, c.name ASC`,
+        [user.id]
+      );
+
+      // Get primary company (fallback to company_id if no user_companies record)
+      let primaryCompany = userCompanies.find((c) => c.is_primary === 1);
+      if (!primaryCompany && userCompanies.length > 0) {
+        primaryCompany = userCompanies[0];
+      }
+
       // Generate JWT token
       const token = jwt.sign(
         {
           id: user.id,
           username: user.username,
           fullName: user.full_name,
-          isAdmin: user.is_admin === 1,
+          isAdmin: user.role === 'admin',
+          role: user.role || "user",
+          companyId: primaryCompany?.id || user.company_id,
+          companyName: primaryCompany?.name || user.company_name,
+          companyPauseTime: primaryCompany?.pause_time || user.company_pause_time,
+          userCompanies: userCompanies.map((c) => ({
+            id: c.id,
+            name: c.name,
+            pause_time: c.pause_time,
+            is_primary: c.is_primary === 1,
+          })),
         },
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRES_IN || "24h" }
@@ -66,7 +95,19 @@ router.post(
           id: user.id,
           username: user.username,
           fullName: user.full_name,
-          isAdmin: user.is_admin === 1,
+          isAdmin: user.role === 'admin',
+          role: user.role || "user",
+          companyId: primaryCompany?.id || user.company_id,
+          companyName: primaryCompany?.name || user.company_name,
+          companyPauseTime: primaryCompany?.pause_time || user.company_pause_time,
+          company_name: primaryCompany?.name || user.company_name,
+          company_pause_time: primaryCompany?.pause_time || user.company_pause_time,
+          userCompanies: userCompanies.map((c) => ({
+            id: c.id,
+            name: c.name,
+            pause_time: c.pause_time,
+            is_primary: c.is_primary === 1,
+          })),
         },
       });
     } catch (error) {

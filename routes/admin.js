@@ -20,7 +20,19 @@ router.use(adminMiddleware);
 router.get("/users", async (req, res) => {
   try {
     const users = await db.all(
-      "SELECT id, username, full_name, is_admin, role, is_blocked, created_at FROM users ORDER BY created_at DESC"
+      `SELECT 
+         u.id, u.username, u.full_name, u.role, u.is_blocked, u.created_at,
+         u.company_id, u.phone, u.ritnumber, u.adr, u.mega_kast,
+         u.can_fill_in, u.fill_in_company_id,
+         c.name AS company_name,
+         fc.name AS fill_in_company_name,
+         COALESCE(lb.vacation_hours, 0) AS vacation_hours,
+         COALESCE(lb.overtime_hours, 0) AS overtime_hours
+       FROM users u
+       LEFT JOIN leave_balances lb ON lb.user_id = u.id
+       LEFT JOIN companies c ON c.id = u.company_id
+       LEFT JOIN companies fc ON fc.id = u.fill_in_company_id
+       ORDER BY u.created_at DESC`
     );
     res.json(users);
   } catch (error) {
@@ -43,6 +55,12 @@ router.post(
       .optional()
       .isIn(["admin", "user", "reader"])
       .withMessage("Role must be admin, user, or reader"),
+    body("companyId").optional().isInt(),
+    body("phone").optional().trim(),
+    body("email").optional({ checkFalsy: true }).trim().isEmail(),
+    body("ritnumber").optional().trim(),
+    body("adr").optional().isBoolean(),
+    body("megaKast").optional().isIn(["only_mega", "mega_and_kast", "nvt"]),
   ],
   async (req, res) => {
     try {
@@ -51,7 +69,19 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { username, password, fullName, isAdmin, role = "user" } = req.body;
+      const {
+        username,
+        password,
+        fullName,
+        isAdmin,
+        role = "user",
+        companyId,
+        phone,
+        email,
+        ritnumber,
+        adr = false,
+        megaKast = "only_mega",
+      } = req.body;
 
       // Check if username already exists (case-insensitive)
       const existingUser = await db.get(
@@ -68,8 +98,25 @@ router.post(
 
       // Create user with role
       const result = await db.run(
-        "INSERT INTO users (username, password, full_name, is_admin, role) VALUES (?, ?, ?, ?, ?)",
-        [username, hashedPassword, fullName, isAdmin ? 1 : 0, role]
+        `INSERT INTO users (username, password, full_name, role, company_id, phone, ritnumber, adr, mega_kast) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          username,
+          hashedPassword,
+          fullName,
+          role,
+          companyId || null,
+          phone || null,
+          ritnumber || null,
+          adr ? 1 : 0,
+          megaKast,
+        ]
+      );
+
+      // Initialize leave balance for new user
+      await db.run(
+        "INSERT OR IGNORE INTO leave_balances (user_id, vacation_hours, overtime_hours) VALUES (?, 0, 0)",
+        [result.id]
       );
 
       res.status(201).json({
@@ -78,6 +125,10 @@ router.post(
         fullName,
         isAdmin: isAdmin || false,
         role,
+        companyId,
+        phone,
+        email,
+        ritnumber,
       });
     } catch (error) {
       console.error("Error creating user:", error);
@@ -94,6 +145,14 @@ router.put(
     body("isAdmin").optional().isBoolean(),
     body("password").optional().trim().isLength({ min: 6 }),
     body("role").optional().isIn(["user", "reader", "admin"]),
+    body("companyId").optional(),
+    body("phone").optional().trim(),
+    body("email").optional().trim(),
+    body("ritnumber").optional().trim(),
+    body("adr").optional().isBoolean(),
+    body("megaKast").optional().isIn(["only_mega", "mega_and_kast", "nvt"]),
+    body("canFillIn").optional(),
+    body("fillInCompanyId").optional(),
   ],
   async (req, res) => {
     try {
@@ -103,7 +162,22 @@ router.put(
       }
 
       const { id } = req.params;
-      const { fullName, isAdmin, password, role } = req.body;
+      const {
+        fullName,
+        isAdmin,
+        password,
+        role,
+        companyId,
+        phone,
+        email,
+        ritnumber,
+        adr,
+        megaKast,
+        canFillIn,
+        fillInCompanyId,
+      } = req.body;
+      
+      console.log(`Updating user ${id} with data:`, { fullName, isAdmin, role, companyId, phone, email, ritnumber, adr, megaKast, canFillIn, fillInCompanyId });
 
       const updates = [];
       const values = [];
@@ -113,14 +187,45 @@ router.put(
         values.push(fullName);
       }
 
-      if (isAdmin !== undefined) {
-        updates.push("is_admin = ?");
-        values.push(isAdmin ? 1 : 0);
-      }
-
       if (role !== undefined) {
         updates.push("role = ?");
         values.push(role);
+      }
+
+      if (companyId !== undefined) {
+        updates.push("company_id = ?");
+        values.push(companyId || null);
+      }
+
+      if (phone !== undefined) {
+        updates.push("phone = ?");
+        values.push(phone || null);
+      }
+
+      if (ritnumber !== undefined) {
+        updates.push("ritnumber = ?");
+        values.push(ritnumber || null);
+      }
+
+      if (adr !== undefined) {
+        updates.push("adr = ?");
+        values.push(adr ? 1 : 0);
+        console.log(`Setting ADR: input=${adr}, converted to=${adr ? 1 : 0}`);
+      }
+
+      if (megaKast !== undefined) {
+        updates.push("mega_kast = ?");
+        values.push(megaKast || "only_mega");
+      }
+
+      if (canFillIn !== undefined) {
+        updates.push("can_fill_in = ?");
+        values.push(canFillIn ? 1 : 0);
+      }
+
+      if (fillInCompanyId !== undefined) {
+        updates.push("fill_in_company_id = ?");
+        values.push(fillInCompanyId || null);
       }
 
       if (password !== undefined) {
@@ -136,10 +241,11 @@ router.put(
       updates.push("updated_at = CURRENT_TIMESTAMP");
       values.push(id);
 
-      await db.run(
-        `UPDATE users SET ${updates.join(", ")} WHERE id = ?`,
-        values
-      );
+      const sql = `UPDATE users SET ${updates.join(", ")} WHERE id = ?`;
+      console.log(`Executing SQL: ${sql}`);
+      console.log(`With values:`, values);
+
+      await db.run(sql, values);
 
       res.json({ message: "User updated successfully" });
     } catch (error) {
@@ -179,11 +285,11 @@ router.delete("/users/:id", async (req, res) => {
     const { id } = req.params;
 
     // Prevent deleting the last admin
-    const user = await db.get("SELECT is_admin FROM users WHERE id = ?", [id]);
+    const user = await db.get("SELECT role FROM users WHERE id = ?", [id]);
 
-    if (user && user.is_admin === 1) {
+    if (user && user.role === 'admin') {
       const adminCount = await db.get(
-        "SELECT COUNT(*) as count FROM users WHERE is_admin = 1"
+        "SELECT COUNT(*) as count FROM users WHERE role = 'admin'"
       );
       if (adminCount.count <= 1) {
         return res
@@ -200,13 +306,91 @@ router.delete("/users/:id", async (req, res) => {
   }
 });
 
+// Get leave balances for all users
+router.get("/leave-balances", async (req, res) => {
+  try {
+    const balances = await db.all(
+      `SELECT u.id as user_id, u.username, u.full_name,
+              COALESCE(lb.vacation_hours, 0) AS vacation_hours,
+              COALESCE(lb.overtime_hours, 0) AS overtime_hours,
+              u.is_blocked
+       FROM users u
+       LEFT JOIN leave_balances lb ON lb.user_id = u.id
+       ORDER BY u.full_name COLLATE NOCASE`
+    );
+    res.json(balances);
+  } catch (error) {
+    console.error("Error fetching leave balances:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Update leave balance for a user (vacation and/or overtime)
+router.put(
+  "/leave-balances/:userId",
+  [
+    body("vacationHours").optional().isFloat({ min: 0 }),
+    body("overtimeHours").optional().isFloat({ min: 0 }),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { userId } = req.params;
+      const { vacationHours, overtimeHours } = req.body;
+
+      const balance = await ensureLeaveBalance(userId);
+      if (!balance) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      const updates = [];
+      const values = [];
+
+      if (vacationHours !== undefined) {
+        updates.push("vacation_hours = ?");
+        values.push(parseFloat(vacationHours));
+      }
+
+      if (overtimeHours !== undefined) {
+        updates.push("overtime_hours = ?");
+        values.push(parseFloat(overtimeHours));
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ error: "No balance fields provided" });
+      }
+
+      updates.push("updated_at = CURRENT_TIMESTAMP");
+      values.push(userId);
+
+      await db.run(
+        `UPDATE leave_balances SET ${updates.join(", ")} WHERE user_id = ?`,
+        values
+      );
+
+      res.json({ message: "Leave balance updated" });
+    } catch (error) {
+      console.error("Error updating leave balance:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 // Get all submissions (admin can see all)
 router.get("/submissions", async (req, res) => {
   try {
     const submissions = await db.all(`
-      SELECT s.*, u.username, u.full_name
+            SELECT s.*, u.username, u.full_name, c.name AS company_name,
+              (SELECT COALESCE(SUM(CAST(t.total_hours AS REAL)), 0)
+          FROM timesheets t
+          WHERE (',' || s.timesheet_ids || ',') LIKE ('%,' || t.id || ',%')) AS total_hours
       FROM submissions s
       JOIN users u ON s.user_id = u.id
+      LEFT JOIN companies c ON u.company_id = c.id
       ORDER BY s.submission_date DESC
     `);
 
@@ -424,6 +608,198 @@ router.delete("/submissions/:id", async (req, res) => {
   }
 });
 
+// Get all leave requests
+router.get("/leave-requests", async (req, res) => {
+  try {
+    const requests = await db.all(
+      `SELECT lr.*, u.full_name, u.username,
+              approver.full_name AS approver_name
+       FROM leave_requests lr
+       JOIN users u ON lr.user_id = u.id
+       LEFT JOIN users approver ON approver.id = lr.approved_by
+       ORDER BY lr.created_at DESC`
+    );
+
+    res.json(requests);
+  } catch (error) {
+    console.error("Error fetching leave requests:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Approve or reject a leave request
+router.post(
+  "/leave-requests/:id/decision",
+  [
+    body("status").isIn(["approved", "rejected"]),
+    body("adminNote").optional().isString(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { id } = req.params;
+      const { status, adminNote } = req.body;
+
+      const request = await db.get(
+        "SELECT * FROM leave_requests WHERE id = ?",
+        [id]
+      );
+
+      if (!request) {
+        return res.status(404).json({ error: "Leave request not found" });
+      }
+
+      if (request.status !== "pending") {
+        return res.status(400).json({ error: "Leave request already decided" });
+      }
+
+      await ensureLeaveBalance(request.user_id);
+
+      // If rejected, restore the deducted hours
+      if (status === "rejected") {
+        const column =
+          request.balance_type === "vacation"
+            ? "vacation_hours"
+            : "overtime_hours";
+
+        await db.run(
+          `UPDATE leave_balances SET ${column} = ${column} + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
+          [request.hours_requested, request.user_id]
+        );
+      }
+
+      await db.run(
+        `UPDATE leave_requests 
+         SET status = ?, admin_note = ?, approved_by = ?, decision_date = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [status, adminNote || null, req.user.id, id]
+      );
+
+      res.json({ message: `Request ${status}` });
+    } catch (error) {
+      console.error("Error deciding leave request:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// Admin: Delete (withdraw) any leave request and refund hours
+router.delete("/leave-requests/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const request = await db.get("SELECT * FROM leave_requests WHERE id = ?", [id]);
+
+    if (!request) {
+      return res.status(404).json({ error: "Leave request not found" });
+    }
+
+    await db.run("BEGIN TRANSACTION");
+
+    // Refund hours
+    const column = request.balance_type === "vacation" ? "vacation_hours" : "overtime_hours";
+    await db.run(
+      `UPDATE leave_balances SET ${column} = ${column} + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
+      [request.hours_requested, request.user_id]
+    );
+
+    // Delete request
+    await db.run("DELETE FROM leave_requests WHERE id = ?", [id]);
+
+    await db.run("COMMIT");
+    res.json({ message: "Leave request deleted and hours refunded" });
+  } catch (error) {
+    console.error("Error deleting leave request:", error);
+    await db.run("ROLLBACK");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Admin: Update any leave request (adjust hours, dates, etc.)
+router.put(
+  "/leave-requests/:id",
+  [
+    body("startDate").isISO8601().withMessage("Valid start date is required"),
+    body("endDate").isISO8601().withMessage("Valid end date is required"),
+    body("startTime").optional().isString(),
+    body("endTime").optional().isString(),
+    body("hours").isFloat({ min: 0.25 }).withMessage("Hours must be at least 0.25"),
+    body("balanceType").isIn(["vacation", "overtime"]).withMessage("balanceType must be vacation or overtime"),
+    body("reason").optional().isString(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { id } = req.params;
+      const { startDate, endDate, startTime, endTime, hours, balanceType, reason } = req.body;
+
+      const existingRequest = await db.get(
+        "SELECT * FROM leave_requests WHERE id = ?",
+        [id]
+      );
+
+      if (!existingRequest) {
+        return res.status(404).json({ error: "Leave request not found" });
+      }
+
+      const hoursRequested = parseFloat(hours);
+      const oldHours = parseFloat(existingRequest.hours_requested);
+      const hoursDelta = hoursRequested - oldHours;
+
+      // Check if balance type changed
+      if (balanceType !== existingRequest.balance_type) {
+        return res.status(400).json({ error: "Cannot change balance type. Delete and create a new request instead." });
+      }
+
+      const balance = await ensureLeaveBalance(existingRequest.user_id);
+      const available = balanceType === "vacation" 
+        ? parseFloat(balance.vacation_hours || 0) 
+        : parseFloat(balance.overtime_hours || 0);
+
+      // If increasing hours, check availability
+      if (hoursDelta > 0 && hoursDelta > available) {
+        return res.status(400).json({
+          error: `Insufficient ${balanceType} hours. Available: ${available.toFixed(2)}`,
+        });
+      }
+
+      await db.run("BEGIN TRANSACTION");
+
+      // Update request
+      await db.run(
+        `UPDATE leave_requests 
+         SET start_date = ?, end_date = ?, start_time = ?, end_time = ?, hours_requested = ?, reason = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [startDate, endDate, startTime || null, endTime || null, hoursRequested, reason || null, id]
+      );
+
+      // Adjust balance if hours changed
+      if (hoursDelta !== 0) {
+        const column = balanceType === "vacation" ? "vacation_hours" : "overtime_hours";
+        await db.run(
+          `UPDATE leave_balances SET ${column} = ${column} - ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
+          [hoursDelta, existingRequest.user_id]
+        );
+      }
+
+      await db.run("COMMIT");
+      res.json({ message: "Leave request updated" });
+    } catch (error) {
+      console.error("Error updating leave request:", error);
+      await db.run("ROLLBACK");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 // Send submission email with custom recipient and format
 router.post("/submissions/:id/send-email", async (req, res) => {
   try {
@@ -531,7 +907,7 @@ router.put("/submissions/:id", async (req, res) => {
     // Only admin can change status, owner can update timesheet IDs
     const updatedTimesheetIds = ids || submission.timesheet_ids;
     const updatedStatus =
-      req.user.is_admin && status ? status : submission.status;
+      req.user.role === 'admin' && status ? status : submission.status;
 
     await db.run(
       "UPDATE submissions SET timesheet_ids = ?, status = ? WHERE id = ?",
@@ -823,6 +1199,215 @@ router.post(
   }
 );
 
+// ===== Fleet Management =====
+// Get all vehicles
+router.get("/fleet/vehicles", async (_req, res) => {
+  try {
+    const vehicles = await db.all(
+      `SELECT v.*, 
+              c.name AS company_name,
+              (SELECT COUNT(*) FROM fleet_maintenance fm WHERE fm.vehicle_id = v.id) AS maintenance_count
+       FROM fleet_vehicles v
+       LEFT JOIN companies c ON c.id = v.company_id
+       ORDER BY v.license_plate ASC`
+    );
+    res.json(vehicles);
+  } catch (error) {
+    console.error("Error fetching fleet vehicles:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get single vehicle with maintenance history
+router.get("/fleet/vehicles/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const vehicle = await db.get(
+      `SELECT v.*, 
+              c.name AS company_name,
+              (SELECT COUNT(*) FROM fleet_maintenance fm WHERE fm.vehicle_id = v.id) AS maintenance_count
+       FROM fleet_vehicles v
+       LEFT JOIN companies c ON c.id = v.company_id
+       WHERE v.id = ?`,
+      [id]
+    );
+    if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
+
+    const maintenance = await db.all(
+      `SELECT * FROM fleet_maintenance WHERE vehicle_id = ? ORDER BY maintenance_date DESC, id DESC`,
+      [id]
+    );
+
+    res.json({ vehicle, maintenance });
+  } catch (error) {
+    console.error("Error fetching vehicle:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Create vehicle
+router.post(
+  "/fleet/vehicles",
+  [
+    body("license_plate").trim().notEmpty().withMessage("License plate is required"),
+    body("km").optional().isNumeric(),
+    body("apk_due_date").optional().isString(),
+    body("rit_number").optional().isString(),
+    body("company_id").optional().isInt(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { license_plate, km, apk_due_date, rit_number, company_id } = req.body;
+
+      const result = await db.run(
+        `INSERT INTO fleet_vehicles (license_plate, km, apk_due_date, rit_number, company_id) VALUES (?, ?, ?, ?, ?)` ,
+        [license_plate, km || 0, apk_due_date || null, rit_number || null, company_id || null]
+      );
+
+      const created = await db.get("SELECT * FROM fleet_vehicles WHERE id = ?", [result.id]);
+      res.json(created);
+    } catch (error) {
+      console.error("Error creating vehicle:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// Update vehicle
+router.put(
+  "/fleet/vehicles/:id",
+  [
+    body("license_plate").optional().trim().notEmpty(),
+    body("km").optional().isNumeric(),
+    body("apk_due_date").optional().isString(),
+    body("rit_number").optional().isString(),
+    body("company_id").optional().isInt(),
+  ],
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const vehicle = await db.get("SELECT * FROM fleet_vehicles WHERE id = ?", [id]);
+      if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
+
+      const { license_plate, km, apk_due_date, rit_number, company_id } = req.body;
+      await db.run(
+        `UPDATE fleet_vehicles 
+         SET license_plate = COALESCE(?, license_plate),
+             km = COALESCE(?, km),
+             apk_due_date = COALESCE(?, apk_due_date),
+             rit_number = COALESCE(?, rit_number),
+             company_id = COALESCE(?, company_id),
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [license_plate || null, km ?? null, apk_due_date || null, rit_number || null, company_id ?? null, id]
+      );
+
+      const updated = await db.get("SELECT * FROM fleet_vehicles WHERE id = ?", [id]);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating vehicle:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// Delete vehicle
+router.delete("/fleet/vehicles/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.run("DELETE FROM fleet_vehicles WHERE id = ?", [id]);
+    res.json({ message: "Vehicle deleted" });
+  } catch (error) {
+    console.error("Error deleting vehicle:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Add maintenance entry
+router.post(
+  "/fleet/vehicles/:id/maintenance",
+  [
+    body("maintenance_date").trim().notEmpty().withMessage("Date is required"),
+    body("km").optional().isNumeric(),
+    body("notes").optional().isString(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { id } = req.params;
+      const vehicle = await db.get("SELECT id FROM fleet_vehicles WHERE id = ?", [id]);
+      if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
+
+      const { maintenance_date, km, notes } = req.body;
+
+      const result = await db.run(
+        `INSERT INTO fleet_maintenance (vehicle_id, maintenance_date, km, notes) VALUES (?, ?, ?, ?)` ,
+        [id, maintenance_date, km || 0, notes || null]
+      );
+
+      const created = await db.get("SELECT * FROM fleet_maintenance WHERE id = ?", [result.id]);
+      res.json(created);
+    } catch (error) {
+      console.error("Error adding maintenance:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// Update maintenance record
+router.put(
+  "/fleet/maintenance/:id",
+  [
+    body("maintenance_date").optional().trim().notEmpty(),
+    body("km").optional().isNumeric(),
+    body("notes").optional().isString(),
+  ],
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const maintenance = await db.get("SELECT id FROM fleet_maintenance WHERE id = ?", [id]);
+      if (!maintenance) return res.status(404).json({ error: "Maintenance record not found" });
+
+      const { maintenance_date, km, notes } = req.body;
+      await db.run(
+        `UPDATE fleet_maintenance 
+         SET maintenance_date = COALESCE(?, maintenance_date),
+             km = COALESCE(?, km),
+             notes = COALESCE(?, notes)
+         WHERE id = ?`,
+        [maintenance_date || null, km ?? null, notes || null, id]
+      );
+
+      const updated = await db.get("SELECT * FROM fleet_maintenance WHERE id = ?", [id]);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating maintenance:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// Delete maintenance record
+router.delete("/fleet/maintenance/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.run("DELETE FROM fleet_maintenance WHERE id = ?", [id]);
+    res.json({ message: "Maintenance record deleted" });
+  } catch (error) {
+    console.error("Error deleting maintenance:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Get hours report for all users or specific user
 router.get("/hours-report", async (req, res) => {
   try {
@@ -871,6 +1456,86 @@ router.get("/hours-report", async (req, res) => {
 });
 
 // Helper functions
+async function ensureLeaveBalance(userId) {
+  const user = await db.get("SELECT id FROM users WHERE id = ?", [userId]);
+  if (!user) return null;
+
+  const existing = await db.get(
+    "SELECT * FROM leave_balances WHERE user_id = ?",
+    [userId]
+  );
+
+  if (existing) return existing;
+
+  await db.run(
+    "INSERT INTO leave_balances (user_id, vacation_hours, overtime_hours) VALUES (?, 216, 0)",
+    [userId]
+  );
+
+  return { user_id: userId, vacation_hours: 216, overtime_hours: 0 };
+}
+
+// ===== USER COMPANIES ENDPOINTS =====
+
+// Get all companies for a user
+router.get("/users/:id/companies", async (req, res) => {
+  try {
+    const companies = await db.all(
+      `SELECT c.id, c.name, c.pause_time, uc.is_primary
+       FROM user_companies uc
+       JOIN companies c ON c.id = uc.company_id
+       WHERE uc.user_id = ?
+       ORDER BY uc.is_primary DESC, c.name ASC`,
+      [req.params.id]
+    );
+    res.json(companies);
+  } catch (error) {
+    console.error("Error fetching user companies:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Update user's companies (multi-select)
+router.put("/users/:id/companies", async (req, res) => {
+  try {
+    const { companyIds, primaryCompanyId } = req.body;
+    const userId = req.params.id;
+
+    if (!Array.isArray(companyIds) || companyIds.length === 0) {
+      return res.status(400).json({ error: "At least one company is required" });
+    }
+
+    // Start transaction - remove all existing assignments
+    await db.run("DELETE FROM user_companies WHERE user_id = ?", [userId]);
+
+    // Insert new assignments
+    for (const companyId of companyIds) {
+      const isPrimary = companyId === primaryCompanyId ? 1 : 0;
+      await db.run(
+        "INSERT INTO user_companies (user_id, company_id, is_primary) VALUES (?, ?, ?)",
+        [userId, companyId, isPrimary]
+      );
+    }
+
+    // Update primary company_id in users table for backward compatibility
+    const primaryId = primaryCompanyId || companyIds[0];
+    await db.run("UPDATE users SET company_id = ? WHERE id = ?", [
+      primaryId,
+      userId,
+    ]);
+
+    res.json({
+      message: "User companies updated successfully",
+      userId,
+      companyIds,
+      primaryCompanyId: primaryId,
+    });
+  } catch (error) {
+    console.error("Error updating user companies:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 function getWeekNumber(date) {
   const d = new Date(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
@@ -896,5 +1561,16 @@ function calculateTotalHours(startTime, endTime, pauseTime) {
   const totalMinutes = endMinutes - startMinutes - pauseMinutes;
   return (totalMinutes / 60).toFixed(2);
 }
+
+// Get all companies
+router.get("/companies", async (req, res) => {
+  try {
+    const companies = await db.all("SELECT id, name, pause_time FROM companies ORDER BY name");
+    res.json(companies);
+  } catch (error) {
+    console.error("Error fetching companies:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 module.exports = router;

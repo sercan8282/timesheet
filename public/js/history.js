@@ -56,6 +56,9 @@ function getWeekDateRange(weekNumber, year) {
 async function renderSubmissions(submissions) {
   const container = document.getElementById("historyContent");
 
+  // Debug: log what backend returns to diagnose missing names
+  console.log("Submissions payload:", submissions);
+
   if (submissions.length === 0) {
     container.innerHTML = `
             <div class="alert alert-info">

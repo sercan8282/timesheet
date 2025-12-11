@@ -13,7 +13,12 @@ router.use(authMiddleware);
 router.get("/me", async (req, res) => {
   try {
     const user = await db.get(
-      "SELECT id, username, full_name, is_admin, created_at FROM users WHERE id = ?",
+      `SELECT 
+          u.id, u.username, u.full_name, u.role, u.created_at,
+          u.company_id, c.name AS company_name, c.pause_time AS company_pause_time
+       FROM users u
+       LEFT JOIN companies c ON c.id = u.company_id
+       WHERE u.id = ?`,
       [req.user.id]
     );
 
@@ -21,7 +26,35 @@ router.get("/me", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(user);
+    // Get all companies for this user
+    const userCompanies = await db.all(
+      `SELECT c.id, c.name, c.pause_time, uc.is_primary
+       FROM user_companies uc
+       JOIN companies c ON c.id = uc.company_id
+       WHERE uc.user_id = ?
+       ORDER BY uc.is_primary DESC, c.name ASC`,
+      [user.id]
+    );
+
+    res.json({
+      id: user.id,
+      username: user.username,
+      fullName: user.full_name,
+      isAdmin: user.role === 'admin',
+      role: user.role || "user",
+      createdAt: user.created_at,
+      companyId: user.company_id,
+      companyName: user.company_name,
+      companyPauseTime: user.company_pause_time,
+      company_name: user.company_name,
+      company_pause_time: user.company_pause_time,
+      userCompanies: userCompanies.map((c) => ({
+        id: c.id,
+        name: c.name,
+        pause_time: c.pause_time,
+        is_primary: c.is_primary === 1,
+      })),
+    });
   } catch (error) {
     console.error("Error fetching user:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -133,10 +166,10 @@ router.post("/timesheets/details", async (req, res) => {
       [...ids, req.user.id]
     );
 
-    // Enhance with user_name from users table
+    // Enhance with user_name from users table (fallback to token fullName/username)
     const enrichedTimesheets = timesheets.map((ts) => ({
       ...ts,
-      user_name: req.user.name,
+      user_name: req.user.fullName || req.user.username || ts.user_name || "Unknown",
     }));
 
     res.json(enrichedTimesheets);
@@ -162,6 +195,7 @@ router.post(
       .withMessage("Valid start km is required"),
     body("endKm").isFloat({ min: 0 }).withMessage("Valid end km is required"),
     body("pauseTime")
+      .optional()
       .matches(/^([0-9]+):([0-5][0-9])$/)
       .withMessage("Valid pause time is required (HH:MM)"),
     body("ritnumber").optional().trim(),
@@ -173,24 +207,49 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { date, startTime, endTime, startKm, endKm, pauseTime, ritnumber } =
+      let { date, startTime, endTime, startKm, endKm, pauseTime, ritnumber } =
         req.body;
 
-      // Calculate week number
-      const dateObj = new Date(date);
-      const weekNumber = getWeekNumber(dateObj);
+      // Default pause based on company if not provided
+      if (!pauseTime) {
+        pauseTime =
+          req.user.company_pause_time ||
+          req.user.companyPauseTime ||
+          "00:30";
+      }
 
-      // Calculate total hours
-      const totalHours = calculateTotalHours(startTime, endTime, pauseTime);
+      try {
+        // Calculate week number
+        const dateObj = new Date(date);
+        const weekNumber = getWeekNumber(dateObj);
 
-      // Calculate total km
-      const totalKm = endKm - startKm;
+        // Calculate total hours
+        const totalHours = calculateTotalHours(startTime, endTime, pauseTime);
 
-      const result = await db.run(
-        `INSERT INTO timesheets (user_id, week_number, date, start_time, end_time, start_km, end_km, pause_time, total_hours, total_km, ritnumber)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          req.user.id,
+        // Calculate total km
+        const totalKm = endKm - startKm;
+
+        const result = await db.run(
+          `INSERT INTO timesheets (user_id, week_number, date, start_time, end_time, start_km, end_km, pause_time, total_hours, total_km, ritnumber)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            req.user.id,
+            weekNumber,
+            date,
+            startTime,
+            endTime,
+            startKm,
+            endKm,
+            pauseTime,
+            totalHours,
+            totalKm,
+            ritnumber || "",
+          ]
+        );
+
+        res.status(201).json({
+          id: result.id,
+          userId: req.user.id,
           weekNumber,
           date,
           startTime,
@@ -200,24 +259,12 @@ router.post(
           pauseTime,
           totalHours,
           totalKm,
-          ritnumber || "",
-        ]
-      );
-
-      res.status(201).json({
-        id: result.id,
-        userId: req.user.id,
-        weekNumber,
-        date,
-        startTime,
-        endTime,
-        startKm,
-        endKm,
-        pauseTime,
-        totalHours,
-        totalKm,
-        ritnumber: ritnumber || "",
-      });
+          ritnumber: ritnumber || "",
+        });
+      } catch (calcError) {
+        console.error("Error during calculation or insert:", calcError);
+        res.status(500).json({ error: "Failed to create timesheet: " + calcError.message });
+      }
     } catch (error) {
       console.error("Error creating timesheet:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -272,7 +319,15 @@ router.put(
       const updatedStartKm =
         startKm !== undefined ? startKm : timesheet.start_km;
       const updatedEndKm = endKm !== undefined ? endKm : timesheet.end_km;
-      const updatedPauseTime = pauseTime || timesheet.pause_time;
+      let updatedPauseTime = pauseTime || timesheet.pause_time;
+
+      // Default pause based on company if still missing
+      if (!updatedPauseTime) {
+        updatedPauseTime =
+          req.user.company_pause_time ||
+          req.user.companyPauseTime ||
+          "00:30";
+      }
       const updatedRitnumber =
         ritnumber !== undefined ? ritnumber : timesheet.ritnumber || "";
 
@@ -338,13 +393,285 @@ router.delete("/timesheets/:id", async (req, res) => {
 router.get("/submissions", async (req, res) => {
   try {
     const submissions = await db.all(
-      "SELECT * FROM submissions WHERE user_id = ? ORDER BY submission_date DESC",
+      `SELECT 
+         s.*, 
+         COALESCE(u.full_name, u.username, s.user_name, 'Unknown') AS user_name
+       FROM submissions s
+       LEFT JOIN users u ON u.id = s.user_id
+       WHERE s.user_id = ?
+       ORDER BY s.submission_date DESC`,
       [req.user.id]
     );
 
     res.json(submissions);
   } catch (error) {
     console.error("Error fetching submissions:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get leave balance for current user
+router.get("/leave/balance", async (req, res) => {
+  try {
+    const balance = await ensureLeaveBalance(req.user.id);
+    res.json({
+      vacation_hours: balance.vacation_hours,
+      overtime_hours: balance.overtime_hours,
+      updated_at: balance.updated_at,
+    });
+  } catch (error) {
+    console.error("Error fetching leave balance:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get leave requests for current user
+router.get("/leave/requests", async (req, res) => {
+  try {
+    const requests = await db.all(
+      `SELECT lr.*, approver.full_name AS approver_name
+       FROM leave_requests lr
+       LEFT JOIN users approver ON approver.id = lr.approved_by
+       WHERE lr.user_id = ?
+       ORDER BY lr.created_at DESC`,
+      [req.user.id]
+    );
+
+    res.json(requests);
+  } catch (error) {
+    console.error("Error fetching leave requests:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get all approved leave requests for calendar view (all users)
+router.get("/leave/calendar", async (req, res) => {
+  try {
+    const requests = await db.all(
+      `SELECT lr.*, u.full_name, u.username
+       FROM leave_requests lr
+       INNER JOIN users u ON u.id = lr.user_id
+       WHERE lr.status = 'approved' AND u.is_blocked = 0
+       ORDER BY lr.start_date ASC`
+    );
+
+    res.json(requests);
+  } catch (error) {
+    console.error("Error fetching calendar leave requests:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Submit a leave request (deducts balance immediately)
+router.post(
+  "/leave/requests",
+  [
+    body("startDate").isISO8601().withMessage("Valid start date is required"),
+    body("endDate").isISO8601().withMessage("Valid end date is required"),
+    body("startTime").optional().isString(),
+    body("endTime").optional().isString(),
+    body("hours")
+      .isFloat({ min: 0.25 })
+      .withMessage("Hours must be at least 0.25"),
+    body("balanceType")
+      .isIn(["vacation", "overtime"])
+      .withMessage("balanceType must be vacation or overtime"),
+    body("reason").optional().isString(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const {
+        startDate,
+        endDate,
+        startTime,
+        endTime,
+        hours,
+        balanceType,
+        reason,
+      } = req.body;
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (end < start) {
+        return res
+          .status(400)
+          .json({ error: "End date must be on or after start date" });
+      }
+
+      const hoursRequested = parseFloat(hours);
+
+      const balance = await ensureLeaveBalance(req.user.id);
+      const available =
+        balanceType === "vacation"
+          ? parseFloat(balance.vacation_hours || 0)
+          : parseFloat(balance.overtime_hours || 0);
+
+      if (hoursRequested > available) {
+        return res.status(400).json({
+          error: `Insufficient ${balanceType} hours. Available: ${available.toFixed(
+            2
+          )}`,
+        });
+      }
+
+      // Deduct immediately and create request
+      await db.run("BEGIN TRANSACTION");
+
+      await db.run(
+        `INSERT INTO leave_requests (user_id, start_date, end_date, start_time, end_time, hours_requested, balance_type, reason)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          req.user.id,
+          startDate,
+          endDate,
+          startTime || null,
+          endTime || null,
+          hoursRequested,
+          balanceType,
+          reason || null,
+        ]
+      );
+
+      if (balanceType === "vacation") {
+        await db.run(
+          "UPDATE leave_balances SET vacation_hours = vacation_hours - ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+          [hoursRequested, req.user.id]
+        );
+      } else {
+        await db.run(
+          "UPDATE leave_balances SET overtime_hours = overtime_hours - ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+          [hoursRequested, req.user.id]
+        );
+      }
+
+      await db.run("COMMIT");
+
+      res.status(201).json({ message: "Leave request submitted" });
+    } catch (error) {
+      console.error("Error submitting leave request:", error);
+      await db.run("ROLLBACK");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// Update (withdraw/modify) a leave request (even if approved)
+router.put(
+  "/leave/requests/:id",
+  [
+    body("startDate").isISO8601().withMessage("Valid start date is required"),
+    body("endDate").isISO8601().withMessage("Valid end date is required"),
+    body("startTime").optional().isString(),
+    body("endTime").optional().isString(),
+    body("hours").isFloat({ min: 0.25 }).withMessage("Hours must be at least 0.25"),
+    body("balanceType").isIn(["vacation", "overtime"]).withMessage("balanceType must be vacation or overtime"),
+    body("reason").optional().isString(),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { id } = req.params;
+      const { startDate, endDate, startTime, endTime, hours, balanceType, reason } = req.body;
+
+      const existingRequest = await db.get(
+        "SELECT * FROM leave_requests WHERE id = ? AND user_id = ?",
+        [id, req.user.id]
+      );
+
+      if (!existingRequest) {
+        return res.status(404).json({ error: "Leave request not found" });
+      }
+
+      const hoursRequested = parseFloat(hours);
+      const oldHours = parseFloat(existingRequest.hours_requested);
+      const hoursDelta = hoursRequested - oldHours;
+
+      // Check if balance type changed
+      if (balanceType !== existingRequest.balance_type) {
+        return res.status(400).json({ error: "Cannot change balance type. Delete and create a new request instead." });
+      }
+
+      const balance = await ensureLeaveBalance(req.user.id);
+      const available = balanceType === "vacation" 
+        ? parseFloat(balance.vacation_hours || 0) 
+        : parseFloat(balance.overtime_hours || 0);
+
+      // If increasing hours, check availability
+      if (hoursDelta > 0 && hoursDelta > available) {
+        return res.status(400).json({
+          error: `Insufficient ${balanceType} hours. Available: ${available.toFixed(2)}`,
+        });
+      }
+
+      await db.run("BEGIN TRANSACTION");
+
+      // Update request
+      await db.run(
+        `UPDATE leave_requests 
+         SET start_date = ?, end_date = ?, start_time = ?, end_time = ?, hours_requested = ?, reason = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+        [startDate, endDate, startTime || null, endTime || null, hoursRequested, reason || null, id]
+      );
+
+      // Adjust balance if hours changed
+      if (hoursDelta !== 0) {
+        const column = balanceType === "vacation" ? "vacation_hours" : "overtime_hours";
+        await db.run(
+          `UPDATE leave_balances SET ${column} = ${column} - ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
+          [hoursDelta, req.user.id]
+        );
+      }
+
+      await db.run("COMMIT");
+      res.json({ message: "Leave request updated" });
+    } catch (error) {
+      console.error("Error updating leave request:", error);
+      await db.run("ROLLBACK");
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// Delete (withdraw) a leave request (even if approved, refunds hours)
+router.delete("/leave/requests/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const request = await db.get(
+      "SELECT * FROM leave_requests WHERE id = ? AND user_id = ?",
+      [id, req.user.id]
+    );
+
+    if (!request) {
+      return res.status(404).json({ error: "Leave request not found" });
+    }
+
+    await db.run("BEGIN TRANSACTION");
+
+    // Refund hours
+    const column = request.balance_type === "vacation" ? "vacation_hours" : "overtime_hours";
+    await db.run(
+      `UPDATE leave_balances SET ${column} = ${column} + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
+      [request.hours_requested, req.user.id]
+    );
+
+    // Delete request
+    await db.run("DELETE FROM leave_requests WHERE id = ?", [id]);
+
+    await db.run("COMMIT");
+    res.json({ message: "Leave request withdrawn and hours refunded" });
+  } catch (error) {
+    console.error("Error deleting leave request:", error);
+    await db.run("ROLLBACK");
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -407,6 +734,25 @@ router.get("/weekly-summary", async (req, res) => {
 });
 
 // Helper function to calculate week number
+async function ensureLeaveBalance(userId) {
+  const user = await db.get("SELECT id FROM users WHERE id = ?", [userId]);
+  if (!user) return null;
+
+  const existing = await db.get(
+    "SELECT * FROM leave_balances WHERE user_id = ?",
+    [userId]
+  );
+
+  if (existing) return existing;
+
+  await db.run(
+    "INSERT INTO leave_balances (user_id, vacation_hours, overtime_hours) VALUES (?, 216, 0)",
+    [userId]
+  );
+
+  return { user_id: userId, vacation_hours: 216, overtime_hours: 0 };
+}
+
 function getWeekNumber(date) {
   const d = new Date(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())

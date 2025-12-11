@@ -36,10 +36,27 @@ class API {
       throw new Error("Unauthorized");
     }
 
+    // Check if response is JSON
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("Non-JSON response:", text);
+      throw new Error(`Server error: ${response.status} ${response.statusText}`);
+    }
+
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || "Request failed");
+      // Log full error details for debugging
+      console.error('API Error Response:', data);
+      
+      // Handle validation errors
+      if (data.errors && Array.isArray(data.errors)) {
+        const errorMessages = data.errors.map(err => err.msg || err.message).join(', ');
+        throw new Error(errorMessages);
+      }
+      
+      throw new Error(data.error || data.message || "Request failed");
     }
 
     return data;
@@ -95,6 +112,38 @@ class API {
 
   async getWeeklySummary(page = 1) {
     return this.request(`/user/weekly-summary?page=${page}`);
+  }
+
+  async getLeaveBalance() {
+    return this.request("/user/leave/balance");
+  }
+
+  async getLeaveRequests() {
+    return this.request("/user/leave/requests");
+  }
+
+  async getLeaveRequestsCalendar() {
+    return this.request("/user/leave/calendar");
+  }
+
+  async submitLeaveRequest(payload) {
+    return this.request("/user/leave/requests", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateLeaveRequest(id, payload) {
+    return this.request(`/user/leave/requests/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteLeaveRequest(id) {
+    return this.request(`/user/leave/requests/${id}`, {
+      method: "DELETE",
+    });
   }
 
   async getTimesheetDetails(timesheetIds) {
@@ -252,6 +301,20 @@ class API {
     });
   }
 
+  async getUserCompanies(userId) {
+    return this.request(`/admin/users/${userId}/companies`);
+  }
+
+  async updateUserCompanies(userId, companyIds, primaryCompanyId) {
+    return this.request(`/admin/users/${userId}/companies`, {
+      method: "PUT",
+      body: JSON.stringify({
+        companyIds,
+        primaryCompanyId,
+      }),
+    });
+  }
+
   async getAdminSubmissions() {
     return this.request("/admin/submissions");
   }
@@ -260,6 +323,84 @@ class API {
     return this.request(
       `/admin/hours-report${userId ? "?userId=" + userId : ""}`
     );
+  }
+
+  async getLeaveBalances() {
+    return this.request("/admin/leave-balances");
+  }
+
+  async updateLeaveBalance(userId, data) {
+    return this.request(`/admin/leave-balances/${userId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getLeaveRequestsAdmin() {
+    return this.request("/admin/leave-requests");
+  }
+
+  async decideLeaveRequest(requestId, status, adminNote = "") {
+    return this.request(`/admin/leave-requests/${requestId}/decision`, {
+      method: "POST",
+      body: JSON.stringify({ status, adminNote }),
+    });
+  }
+
+  async adminUpdateLeaveRequest(id, payload) {
+    return this.request(`/admin/leave-requests/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async adminDeleteLeaveRequest(id) {
+    return this.request(`/admin/leave-requests/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Fleet endpoints
+  async getFleetVehicles() {
+    return this.request('/admin/fleet/vehicles');
+  }
+
+  async getFleetVehicle(id) {
+    return this.request(`/admin/fleet/vehicles/${id}`);
+  }
+
+  async createFleetVehicle(data) {
+    return this.request('/admin/fleet/vehicles', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFleetVehicle(id, data) {
+    return this.request(`/admin/fleet/vehicles/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async addFleetMaintenance(id, data) {
+    return this.request(`/admin/fleet/vehicles/${id}/maintenance`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateFleetMaintenance(maintenanceId, data) {
+    return this.request(`/admin/fleet/maintenance/${maintenanceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteFleetMaintenance(maintenanceId) {
+    return this.request(`/admin/fleet/maintenance/${maintenanceId}`, {
+      method: 'DELETE',
+    });
   }
 
   async getSubmissionTimesheets(submissionId) {
@@ -340,6 +481,233 @@ class API {
       throw new Error(error.error || "Failed to upload logo");
     }
 
+    return response.json();
+  }
+
+  // Company endpoints
+  async getCompanies() {
+    return this.request("/admin/companies");
+  }
+
+  async getCompany(id) {
+    return this.request(`/admin/companies/${id}`);
+  }
+
+  async createCompany(data) {
+    return this.request("/admin/companies", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCompany(id, data) {
+    return this.request(`/admin/companies/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteCompany(id) {
+    return this.request(`/admin/companies/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Vehicle endpoints
+  async getVehicles() {
+    return this.request("/admin/vehicles");
+  }
+
+  async getVehicle(id) {
+    return this.request(`/admin/vehicles/${id}`);
+  }
+
+  async createVehicle(data) {
+    return this.request("/admin/vehicles", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateVehicle(id, data) {
+    return this.request(`/admin/vehicles/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteVehicle(id) {
+    return this.request(`/admin/vehicles/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Vehicle Maintenance endpoints
+  async getVehicleMaintenance(vehicleId) {
+    return this.request(`/admin/vehicles/${vehicleId}/maintenance`);
+  }
+
+  async addVehicleMaintenance(vehicleId, data) {
+    return this.request(`/admin/vehicles/${vehicleId}/maintenance`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateVehicleMaintenance(maintenanceId, data) {
+    return this.request(`/admin/vehicles/maintenance/${maintenanceId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteVehicleMaintenance(maintenanceId) {
+    return this.request(`/admin/vehicles/maintenance/${maintenanceId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Vehicle APK Alerts endpoints
+  async getVehicleAPKAlerts(vehicleId) {
+    return this.request(`/admin/vehicles/${vehicleId}/apk-alerts`);
+  }
+
+  async updateVehicleAPKAlerts(vehicleId, data) {
+    return this.request(`/admin/vehicles/${vehicleId}/apk-alerts`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteVehicleAPKAlerts(vehicleId) {
+    return this.request(`/admin/vehicles/apk-alerts/${vehicleId}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Planning endpoints
+  async getPlanningWeek(weekNumber) {
+    return this.request(`/admin/planning/week/${weekNumber}`);
+  }
+
+  async getRoutes() {
+    return this.request(`/admin/planning/routes`);
+  }
+
+  async getDriversByCompany(companyId) {
+    return this.request(`/admin/planning/drivers/${companyId}`);
+  }
+
+  async createPlanningEntry(data) {
+    return this.request(`/admin/planning`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updatePlanningEntry(id, data) {
+    return this.request(`/admin/planning/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deletePlanningEntry(id) {
+    return this.request(`/admin/planning/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async clearWeekPlanning(weekNumber, companyId) {
+    return this.request(`/admin/planning/week/${weekNumber}/clear${companyId ? '?companyId=' + companyId : ''}`, {
+      method: "DELETE",
+    });
+  }
+
+  async generateWeeklyPlanning(weekNumber) {
+    return this.request(`/admin/planning/generate/${weekNumber}`, {
+      method: "POST",
+    });
+  }
+
+  async generateCompanyWeeklyPlanning(weekNumber, companyId) {
+    return this.request(`/admin/planning/generate/${weekNumber}/company/${companyId}`, {
+      method: "POST",
+    });
+  }
+
+  async generatePlanningByVehicles(weekNumber, companyId) {
+    return this.request(`/admin/planning/generate-by-vehicles/${weekNumber}/company/${companyId}`, {
+      method: "POST",
+    });
+  }
+
+  async exportPlanningPDF(weekNumber) {
+    const response = await fetch(`${API_BASE_URL}/admin/planning/week/${weekNumber}/export-pdf`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'PDF export failed');
+    }
+    
+    return response.blob();
+  }
+
+  async emailPlanningPDF(weekNumber, recipients, subject, message) {
+    return this.request(`/admin/planning/week/${weekNumber}/email`, {
+      method: "POST",
+      body: JSON.stringify({ recipients, subject, message }),
+    });
+  }
+
+  // SMTP Settings
+  async getSMTPSettings() {
+    return this.request(`/admin/smtp-settings`);
+  }
+
+  async updateSMTPSettings(payload) {
+    return this.request(`/admin/smtp-settings`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async testSMTPConnection() {
+    return this.request(`/admin/smtp-settings/test`, {
+      method: "POST",
+    });
+  }
+
+  // Branding Settings
+  async getBrandingSettings() {
+    return this.request(`/admin/branding-settings`);
+  }
+
+  async updateBrandingSettings(payload) {
+    return this.request(`/admin/branding-settings`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async uploadBrandingLogo(formData) {
+    const response = await fetch(`${API_BASE_URL}/admin/branding-settings/logo`, {
+      method: "POST",
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || 'Logo upload failed');
+    }
+    
     return response.json();
   }
 

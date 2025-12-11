@@ -2,6 +2,7 @@ class App {
   constructor() {
     this.user = null;
     this.branding = null;
+    
     this.init();
   }
 
@@ -21,9 +22,29 @@ class App {
     const token = localStorage.getItem("token");
     const userStr = localStorage.getItem("user");
 
+    console.log("[DEBUG app.init] token exists:", !!token);
+    console.log("[DEBUG app.init] userStr exists:", !!userStr);
+
     if (token && userStr) {
       this.user = JSON.parse(userStr);
+      console.log("[DEBUG app.init] User from localStorage:", this.user);
+      
       api.setToken(token);
+      
+      // Refresh user data from backend to ensure company_pause_time is current
+      try {
+        const freshUser = await api.getMe();
+        console.log("[DEBUG app.init] Fresh user from API:", freshUser);
+        this.user = freshUser;
+        window.currentUser = this.user;
+        localStorage.setItem("user", JSON.stringify(this.user));
+        console.log("[DEBUG app.init] User refreshed from API:", this.user);
+      } catch (error) {
+        console.log("[DEBUG app.init] Could not refresh user, using localStorage:", error);
+        window.currentUser = this.user;
+      }
+      
+      console.log("[DEBUG app.init] Final this.user before showApp:", this.user);
       this.showApp();
       this.loadPage("dashboard");
     } else {
@@ -71,14 +92,24 @@ class App {
   }
 
   showApp() {
+    console.log("[DEBUG showApp] this.user:", this.user);
+    console.log("[DEBUG showApp] this.user.isAdmin:", this.user.isAdmin);
+    console.log("[DEBUG showApp] typeof this.user.isAdmin:", typeof this.user.isAdmin);
+    
     document.getElementById("mainNav").style.display = "block";
     document.getElementById("userName").textContent = this.user.fullName;
+    window.currentUser = this.user;
 
     // Show/hide admin menu
+    const adminMenu = document.getElementById("nav-admin");
+    console.log("[DEBUG showApp] adminMenu element found:", !!adminMenu);
+    
     if (this.user.isAdmin) {
-      document.getElementById("nav-admin").style.display = "block";
+      console.log("[DEBUG showApp] Setting nav-admin to display: block");
+      adminMenu.style.display = "block";
     } else {
-      document.getElementById("nav-admin").style.display = "none";
+      console.log("[DEBUG showApp] Setting nav-admin to display: none");
+      adminMenu.style.display = "none";
     }
   }
 
@@ -107,10 +138,45 @@ class App {
         document.getElementById("app").innerHTML = renderWeeklySummary();
         initWeeklySummary();
         break;
+      case "leave":
+        document.getElementById("app").innerHTML = renderLeave();
+        initLeave();
+        break;
       case "admin":
         if (this.user.isAdmin) {
+          if (!window.adminModuleReady) {
+            // Wait for admin module to load
+            console.log("[ADMIN] Waiting for admin module to load...");
+            let retries = 0;
+            const waitForAdmin = setInterval(() => {
+              retries++;
+              if (window.adminModuleReady) {
+                clearInterval(waitForAdmin);
+                document.getElementById("app").innerHTML = renderAdmin();
+                setTimeout(() => {
+                  if (typeof initAdmin === 'function') {
+                    console.log("[ADMIN] Calling initAdmin()");
+                    initAdmin();
+                  }
+                }, 50);
+              } else if (retries > 50) {
+                clearInterval(waitForAdmin);
+                console.error("[ADMIN] Timeout waiting for admin module");
+                document.getElementById("app").innerHTML = '<div class="alert alert-danger">Admin module failed to load. Please refresh the page.</div>';
+              }
+            }, 100);
+            return;
+          }
           document.getElementById("app").innerHTML = renderAdmin();
-          initAdmin();
+          // Call initAdmin directly - it's now a global function
+          setTimeout(() => {
+            if (typeof initAdmin === 'function') {
+              console.log("[ADMIN] Calling initAdmin()");
+              initAdmin();
+            } else {
+              console.error("[ADMIN] initAdmin function not found");
+            }
+          }, 50);
         } else {
           alert("Access denied");
         }
@@ -129,6 +195,7 @@ class App {
       api.clearToken();
       localStorage.removeItem("user");
       this.user = null;
+      window.currentUser = null;
       this.showLogin();
     });
   }
@@ -200,6 +267,9 @@ function executeConfirm() {
   }
   globalConfirmCallback = null;
 }
+
+// Make executeConfirm globally accessible
+window.executeConfirm = executeConfirm;
 
 // Initialize app when DOM is ready
 let app;

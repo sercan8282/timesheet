@@ -5,7 +5,7 @@ const db = require('../config/database');
 // Wait for database to be ready
 function waitForDatabase() {
   return new Promise((resolve) => {
-    setTimeout(resolve, 1000);
+    setTimeout(resolve, 2000);
   });
 }
 
@@ -30,8 +30,8 @@ async function initializeDatabase() {
       );
 
       await db.run(
-        'INSERT INTO users (username, password, full_name, is_admin) VALUES (?, ?, ?, ?)',
-        [process.env.ADMIN_USERNAME || 'admin', hashedPassword, 'Administrator', 1]
+        'INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)',
+        [process.env.ADMIN_USERNAME || 'admin', hashedPassword, 'Administrator', 'admin']
       );
 
       console.log('✓ Admin user created');

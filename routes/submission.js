@@ -111,21 +111,68 @@ router.post(
         emailStatus = "failed";
       }
 
+      // Calculate overtime hours (total hours - 40 hours per week)
+      // Group timesheets by week and calculate overtime per week
+      const weekGroups = {};
+      timesheets.forEach((ts) => {
+        if (!weekGroups[ts.week_number]) {
+          weekGroups[ts.week_number] = 0;
+        }
+        weekGroups[ts.week_number] += parseFloat(ts.total_hours || 0);
+      });
+
+      let totalOvertime = 0;
+      Object.values(weekGroups).forEach((weekHours) => {
+        const overtime = weekHours - 40;
+        if (overtime > 0) {
+          totalOvertime += overtime;
+        }
+      });
+
+      // Get unique week numbers, sorted
+      const weekNumbers = Object.keys(weekGroups)
+        .map(w => parseInt(w, 10))
+        .sort((a, b) => a - b)
+        .join(',');
+
       // Save submission record regardless of email status
       await db.run(
-        "INSERT INTO submissions (user_id, user_name, timesheet_ids, status) VALUES (?, ?, ?, ?)",
-        [req.user.id, req.user.fullName, timesheetIds.join(","), emailStatus]
+        "INSERT INTO submissions (user_id, user_name, timesheet_ids, status, week_numbers) VALUES (?, ?, ?, ?, ?)",
+        [req.user.id, req.user.fullName, timesheetIds.join(","), emailStatus, weekNumbers]
       );
+
+      // Add overtime to user's leave balance if there is any
+      if (totalOvertime > 0) {
+        // Ensure leave balance record exists
+        const existingBalance = await db.get(
+          "SELECT id FROM leave_balances WHERE user_id = ?",
+          [req.user.id]
+        );
+
+        if (!existingBalance) {
+          await db.run(
+            "INSERT INTO leave_balances (user_id, vacation_hours, overtime_hours) VALUES (?, 216, ?)",
+            [req.user.id, totalOvertime]
+          );
+        } else {
+          await db.run(
+            "UPDATE leave_balances SET overtime_hours = overtime_hours + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+            [totalOvertime, req.user.id]
+          );
+        }
+      }
 
       if (emailStatus === "sent") {
         res.json({
           message: "Timesheets submitted and email sent successfully",
+          overtimeAdded: totalOvertime > 0 ? totalOvertime.toFixed(2) : 0,
         });
       } else {
         res.json({
           message:
             "Timesheets submitted but email failed to send. Please check SMTP settings.",
           warning: emailError,
+          overtimeAdded: totalOvertime > 0 ? totalOvertime.toFixed(2) : 0,
         });
       }
     } catch (error) {

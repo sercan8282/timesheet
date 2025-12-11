@@ -103,12 +103,7 @@ async function buildTransporter(settings) {
   });
 }
 
-async function sendEmail(
-  subject,
-  text,
-  attachments = [],
-  customRecipient = null
-) {
+async function sendEmail(options) {
   try {
     const settings = await db.get("SELECT * FROM smtp_settings LIMIT 1");
 
@@ -118,13 +113,32 @@ async function sendEmail(
 
     const transporter = await buildTransporter(settings);
 
-    const info = await transporter.sendMail({
-      from: settings.email_from,
-      to: customRecipient || settings.email_to,
-      subject,
-      text,
-      attachments,
-    });
+    // Support both old signature (subject, text, attachments, customRecipient) 
+    // and new signature ({ to, subject, text, html, attachments })
+    let mailOptions;
+    if (typeof options === 'string') {
+      // Old signature: sendEmail(subject, text, attachments, customRecipient)
+      const [subject, text, attachments = [], customRecipient = null] = arguments;
+      mailOptions = {
+        from: settings.email_from,
+        to: customRecipient || settings.email_to,
+        subject,
+        text,
+        attachments,
+      };
+    } else {
+      // New signature: sendEmail({ to, subject, text, html, attachments })
+      mailOptions = {
+        from: settings.email_from,
+        to: options.to || settings.email_to,
+        subject: options.subject,
+        text: options.text,
+        html: options.html,
+        attachments: options.attachments || [],
+      };
+    }
+
+    const info = await transporter.sendMail(mailOptions);
 
     return info;
   } catch (error) {

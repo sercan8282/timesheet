@@ -1,6 +1,7 @@
 let timesheets = [];
 let timesheetCounter = 0;
 let deleteConfirmationData = { index: null, timesheet: null };
+let selectedCompanyId = null; // Track selected company for multi-company users
 
 function renderDashboard() {
   return `
@@ -8,8 +9,13 @@ function renderDashboard() {
             <div class="row">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-header">
+                        <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Timesheet Entry</h5>
+                            <div id="companySelector" style="display: none;">
+                                <select class="form-select form-select-sm" id="selectedCompanyDropdown" onchange="handleCompanyChange()" style="max-width: 250px;">
+                                    <option value="">Selecteer bedrijf...</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="card-body">
                             <div id="timesheetAlert"></div>
@@ -65,9 +71,57 @@ function renderDashboard() {
 async function initDashboard() {
   timesheets = [];
   timesheetCounter = 0;
+
+  // Initialize company selector for multi-company users
+  const userCompanies = window.currentUser?.userCompanies || [];
+  if (userCompanies.length > 1) {
+    const selector = document.getElementById("companySelector");
+    const dropdown = document.getElementById("selectedCompanyDropdown");
+    
+    if (selector && dropdown) {
+      selector.style.display = "block";
+      
+      // Load saved company selection from localStorage
+      const savedCompanyId = localStorage.getItem("selectedCompanyId");
+      
+      // Populate dropdown
+      dropdown.innerHTML = 
+        '<option value="">Selecteer bedrijf...</option>' +
+        userCompanies
+          .map(
+            (c) =>
+              `<option value="${c.id}" ${
+                savedCompanyId == c.id || c.is_primary ? "selected" : ""
+              }>${c.name} (${c.pause_time})</option>`
+          )
+          .join("");
+      
+      // Set initial selected company
+      selectedCompanyId = 
+        savedCompanyId || 
+        userCompanies.find((c) => c.is_primary)?.id ||
+        userCompanies[0]?.id ||
+        null;
+      
+      if (selectedCompanyId) {
+        dropdown.value = selectedCompanyId;
+      }
+    }
+  }
+
   await loadExistingTimesheets();
   if (timesheets.length === 0) {
     addTimesheetRow();
+  }
+}
+
+function handleCompanyChange() {
+  const dropdown = document.getElementById("selectedCompanyDropdown");
+  selectedCompanyId = dropdown.value ? parseInt(dropdown.value) : null;
+  
+  if (selectedCompanyId) {
+    localStorage.setItem("selectedCompanyId", selectedCompanyId);
+    console.log("[DEBUG] Selected company changed to:", selectedCompanyId);
   }
 }
 
@@ -102,6 +156,39 @@ async function loadExistingTimesheets() {
 
 function addTimesheetRow() {
   const today = new Date().toISOString().split("T")[0];
+  
+  // Get pause time based on selected company
+  let pauseDefault = "00:30"; // Default fallback
+  
+  // If user has multiple companies and one is selected
+  if (selectedCompanyId && window.currentUser?.userCompanies) {
+    const selectedCompany = window.currentUser.userCompanies.find(
+      (c) => c.id === selectedCompanyId
+    );
+    if (selectedCompany?.pause_time) {
+      pauseDefault = selectedCompany.pause_time;
+    }
+  } else if (window.currentUser?.company_pause_time) {
+    // Fallback to primary company
+    pauseDefault = window.currentUser.company_pause_time;
+  } else if (window.currentUser?.companyPauseTime) {
+    pauseDefault = window.currentUser.companyPauseTime;
+  } else {
+    // Fallback based on company name
+    const userCompany = window.currentUser?.company_name || window.currentUser?.companyName || "";
+    if (userCompany.toLowerCase() === "dachser") {
+      pauseDefault = "01:00";
+    } else if (userCompany.toLowerCase() === "mainfreight") {
+      pauseDefault = "00:45";
+    }
+  }
+
+  console.log("[DEBUG addTimesheetRow]", {
+    selectedCompanyId,
+    currentUser: window.currentUser,
+    pauseDefault,
+  });
+
   timesheets.push({
     id: null,
     tempId: ++timesheetCounter,
@@ -111,7 +198,7 @@ function addTimesheetRow() {
     endTime: "17:00",
     startKm: 0,
     endKm: 0,
-    pauseTime: "00:30",
+    pauseTime: pauseDefault,
     saved: false,
   });
   renderTimesheetRows();
@@ -288,38 +375,6 @@ async function saveTimesheets() {
   }
 }
 
-async function saveTimesheets() {
-  const alertDiv = document.getElementById("timesheetAlert");
-
-  try {
-    for (let ts of timesheets) {
-      if (!ts.saved) {
-        const data = {
-          date: ts.date,
-          startTime: ts.startTime,
-          endTime: ts.endTime,
-          startKm: parseFloat(ts.startKm),
-          endKm: parseFloat(ts.endKm),
-          pauseTime: ts.pauseTime,
-          ritnumber: ts.ritnumber || "",
-        };
-
-        if (ts.id) {
-          await api.updateTimesheet(ts.id, data);
-        } else {
-          const result = await api.createTimesheet(data);
-          ts.id = result.id;
-        }
-        ts.saved = true;
-      }
-    }
-
-    showAlert("All timesheets saved successfully!", "success");
-  } catch (error) {
-    showAlert(error.message, "danger");
-  }
-}
-
 async function submitTimesheets() {
   // Save first
   await saveTimesheets();
@@ -336,23 +391,27 @@ async function submitTimesheets() {
     `Submit ${timesheetIds.length} timesheet(s) via email?`,
     async () => {
       try {
-        await api.submitTimesheets(timesheetIds);
+        const response = await api.submitTimesheets(timesheetIds);
 
         // Clear all timesheets from the display and start fresh
         timesheets = [];
         timesheetCounter = 0;
         addTimesheetRow(); // Add one empty row for new entries - also calls renderTimesheetRows()
 
-        // Show success message
-        showAlert("Timesheets submitted and sent successfully!", "success");
+        // Show success message with overtime info
+        let message = "Timesheets submitted and sent successfully!";
+        if (response.overtimeAdded && parseFloat(response.overtimeAdded) > 0) {
+          message += ` (+${response.overtimeAdded} overuren toegevoegd aan saldo)`;
+        }
+        showAlert(message, "success");
 
-        // Clear alert after 3 seconds
+        // Clear alert after 5 seconds
         setTimeout(() => {
           const alertDiv = document.getElementById("timesheetAlert");
           if (alertDiv) {
             alertDiv.innerHTML = "";
           }
-        }, 3000);
+        }, 5000);
       } catch (error) {
         showAlert(error.message, "danger");
       }
