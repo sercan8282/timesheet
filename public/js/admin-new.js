@@ -2785,12 +2785,16 @@ async function saveBrandingSettings() {
   }
 
   try {
+    console.log('[BRANDING SAVE] Sending:', { company_name: companyName, primary_color: primaryColor, tagline });
+    
     // Save basic settings
-    await api.updateBrandingSettings({
+    const result = await api.updateBrandingSettings({
       company_name: companyName,
       primary_color: primaryColor,
       tagline: tagline
     });
+
+    console.log('[BRANDING SAVE] Response:', result);
 
     // Upload logo if provided
     if (logoFile) {
@@ -2801,7 +2805,19 @@ async function saveBrandingSettings() {
 
     alertDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle"></i> Branding instellingen opgeslagen!</div>';
     showToast('Branding instellingen opgeslagen', 'success');
+    
+    // Reload branding to apply changes immediately
+    console.log('[BRANDING SAVE] Reloading branding...');
+    try {
+      app.branding = await api.getPublicBranding();
+      console.log('[BRANDING SAVE] Loaded branding:', app.branding);
+      app.applyBranding();
+      console.log('[BRANDING SAVE] Applied branding');
+    } catch (e) {
+      console.error('Failed to reload branding:', e);
+    }
   } catch (error) {
+    console.error('[BRANDING SAVE] Error:', error);
     alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
     showToast('Opslaan mislukt', 'danger');
   }

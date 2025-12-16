@@ -55,17 +55,17 @@ class App {
   applyBranding() {
     if (!this.branding) return;
 
+    console.log('[APPLY BRANDING]', this.branding);
+
     // Update page title
     if (this.branding.company_name) {
       document.title = this.branding.company_name;
     }
 
-    // Apply primary color to navbar
+    // Apply primary color to navbar via CSS custom property
     if (this.branding.primary_color) {
-      const navbar = document.getElementById("mainNav");
-      if (navbar) {
-        navbar.style.backgroundColor = this.branding.primary_color;
-      }
+      document.documentElement.style.setProperty('--branding-primary-color', this.branding.primary_color);
+      console.log('[APPLY BRANDING] Set CSS variable --branding-primary-color to:', this.branding.primary_color);
     }
 
     // Update navbar brand

@@ -1094,10 +1094,12 @@ router.put(
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.error("[BRANDING UPDATE] Validation errors:", errors.array());
         return res.status(400).json({ errors: errors.array() });
       }
 
       const { company_name, primary_color, tagline } = req.body;
+      console.log("[BRANDING UPDATE] Received:", { company_name, primary_color, tagline });
 
       // Check if settings exist
       const existing = await db.get("SELECT id FROM branding_settings LIMIT 1");
@@ -1112,6 +1114,7 @@ router.put(
             existing.id,
           ]
         );
+        console.log("[BRANDING UPDATE] Updated existing record, ID:", existing.id);
       } else {
         await db.run(
           `INSERT INTO branding_settings (company_name, primary_color, tagline) VALUES (?, ?, ?)`,
@@ -1121,12 +1124,18 @@ router.put(
             tagline || "Please sign in to continue",
           ]
         );
+        console.log("[BRANDING UPDATE] Inserted new record");
       }
 
-      res.json({ message: "Branding settings updated successfully" });
+      // Return updated settings
+      const updated = await db.get("SELECT * FROM branding_settings LIMIT 1");
+      res.json({ 
+        message: "Branding settings updated successfully",
+        data: updated
+      });
     } catch (error) {
       console.error("Error updating branding settings:", error);
-      res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Internal server error: " + error.message });
     }
   }
 );
