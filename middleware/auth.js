@@ -28,11 +28,9 @@ const authMiddleware = async (req, res, next) => {
       }
 
       if (user.is_blocked === 1) {
-        return res
-          .status(403)
-          .json({
-            error: "Your account has been blocked. Contact administrator.",
-          });
+        return res.status(403).json({
+          error: "Your account has been blocked. Contact administrator.",
+        });
       }
 
       // Merge DB values to ensure fullName is always available for logging/submissions
@@ -40,7 +38,7 @@ const authMiddleware = async (req, res, next) => {
         id: user.id,
         username: user.username,
         fullName: user.full_name,
-        isAdmin: user.role === 'admin',
+        isAdmin: user.role === "admin",
         role: user.role || decoded.role,
         company_id: user.company_id,
         company_name: user.company_name,

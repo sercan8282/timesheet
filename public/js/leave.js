@@ -276,10 +276,14 @@ async function loadLeaveRequests() {
         }${approver}</span></td>
             <td>${req.reason || req.admin_note || "-"}</td>
             <td>
-              <button class="btn btn-sm btn-warning" onclick="editLeaveRequest(${req.id})" title="Bewerken">
+              <button class="btn btn-sm btn-warning" onclick="editLeaveRequest(${
+                req.id
+              })" title="Bewerken">
                 <i class="bi bi-pencil"></i>
               </button>
-              <button class="btn btn-sm btn-danger" onclick="deleteLeaveRequest(${req.id})" title="Intrekken">
+              <button class="btn btn-sm btn-danger" onclick="deleteLeaveRequest(${
+                req.id
+              })" title="Intrekken">
                 <i class="bi bi-trash"></i>
               </button>
             </td>
@@ -293,7 +297,7 @@ async function loadLeaveRequests() {
 }
 
 async function editLeaveRequest(id) {
-  const req = leaveRequests.find(r => r.id === id);
+  const req = leaveRequests.find((r) => r.id === id);
   if (!req) return;
 
   // Populate form with existing data
@@ -313,20 +317,23 @@ async function editLeaveRequest(id) {
   </div>`;
 
   // Replace submit button
-  const submitBtn = document.querySelector('button[onclick="submitLeaveRequestForm()"]');
-  submitBtn.setAttribute('onclick', `updateLeaveRequest(${id})`);
+  const submitBtn = document.querySelector(
+    'button[onclick="submitLeaveRequestForm()"]'
+  );
+  submitBtn.setAttribute("onclick", `updateLeaveRequest(${id})`);
   submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Bijwerken';
-  
+
   // Scroll to form
-  document.querySelector('.card-header').scrollIntoView({ behavior: 'smooth' });
+  document.querySelector(".card-header").scrollIntoView({ behavior: "smooth" });
 }
 
 function cancelEdit() {
   document.getElementById("leaveFormAlert").innerHTML = "";
   document.getElementById("leaveReason").value = "";
-  const submitBtn = document.querySelector('button[onclick^="updateLeaveRequest"]') || 
-                    document.querySelector('button[onclick="submitLeaveRequestForm()"]');
-  submitBtn.setAttribute('onclick', 'submitLeaveRequestForm()');
+  const submitBtn =
+    document.querySelector('button[onclick^="updateLeaveRequest"]') ||
+    document.querySelector('button[onclick="submitLeaveRequestForm()"]');
+  submitBtn.setAttribute("onclick", "submitLeaveRequestForm()");
   submitBtn.innerHTML = '<i class="bi bi-send"></i> Aanvraag indienen';
 }
 
@@ -340,7 +347,14 @@ async function updateLeaveRequest(id) {
   const hours = parseFloat(document.getElementById("leaveHours").value);
   const reason = document.getElementById("leaveReason").value.trim();
 
-  if (!startDate || !endDate || !startTime || !endTime || !hours || hours <= 0) {
+  if (
+    !startDate ||
+    !endDate ||
+    !startTime ||
+    !endTime ||
+    !hours ||
+    hours <= 0
+  ) {
     alertDiv.innerHTML = `<div class="alert alert-warning">Vul alle verplichte velden in en gebruik een geldige urenwaarde.</div>`;
     return;
   }
@@ -370,7 +384,11 @@ async function updateLeaveRequest(id) {
 }
 
 async function deleteLeaveRequest(id) {
-  if (!confirm('Weet je zeker dat je deze verlofaanvraag wilt intrekken? De uren worden teruggestort.')) {
+  if (
+    !confirm(
+      "Weet je zeker dat je deze verlofaanvraag wilt intrekken? De uren worden teruggestort."
+    )
+  ) {
     return;
   }
 

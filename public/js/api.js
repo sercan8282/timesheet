@@ -41,21 +41,25 @@ class API {
     if (!contentType || !contentType.includes("application/json")) {
       const text = await response.text();
       console.error("Non-JSON response:", text);
-      throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Server error: ${response.status} ${response.statusText}`
+      );
     }
 
     const data = await response.json();
 
     if (!response.ok) {
       // Log full error details for debugging
-      console.error('API Error Response:', data);
-      
+      console.error("API Error Response:", data);
+
       // Handle validation errors
       if (data.errors && Array.isArray(data.errors)) {
-        const errorMessages = data.errors.map(err => err.msg || err.message).join(', ');
+        const errorMessages = data.errors
+          .map((err) => err.msg || err.message)
+          .join(", ");
         throw new Error(errorMessages);
       }
-      
+
       throw new Error(data.error || data.message || "Request failed");
     }
 
@@ -362,7 +366,7 @@ class API {
 
   // Fleet endpoints
   async getFleetVehicles() {
-    return this.request('/admin/fleet/vehicles');
+    return this.request("/admin/fleet/vehicles");
   }
 
   async getFleetVehicle(id) {
@@ -370,36 +374,36 @@ class API {
   }
 
   async createFleetVehicle(data) {
-    return this.request('/admin/fleet/vehicles', {
-      method: 'POST',
+    return this.request("/admin/fleet/vehicles", {
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async updateFleetVehicle(id, data) {
     return this.request(`/admin/fleet/vehicles/${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
   async addFleetMaintenance(id, data) {
     return this.request(`/admin/fleet/vehicles/${id}/maintenance`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(data),
     });
   }
 
   async updateFleetMaintenance(maintenanceId, data) {
     return this.request(`/admin/fleet/maintenance/${maintenanceId}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
   async deleteFleetMaintenance(maintenanceId) {
     return this.request(`/admin/fleet/maintenance/${maintenanceId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   }
 
@@ -619,9 +623,14 @@ class API {
   }
 
   async clearWeekPlanning(weekNumber, companyId) {
-    return this.request(`/admin/planning/week/${weekNumber}/clear${companyId ? '?companyId=' + companyId : ''}`, {
-      method: "DELETE",
-    });
+    return this.request(
+      `/admin/planning/week/${weekNumber}/clear${
+        companyId ? "?companyId=" + companyId : ""
+      }`,
+      {
+        method: "DELETE",
+      }
+    );
   }
 
   async generateWeeklyPlanning(weekNumber) {
@@ -631,29 +640,38 @@ class API {
   }
 
   async generateCompanyWeeklyPlanning(weekNumber, companyId) {
-    return this.request(`/admin/planning/generate/${weekNumber}/company/${companyId}`, {
-      method: "POST",
-    });
+    return this.request(
+      `/admin/planning/generate/${weekNumber}/company/${companyId}`,
+      {
+        method: "POST",
+      }
+    );
   }
 
   async generatePlanningByVehicles(weekNumber, companyId) {
-    return this.request(`/admin/planning/generate-by-vehicles/${weekNumber}/company/${companyId}`, {
-      method: "POST",
-    });
+    return this.request(
+      `/admin/planning/generate-by-vehicles/${weekNumber}/company/${companyId}`,
+      {
+        method: "POST",
+      }
+    );
   }
 
   async exportPlanningPDF(weekNumber) {
-    const response = await fetch(`${API_BASE_URL}/admin/planning/week/${weekNumber}/export-pdf`, {
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
+    const response = await fetch(
+      `${API_BASE_URL}/admin/planning/week/${weekNumber}/export-pdf`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
       }
-    });
-    
+    );
+
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'PDF export failed');
+      throw new Error(error.error || "PDF export failed");
     }
-    
+
     return response.blob();
   }
 
@@ -695,19 +713,22 @@ class API {
   }
 
   async uploadBrandingLogo(formData) {
-    const response = await fetch(`${API_BASE_URL}/admin/branding-settings/logo`, {
-      method: "POST",
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`
-      },
-      body: formData
-    });
-    
+    const response = await fetch(
+      `${API_BASE_URL}/admin/branding-settings/logo`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: formData,
+      }
+    );
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || 'Logo upload failed');
+      throw new Error(error.error || "Logo upload failed");
     }
-    
+
     return response.json();
   }
 
@@ -715,6 +736,155 @@ class API {
   async getPublicBranding() {
     const response = await fetch(`${API_BASE_URL}/branding`);
     return response.json();
+  }
+
+  // ============================================
+  // INVOICE API
+  // ============================================
+
+  // Invoice Templates
+  async getInvoiceTemplates() {
+    return this.request("/admin/invoices/templates");
+  }
+
+  async getInvoiceTemplate(id) {
+    return this.request(`/admin/invoices/templates/${id}`);
+  }
+
+  async createInvoiceTemplate(data) {
+    return this.request("/admin/invoices/templates", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateInvoiceTemplate(id, data) {
+    return this.request(`/admin/invoices/templates/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteInvoiceTemplate(id) {
+    return this.request(`/admin/invoices/templates/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  // Template Elements
+  async addTemplateElement(templateId, formData) {
+    const response = await fetch(
+      `${API_BASE_URL}/admin/invoices/templates/${templateId}/elements`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to add element");
+    }
+
+    return response.json();
+  }
+
+  async updateTemplateElement(templateId, elementId, formData) {
+    const response = await fetch(
+      `${API_BASE_URL}/admin/invoices/templates/${templateId}/elements/${elementId}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || "Failed to update element");
+    }
+
+    return response.json();
+  }
+
+  async deleteTemplateElement(templateId, elementId) {
+    return this.request(
+      `/admin/invoices/templates/${templateId}/elements/${elementId}`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
+
+  // Invoices
+  async getInvoices() {
+    return this.request("/admin/invoices/invoices");
+  }
+
+  async getInvoice(id) {
+    return this.request(`/admin/invoices/invoices/${id}`);
+  }
+
+  async createInvoice(data) {
+    return this.request("/admin/invoices/invoices", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateInvoice(id, data) {
+    return this.request(`/admin/invoices/invoices/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteInvoice(id) {
+    return this.request(`/admin/invoices/invoices/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async getNextInvoiceNumber() {
+    return this.request("/admin/invoices/invoices/next-number");
+  }
+
+  // PDF Generation
+  async generateInvoicePDF(id) {
+    return this.request(`/admin/invoices/invoices/${id}/generate-pdf`, {
+      method: "POST",
+    });
+  }
+
+  async downloadInvoicePDF(id) {
+    const response = await fetch(
+      `${API_BASE_URL}/admin/invoices/invoices/${id}/download-pdf`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to download PDF");
+    }
+
+    return response.blob();
+  }
+
+  // Email
+  async sendInvoiceEmail(id, data) {
+    return this.request(`/admin/invoices/invoices/${id}/send-email`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   }
 }
 

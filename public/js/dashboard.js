@@ -77,15 +77,15 @@ async function initDashboard() {
   if (userCompanies.length > 1) {
     const selector = document.getElementById("companySelector");
     const dropdown = document.getElementById("selectedCompanyDropdown");
-    
+
     if (selector && dropdown) {
       selector.style.display = "block";
-      
+
       // Load saved company selection from localStorage
       const savedCompanyId = localStorage.getItem("selectedCompanyId");
-      
+
       // Populate dropdown
-      dropdown.innerHTML = 
+      dropdown.innerHTML =
         '<option value="">Selecteer bedrijf...</option>' +
         userCompanies
           .map(
@@ -95,14 +95,14 @@ async function initDashboard() {
               }>${c.name} (${c.pause_time})</option>`
           )
           .join("");
-      
+
       // Set initial selected company
-      selectedCompanyId = 
-        savedCompanyId || 
+      selectedCompanyId =
+        savedCompanyId ||
         userCompanies.find((c) => c.is_primary)?.id ||
         userCompanies[0]?.id ||
         null;
-      
+
       if (selectedCompanyId) {
         dropdown.value = selectedCompanyId;
       }
@@ -118,7 +118,7 @@ async function initDashboard() {
 function handleCompanyChange() {
   const dropdown = document.getElementById("selectedCompanyDropdown");
   selectedCompanyId = dropdown.value ? parseInt(dropdown.value) : null;
-  
+
   if (selectedCompanyId) {
     localStorage.setItem("selectedCompanyId", selectedCompanyId);
     console.log("[DEBUG] Selected company changed to:", selectedCompanyId);
@@ -156,10 +156,10 @@ async function loadExistingTimesheets() {
 
 function addTimesheetRow() {
   const today = new Date().toISOString().split("T")[0];
-  
+
   // Get pause time based on selected company
   let pauseDefault = "00:30"; // Default fallback
-  
+
   // If user has multiple companies and one is selected
   if (selectedCompanyId && window.currentUser?.userCompanies) {
     const selectedCompany = window.currentUser.userCompanies.find(
@@ -175,7 +175,8 @@ function addTimesheetRow() {
     pauseDefault = window.currentUser.companyPauseTime;
   } else {
     // Fallback based on company name
-    const userCompany = window.currentUser?.company_name || window.currentUser?.companyName || "";
+    const userCompany =
+      window.currentUser?.company_name || window.currentUser?.companyName || "";
     if (userCompany.toLowerCase() === "dachser") {
       pauseDefault = "01:00";
     } else if (userCompany.toLowerCase() === "mainfreight") {

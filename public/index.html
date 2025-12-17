@@ -65,6 +65,16 @@
                 <i class="bi bi-airplane"></i> Verlof
               </a>
             </li>
+            <li class="nav-item" id="nav-invoices" style="display: none">
+              <a class="nav-link" href="#" onclick="app.loadPage('invoices')">
+                <i class="bi bi-receipt"></i> Invoices
+              </a>
+            </li>
+            <li class="nav-item" id="nav-revenue" style="display: none">
+              <a class="nav-link" href="#" onclick="app.loadPage('revenue')">
+                <i class="bi bi-graph-up"></i> Omzet
+              </a>
+            </li>
             <li class="nav-item" id="nav-admin" style="display: none">
               <a class="nav-link" href="#" onclick="app.loadPage('admin')">
                 <i class="bi bi-gear"></i> Admin
@@ -110,20 +120,27 @@
     <div id="app"></div>
 
     <!-- Toast Container -->
-    <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+    <div
+      class="toast-container position-fixed bottom-0 end-0 p-3"
+      id="toastContainer"
+    ></div>
 
     <!-- Scripts - LOAD IN CORRECT ORDER -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="/js/api.js?v=20251211"></script>
     <script src="/js/auth.js?v=20251211"></script>
     <script src="/js/dashboard.js?v=20251211"></script>
     <script src="/js/history.js?v=20251211"></script>
     <script src="/js/weekly-summary.js?v=20251211"></script>
     <script src="/js/leave.js?v=20251211"></script>
-    
-    <!-- Admin Complete - Full admin functionality -->
+
+      <script src="/js/revenue.js?v=20251211"></script>
     <script src="/js/admin-new.js?v=20251211"></script>
-    
+
+    <!-- Invoice Management -->
+    <script src="/js/invoices.js?v=20251216"></script>
+
     <!-- App LAST -->
     <script src="/js/app.js?v=20251211"></script>
   </body>

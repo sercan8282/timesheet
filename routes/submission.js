@@ -131,14 +131,20 @@ router.post(
 
       // Get unique week numbers, sorted
       const weekNumbers = Object.keys(weekGroups)
-        .map(w => parseInt(w, 10))
+        .map((w) => parseInt(w, 10))
         .sort((a, b) => a - b)
-        .join(',');
+        .join(",");
 
       // Save submission record regardless of email status
       await db.run(
         "INSERT INTO submissions (user_id, user_name, timesheet_ids, status, week_numbers) VALUES (?, ?, ?, ?, ?)",
-        [req.user.id, req.user.fullName, timesheetIds.join(","), emailStatus, weekNumbers]
+        [
+          req.user.id,
+          req.user.fullName,
+          timesheetIds.join(","),
+          emailStatus,
+          weekNumbers,
+        ]
       );
 
       // Add overtime to user's leave balance if there is any

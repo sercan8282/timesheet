@@ -113,12 +113,13 @@ async function sendEmail(options) {
 
     const transporter = await buildTransporter(settings);
 
-    // Support both old signature (subject, text, attachments, customRecipient) 
+    // Support both old signature (subject, text, attachments, customRecipient)
     // and new signature ({ to, subject, text, html, attachments })
     let mailOptions;
-    if (typeof options === 'string') {
+    if (typeof options === "string") {
       // Old signature: sendEmail(subject, text, attachments, customRecipient)
-      const [subject, text, attachments = [], customRecipient = null] = arguments;
+      const [subject, text, attachments = [], customRecipient = null] =
+        arguments;
       mailOptions = {
         from: settings.email_from,
         to: customRecipient || settings.email_to,
@@ -176,4 +177,9 @@ async function testSMTPConnection() {
   }
 }
 
-module.exports = { sendEmail, testSMTPConnection };
+// Send invoice email with attachment
+async function sendInvoiceEmail(options) {
+  return sendEmail(options);
+}
+
+module.exports = { sendEmail, testSMTPConnection, sendInvoiceEmail };

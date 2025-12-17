@@ -36,16 +36,16 @@ async function generatePlanningPDF(weekNumber) {
       );
 
       // Get branding
-      const branding = await db.get(
-        "SELECT * FROM branding_settings LIMIT 1"
-      );
-      const companyName =
-        branding?.company_name || "Timesheet System";
+      const branding = await db.get("SELECT * FROM branding_settings LIMIT 1");
+      const companyName = branding?.company_name || "Timesheet System";
 
       // Header
-      doc.fontSize(18).font("Helvetica-Bold").text(`Weekplanning - Week ${weekNumber}`, {
-        align: "center",
-      });
+      doc
+        .fontSize(18)
+        .font("Helvetica-Bold")
+        .text(`Weekplanning - Week ${weekNumber}`, {
+          align: "center",
+        });
       doc.fontSize(12).font("Helvetica").text(companyName, {
         align: "center",
       });
@@ -245,7 +245,11 @@ async function generatePlanningPDF(weekNumber) {
 
             doc.rect(x, y, colWidths.truck, rowHeight).stroke();
             doc.text(
-              entry.driver_mega_kast === "mega_and_kast" ? "Mega+Kast" : entry.driver_mega_kast === "nvt" ? "N.v.t." : "Mega",
+              entry.driver_mega_kast === "mega_and_kast"
+                ? "Mega+Kast"
+                : entry.driver_mega_kast === "nvt"
+                ? "N.v.t."
+                : "Mega",
               x + 5,
               y + 4,
               { width: colWidths.truck - 10 }
@@ -278,13 +282,15 @@ async function generatePlanningPDF(weekNumber) {
       const pageRange = doc.bufferedPageRange();
       const pageCount = pageRange.count;
       const startPage = pageRange.start;
-      
+
       for (let i = 0; i < pageCount; i++) {
         doc.switchToPage(startPage + i);
         doc
           .fontSize(8)
           .text(
-            `Pagina ${i + 1} van ${pageCount} - Gegenereerd op ${new Date().toLocaleString(
+            `Pagina ${
+              i + 1
+            } van ${pageCount} - Gegenereerd op ${new Date().toLocaleString(
               "nl-NL"
             )}`,
             30,

@@ -48,12 +48,30 @@ class Database {
                     this.db.run(sql);
                   }
                 };
-                ensure("adr", "ALTER TABLE users ADD COLUMN adr INTEGER DEFAULT 0");
-                ensure("can_fill_in", "ALTER TABLE users ADD COLUMN can_fill_in INTEGER DEFAULT 0");
-                ensure("fill_in_company_id", "ALTER TABLE users ADD COLUMN fill_in_company_id INTEGER");
-                ensure("mega_kast", "ALTER TABLE users ADD COLUMN mega_kast TEXT DEFAULT 'only_mega'");
-                ensure("ritnumber", "ALTER TABLE users ADD COLUMN ritnumber TEXT");
-                ensure("is_blocked", "ALTER TABLE users ADD COLUMN is_blocked INTEGER DEFAULT 0");
+                ensure(
+                  "adr",
+                  "ALTER TABLE users ADD COLUMN adr INTEGER DEFAULT 0"
+                );
+                ensure(
+                  "can_fill_in",
+                  "ALTER TABLE users ADD COLUMN can_fill_in INTEGER DEFAULT 0"
+                );
+                ensure(
+                  "fill_in_company_id",
+                  "ALTER TABLE users ADD COLUMN fill_in_company_id INTEGER"
+                );
+                ensure(
+                  "mega_kast",
+                  "ALTER TABLE users ADD COLUMN mega_kast TEXT DEFAULT 'only_mega'"
+                );
+                ensure(
+                  "ritnumber",
+                  "ALTER TABLE users ADD COLUMN ritnumber TEXT"
+                );
+                ensure(
+                  "is_blocked",
+                  "ALTER TABLE users ADD COLUMN is_blocked INTEGER DEFAULT 0"
+                );
               }
             });
           }
@@ -85,13 +103,19 @@ class Database {
         if (!err && columns) {
           const hasRitnumber = columns.some((c) => c.name === "ritnumber");
           if (!hasRitnumber) {
-            this.db.run(`ALTER TABLE timesheets ADD COLUMN ritnumber TEXT`, (err) => {
-              if (err) {
-                console.error('Error adding ritnumber column to timesheets:', err);
-              } else {
-                console.log('✓ Added ritnumber column to timesheets');
+            this.db.run(
+              `ALTER TABLE timesheets ADD COLUMN ritnumber TEXT`,
+              (err) => {
+                if (err) {
+                  console.error(
+                    "Error adding ritnumber column to timesheets:",
+                    err
+                  );
+                } else {
+                  console.log("✓ Added ritnumber column to timesheets");
+                }
               }
-            });
+            );
           }
         }
       });
@@ -114,22 +138,30 @@ class Database {
       this.db.serialize(() => {
         this.db.all(`PRAGMA table_info(submissions)`, [], (err, columns) => {
           if (!err && columns) {
-            const columnNames = columns.map(c => c.name);
-            if (!columnNames.includes('week_numbers')) {
-              console.log('Adding week_numbers column to submissions table');
-              this.db.run(`ALTER TABLE submissions ADD COLUMN week_numbers TEXT`, (err) => {
-                if (err && !err.message.includes('duplicate column')) console.error('Error adding week_numbers:', err);
-              });
+            const columnNames = columns.map((c) => c.name);
+            if (!columnNames.includes("week_numbers")) {
+              console.log("Adding week_numbers column to submissions table");
+              this.db.run(
+                `ALTER TABLE submissions ADD COLUMN week_numbers TEXT`,
+                (err) => {
+                  if (err && !err.message.includes("duplicate column"))
+                    console.error("Error adding week_numbers:", err);
+                }
+              );
             }
             // Remove old period columns if they exist
-            if (columnNames.includes('period')) {
-              console.log('Removing old period column from submissions table');
+            if (columnNames.includes("period")) {
+              console.log("Removing old period column from submissions table");
             }
-            if (columnNames.includes('period_start')) {
-              console.log('Removing old period_start column from submissions table');
+            if (columnNames.includes("period_start")) {
+              console.log(
+                "Removing old period_start column from submissions table"
+              );
             }
-            if (columnNames.includes('period_end')) {
-              console.log('Removing old period_end column from submissions table');
+            if (columnNames.includes("period_end")) {
+              console.log(
+                "Removing old period_end column from submissions table"
+              );
             }
           }
         });
@@ -170,7 +202,9 @@ class Database {
               if (!err && columns) {
                 const hasPause = columns.some((c) => c.name === "pause_time");
                 if (!hasPause) {
-                  this.db.run(`ALTER TABLE companies ADD COLUMN pause_time TEXT DEFAULT '00:30'`);
+                  this.db.run(
+                    `ALTER TABLE companies ADD COLUMN pause_time TEXT DEFAULT '00:30'`
+                  );
                 }
               }
             });
@@ -203,14 +237,24 @@ class Database {
       `,
         (err) => {
           if (!err) {
-            this.db.all(`PRAGMA table_info(leave_requests)`, [], (err, columns) => {
-              if (!err && columns) {
-                const hasStart = columns.some((c) => c.name === "start_time");
-                const hasEnd = columns.some((c) => c.name === "end_time");
-                if (!hasStart) this.db.run(`ALTER TABLE leave_requests ADD COLUMN start_time TEXT`);
-                if (!hasEnd) this.db.run(`ALTER TABLE leave_requests ADD COLUMN end_time TEXT`);
+            this.db.all(
+              `PRAGMA table_info(leave_requests)`,
+              [],
+              (err, columns) => {
+                if (!err && columns) {
+                  const hasStart = columns.some((c) => c.name === "start_time");
+                  const hasEnd = columns.some((c) => c.name === "end_time");
+                  if (!hasStart)
+                    this.db.run(
+                      `ALTER TABLE leave_requests ADD COLUMN start_time TEXT`
+                    );
+                  if (!hasEnd)
+                    this.db.run(
+                      `ALTER TABLE leave_requests ADD COLUMN end_time TEXT`
+                    );
+                }
               }
-            });
+            );
           }
         }
       );
@@ -270,7 +314,9 @@ class Database {
                       [user.id, user.company_id],
                       (err) => {
                         if (!err) {
-                          console.log(`✓ Migrated user ${user.id} company assignment to user_companies`);
+                          console.log(
+                            `✓ Migrated user ${user.id} company assignment to user_companies`
+                          );
                         }
                       }
                     );
@@ -369,7 +415,8 @@ class Database {
       `);
 
       // Branding settings (used by public branding endpoint and PDFs)
-      this.db.run(`
+      this.db.run(
+        `
         CREATE TABLE IF NOT EXISTS branding_settings (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           company_name TEXT,
@@ -379,19 +426,97 @@ class Database {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
-      `, (err) => {
-        if (!err) {
-          // Check if tagline column exists, if not add it
-          this.db.all(`PRAGMA table_info(branding_settings)`, [], (err, columns) => {
-            if (!err && columns) {
-              const hasTagline = columns.some((c) => c.name === "tagline");
-              if (!hasTagline) {
-                this.db.run(`ALTER TABLE branding_settings ADD COLUMN tagline TEXT`);
+      `,
+        (err) => {
+          if (!err) {
+            // Check if tagline column exists, if not add it
+            this.db.all(
+              `PRAGMA table_info(branding_settings)`,
+              [],
+              (err, columns) => {
+                if (!err && columns) {
+                  const hasTagline = columns.some((c) => c.name === "tagline");
+                  if (!hasTagline) {
+                    this.db.run(
+                      `ALTER TABLE branding_settings ADD COLUMN tagline TEXT`
+                    );
+                  }
+                }
               }
-            }
-          });
+            );
+          }
         }
-      });
+      );
+
+      // Invoice templates
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS invoice_templates (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT,
+          is_default INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Invoice template elements (text fields, images, calculated fields)
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS invoice_template_elements (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          template_id INTEGER NOT NULL,
+          element_type TEXT NOT NULL,
+          label TEXT,
+          content TEXT,
+          image_path TEXT,
+          position_order INTEGER DEFAULT 0,
+          font_size INTEGER DEFAULT 14,
+          font_color TEXT DEFAULT '#000000',
+          font_weight TEXT DEFAULT 'normal',
+          calculation_formula TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (template_id) REFERENCES invoice_templates(id) ON DELETE CASCADE
+        )
+      `);
+
+      // Invoices (generated invoices from templates)
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS invoices (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          template_id INTEGER NOT NULL,
+          invoice_number TEXT NOT NULL UNIQUE,
+          customer_name TEXT,
+          customer_address TEXT,
+          invoice_date TEXT NOT NULL,
+          due_date TEXT,
+          subtotal REAL DEFAULT 0,
+          vat_amount REAL DEFAULT 0,
+          total_amount REAL DEFAULT 0,
+          status TEXT DEFAULT 'draft' CHECK(status IN ('draft','sent','paid','cancelled')),
+          notes TEXT,
+          created_by INTEGER,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (template_id) REFERENCES invoice_templates(id) ON DELETE RESTRICT,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+
+      // Invoice line items (individual lines in an invoice)
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS invoice_line_items (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          invoice_id INTEGER NOT NULL,
+          description TEXT NOT NULL,
+          quantity REAL DEFAULT 1,
+          unit_price REAL DEFAULT 0,
+          line_total REAL DEFAULT 0,
+          position_order INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+        )
+      `);
     });
   }
 

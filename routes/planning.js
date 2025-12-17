@@ -178,46 +178,46 @@ router.put("/:id", async (req, res) => {
     // Build dynamic UPDATE query based on provided fields
     const updates = [];
     const values = [];
-    
+
     if (route_number !== undefined) {
-      updates.push('route_number = ?');
+      updates.push("route_number = ?");
       values.push(route_number);
     }
     if (driver_id !== undefined) {
-      updates.push('driver_id = ?');
+      updates.push("driver_id = ?");
       values.push(driver_id);
     }
     if (vehicle_id !== undefined) {
-      updates.push('vehicle_id = ?');
+      updates.push("vehicle_id = ?");
       values.push(vehicle_id || null);
     }
     if (adr !== undefined) {
-      updates.push('adr = ?');
+      updates.push("adr = ?");
       values.push(adr ? 1 : 0);
     }
     if (mega_kast !== undefined) {
-      updates.push('mega_kast = ?');
-      values.push(mega_kast || 'only_mega');
+      updates.push("mega_kast = ?");
+      values.push(mega_kast || "only_mega");
     }
     if (phone_number !== undefined) {
-      updates.push('phone_number = ?');
+      updates.push("phone_number = ?");
       values.push(phone_number || null);
     }
     if (notes !== undefined) {
-      updates.push('notes = ?');
+      updates.push("notes = ?");
       values.push(notes || null);
     }
-    
+
     // Always update timestamp
-    updates.push('updated_at = CURRENT_TIMESTAMP');
+    updates.push("updated_at = CURRENT_TIMESTAMP");
     values.push(id);
-    
+
     if (updates.length === 1) {
-      return res.status(400).json({ error: 'No fields to update' });
+      return res.status(400).json({ error: "No fields to update" });
     }
 
     await db.run(
-      `UPDATE planning_schedules SET ${updates.join(', ')} WHERE id = ?`,
+      `UPDATE planning_schedules SET ${updates.join(", ")} WHERE id = ?`,
       values
     );
 
@@ -250,10 +250,9 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await db.run(
-      `DELETE FROM planning_schedules WHERE id = ?`,
-      [id]
-    );
+    const result = await db.run(`DELETE FROM planning_schedules WHERE id = ?`, [
+      id,
+    ]);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: "Planning entry not found" });
@@ -282,7 +281,11 @@ router.delete("/week/:weekNumber/clear", async (req, res) => {
 
     const result = await db.run(sql, params);
 
-    console.log(`Deleted ${result.changes} planning entries for week ${weekNumber}${companyId ? ' (company ' + companyId + ')' : ''}`);
+    console.log(
+      `Deleted ${result.changes} planning entries for week ${weekNumber}${
+        companyId ? " (company " + companyId + ")" : ""
+      }`
+    );
 
     res.json({
       message: `${result.changes} planning entries verwijderd voor week ${weekNumber}`,
@@ -301,8 +304,10 @@ router.post("/generate/:weekNumber", async (req, res) => {
 
     // Get all companies
     const companies = await db.all("SELECT id FROM companies");
-    
-    console.log(`Generating planning for week ${weekNumber}, found ${companies.length} companies`);
+
+    console.log(
+      `Generating planning for week ${weekNumber}, found ${companies.length} companies`
+    );
 
     let totalCreated = 0;
 
@@ -314,8 +319,10 @@ router.post("/generate/:weekNumber", async (req, res) => {
         WHERE company_id = ? AND role = 'user' AND is_blocked = 0`,
         [company.id]
       );
-      
-      console.log(`Company ${company.id}: found ${drivers.length} active drivers`);
+
+      console.log(
+        `Company ${company.id}: found ${drivers.length} active drivers`
+      );
 
       // Get vehicles for this company
       const vehicles = await db.all(
@@ -341,7 +348,9 @@ router.post("/generate/:weekNumber", async (req, res) => {
           );
 
           if (!existing) {
-            console.log(`Creating entry for driver ${driver.id} (${driver.ritnumber}), day ${day}, week ${weekNumber}`);
+            console.log(
+              `Creating entry for driver ${driver.id} (${driver.ritnumber}), day ${day}, week ${weekNumber}`
+            );
             await db.run(
               `INSERT INTO planning_schedules 
               (week_number, day_of_week, route_number, driver_id, vehicle_id, company_id, adr, mega_kast, phone_number)
@@ -360,13 +369,17 @@ router.post("/generate/:weekNumber", async (req, res) => {
             );
             totalCreated++;
           } else {
-            console.log(`Skipping driver ${driver.id}, day ${day} - entry already exists (id: ${existing.id})`);
+            console.log(
+              `Skipping driver ${driver.id}, day ${day} - entry already exists (id: ${existing.id})`
+            );
           }
         }
       }
     }
 
-    console.log(`Total created: ${totalCreated} entries for week ${weekNumber}`);
+    console.log(
+      `Total created: ${totalCreated} entries for week ${weekNumber}`
+    );
 
     res.json({
       message: `Generated ${totalCreated} planning entries for week ${weekNumber}`,
@@ -384,7 +397,9 @@ router.post("/generate/:weekNumber/company/:companyId", async (req, res) => {
     const { weekNumber, companyId } = req.params;
 
     // Validate company exists
-    const company = await db.get("SELECT id FROM companies WHERE id = ?", [companyId]);
+    const company = await db.get("SELECT id FROM companies WHERE id = ?", [
+      companyId,
+    ]);
     if (!company) {
       return res.status(404).json({ error: "Company not found" });
     }
@@ -410,7 +425,9 @@ router.post("/generate/:weekNumber/company/:companyId", async (req, res) => {
     // Create planning entries for Mon-Fri (days 1-5)
     for (let day = 1; day <= 5; day++) {
       for (const driver of drivers) {
-        const vehicle = vehicles.find((v) => v.route_number === driver.ritnumber);
+        const vehicle = vehicles.find(
+          (v) => v.route_number === driver.ritnumber
+        );
         const existing = await db.get(
           `SELECT id FROM planning_schedules 
            WHERE week_number = ? AND day_of_week = ? AND driver_id = ? AND company_id = ? AND is_active = 1`,
@@ -494,9 +511,7 @@ router.post(
       const pdfBuffer = await generatePlanningPDF(weekNumber);
 
       // Get branding for email
-      const branding = await db.get(
-        "SELECT * FROM branding_settings LIMIT 1"
-      );
+      const branding = await db.get("SELECT * FROM branding_settings LIMIT 1");
       const companyName = branding?.company_name || "Timesheet System";
 
       const emailSubject =
@@ -539,83 +554,89 @@ router.post(
 );
 
 // NEW: Generate planning by vehicles for a company (Monday-Friday)
-router.post("/generate-by-vehicles/:weekNumber/company/:companyId", async (req, res) => {
-  try {
-    const { weekNumber, companyId } = req.params;
+router.post(
+  "/generate-by-vehicles/:weekNumber/company/:companyId",
+  async (req, res) => {
+    try {
+      const { weekNumber, companyId } = req.params;
 
-    // Validate company exists
-    const company = await db.get("SELECT id FROM companies WHERE id = ?", [companyId]);
-    if (!company) {
-      return res.status(404).json({ error: "Company not found" });
-    }
+      // Validate company exists
+      const company = await db.get("SELECT id FROM companies WHERE id = ?", [
+        companyId,
+      ]);
+      if (!company) {
+        return res.status(404).json({ error: "Company not found" });
+      }
 
-    // Get all vehicles for this company
-    const vehicles = await db.all(
-      `SELECT id, license_plate, rit_number
+      // Get all vehicles for this company
+      const vehicles = await db.all(
+        `SELECT id, license_plate, rit_number
        FROM fleet_vehicles
        WHERE company_id = ?
        ORDER BY rit_number ASC`,
-      [companyId]
-    );
+        [companyId]
+      );
 
-    if (vehicles.length === 0) {
-      return res.status(400).json({ error: "No vehicles found for this company" });
-    }
+      if (vehicles.length === 0) {
+        return res
+          .status(400)
+          .json({ error: "No vehicles found for this company" });
+      }
 
-    let totalCreated = 0;
+      let totalCreated = 0;
 
-    // Prepare a fallback driver per company to satisfy NOT NULL constraint
-    const fallbackDriver = await db.get(
-      `SELECT id FROM users WHERE company_id = ? AND role = 'user' AND is_blocked = 0 ORDER BY full_name LIMIT 1`,
-      [companyId]
-    );
+      // Prepare a fallback driver per company to satisfy NOT NULL constraint
+      const fallbackDriver = await db.get(
+        `SELECT id FROM users WHERE company_id = ? AND role = 'user' AND is_blocked = 0 ORDER BY full_name LIMIT 1`,
+        [companyId]
+      );
 
-    // Create planning entries: one row per vehicle per day (Mon-Fri = days 1-5)
-    for (let day = 1; day <= 5; day++) {
-      for (const vehicle of vehicles) {
-        const existing = await db.get(
-          `SELECT id FROM planning_schedules 
+      // Create planning entries: one row per vehicle per day (Mon-Fri = days 1-5)
+      for (let day = 1; day <= 5; day++) {
+        for (const vehicle of vehicles) {
+          const existing = await db.get(
+            `SELECT id FROM planning_schedules 
            WHERE week_number = ? AND day_of_week = ? AND vehicle_id = ? AND company_id = ? AND is_active = 1`,
-          [weekNumber, day, vehicle.id, companyId]
-        );
-        
-        if (!existing) {
-          // Ensure we set a driver_id to satisfy NOT NULL; admin can update later in UI
-          const driverIdToUse = fallbackDriver ? fallbackDriver.id : null;
-          if (!driverIdToUse) {
-            // If there is truly no driver for the company, skip creating this entry to avoid constraint error
-            continue;
-          }
-          await db.run(
-            `INSERT INTO planning_schedules 
+            [weekNumber, day, vehicle.id, companyId]
+          );
+
+          if (!existing) {
+            // Ensure we set a driver_id to satisfy NOT NULL; admin can update later in UI
+            const driverIdToUse = fallbackDriver ? fallbackDriver.id : null;
+            if (!driverIdToUse) {
+              // If there is truly no driver for the company, skip creating this entry to avoid constraint error
+              continue;
+            }
+            await db.run(
+              `INSERT INTO planning_schedules 
              (week_number, day_of_week, route_number, driver_id, vehicle_id, company_id, mega_kast)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [
-              weekNumber,
-              day,
-              vehicle.rit_number || '',
-              driverIdToUse,
-              vehicle.id,
-              companyId,
-              'only_mega',
-            ]
-          );
-          totalCreated++;
+              [
+                weekNumber,
+                day,
+                vehicle.rit_number || "",
+                driverIdToUse,
+                vehicle.id,
+                companyId,
+                "only_mega",
+              ]
+            );
+            totalCreated++;
+          }
         }
       }
-    }
 
-    res.json({
-      message: `Generated ${totalCreated} planning entries for company ${companyId} in week ${weekNumber}`,
-      totalCreated,
-      companyId: Number(companyId),
-      weekNumber: Number(weekNumber),
-    });
-  } catch (error) {
-    console.error("Error generating planning by vehicles:", error);
-    res.status(500).json({ error: error.message });
+      res.json({
+        message: `Generated ${totalCreated} planning entries for company ${companyId} in week ${weekNumber}`,
+        totalCreated,
+        companyId: Number(companyId),
+        weekNumber: Number(weekNumber),
+      });
+    } catch (error) {
+      console.error("Error generating planning by vehicles:", error);
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 module.exports = router;
-

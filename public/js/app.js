@@ -2,7 +2,7 @@ class App {
   constructor() {
     this.user = null;
     this.branding = null;
-    
+
     this.init();
   }
 
@@ -28,9 +28,9 @@ class App {
     if (token && userStr) {
       this.user = JSON.parse(userStr);
       console.log("[DEBUG app.init] User from localStorage:", this.user);
-      
+
       api.setToken(token);
-      
+
       // Refresh user data from backend to ensure company_pause_time is current
       try {
         const freshUser = await api.getMe();
@@ -40,11 +40,17 @@ class App {
         localStorage.setItem("user", JSON.stringify(this.user));
         console.log("[DEBUG app.init] User refreshed from API:", this.user);
       } catch (error) {
-        console.log("[DEBUG app.init] Could not refresh user, using localStorage:", error);
+        console.log(
+          "[DEBUG app.init] Could not refresh user, using localStorage:",
+          error
+        );
         window.currentUser = this.user;
       }
-      
-      console.log("[DEBUG app.init] Final this.user before showApp:", this.user);
+
+      console.log(
+        "[DEBUG app.init] Final this.user before showApp:",
+        this.user
+      );
       this.showApp();
       this.loadPage("dashboard");
     } else {
@@ -55,7 +61,7 @@ class App {
   applyBranding() {
     if (!this.branding) return;
 
-    console.log('[APPLY BRANDING]', this.branding);
+    console.log("[APPLY BRANDING]", this.branding);
 
     // Update page title
     if (this.branding.company_name) {
@@ -64,8 +70,14 @@ class App {
 
     // Apply primary color to navbar via CSS custom property
     if (this.branding.primary_color) {
-      document.documentElement.style.setProperty('--branding-primary-color', this.branding.primary_color);
-      console.log('[APPLY BRANDING] Set CSS variable --branding-primary-color to:', this.branding.primary_color);
+      document.documentElement.style.setProperty(
+        "--branding-primary-color",
+        this.branding.primary_color
+      );
+      console.log(
+        "[APPLY BRANDING] Set CSS variable --branding-primary-color to:",
+        this.branding.primary_color
+      );
     }
 
     // Update navbar brand
@@ -94,22 +106,35 @@ class App {
   showApp() {
     console.log("[DEBUG showApp] this.user:", this.user);
     console.log("[DEBUG showApp] this.user.isAdmin:", this.user.isAdmin);
-    console.log("[DEBUG showApp] typeof this.user.isAdmin:", typeof this.user.isAdmin);
-    
+    console.log(
+      "[DEBUG showApp] typeof this.user.isAdmin:",
+      typeof this.user.isAdmin
+    );
+
     document.getElementById("mainNav").style.display = "block";
     document.getElementById("userName").textContent = this.user.fullName;
     window.currentUser = this.user;
 
-    // Show/hide admin menu
+    // Show/hide admin menus
     const adminMenu = document.getElementById("nav-admin");
+    const invoicesMenu = document.getElementById("nav-invoices");
+    const revenueMenu = document.getElementById("nav-revenue");
     console.log("[DEBUG showApp] adminMenu element found:", !!adminMenu);
-    
+
     if (this.user.isAdmin) {
-      console.log("[DEBUG showApp] Setting nav-admin to display: block");
+      console.log(
+        "[DEBUG showApp] Setting nav-admin and nav-invoices to display: block"
+      );
       adminMenu.style.display = "block";
+      if (invoicesMenu) invoicesMenu.style.display = "block";
+      if (revenueMenu) revenueMenu.style.display = "block";
     } else {
-      console.log("[DEBUG showApp] Setting nav-admin to display: none");
+      console.log(
+        "[DEBUG showApp] Setting nav-admin and nav-invoices to display: none"
+      );
       adminMenu.style.display = "none";
+      if (invoicesMenu) invoicesMenu.style.display = "none";
+      if (revenueMenu) revenueMenu.style.display = "none";
     }
   }
 
@@ -142,6 +167,27 @@ class App {
         document.getElementById("app").innerHTML = renderLeave();
         initLeave();
         break;
+      case "invoices":
+        if (this.user.isAdmin) {
+          document.getElementById("app").innerHTML = '<div id="content"></div>';
+          if (typeof invoiceManager !== "undefined") {
+            invoiceManager.init();
+          } else {
+            document.getElementById("app").innerHTML =
+              '<div class="alert alert-danger">Invoice module failed to load.</div>';
+          }
+        } else {
+          alert("Access denied");
+        }
+        break;
+      case "revenue":
+        if (this.user.isAdmin) {
+          document.getElementById("app").innerHTML = renderRevenue();
+          initRevenue();
+        } else {
+          alert("Access denied");
+        }
+        break;
       case "admin":
         if (this.user.isAdmin) {
           if (!window.adminModuleReady) {
@@ -154,7 +200,7 @@ class App {
                 clearInterval(waitForAdmin);
                 document.getElementById("app").innerHTML = renderAdmin();
                 setTimeout(() => {
-                  if (typeof initAdmin === 'function') {
+                  if (typeof initAdmin === "function") {
                     console.log("[ADMIN] Calling initAdmin()");
                     initAdmin();
                   }
@@ -162,7 +208,8 @@ class App {
               } else if (retries > 50) {
                 clearInterval(waitForAdmin);
                 console.error("[ADMIN] Timeout waiting for admin module");
-                document.getElementById("app").innerHTML = '<div class="alert alert-danger">Admin module failed to load. Please refresh the page.</div>';
+                document.getElementById("app").innerHTML =
+                  '<div class="alert alert-danger">Admin module failed to load. Please refresh the page.</div>';
               }
             }, 100);
             return;
@@ -170,7 +217,7 @@ class App {
           document.getElementById("app").innerHTML = renderAdmin();
           // Call initAdmin directly - it's now a global function
           setTimeout(() => {
-            if (typeof initAdmin === 'function') {
+            if (typeof initAdmin === "function") {
               console.log("[ADMIN] Calling initAdmin()");
               initAdmin();
             } else {
@@ -199,6 +246,61 @@ class App {
       this.showLogin();
     });
   }
+
+  showMessage(message, type = "info") {
+    showToast(message, type);
+  }
+}
+
+// Global toast notification function
+function showToast(message, type = "info") {
+  const toastContainer =
+    document.getElementById("toastContainer") || createToastContainer();
+
+  const toastId = "toast-" + Date.now();
+  const iconMap = {
+    success: "check-circle",
+    error: "exclamation-circle",
+    warning: "exclamation-triangle",
+    info: "info-circle",
+  };
+  const bgMap = {
+    success: "bg-success",
+    error: "bg-danger",
+    warning: "bg-warning",
+    info: "bg-info",
+  };
+
+  const toastHtml = `
+    <div class="toast align-items-center text-white ${
+      bgMap[type] || "bg-info"
+    } border-0" role="alert" id="${toastId}">
+      <div class="d-flex">
+        <div class="toast-body">
+          <i class="bi bi-${iconMap[type] || "info-circle"}"></i> ${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  `;
+
+  toastContainer.insertAdjacentHTML("beforeend", toastHtml);
+
+  const toastElement = document.getElementById(toastId);
+  const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+  toast.show();
+
+  toastElement.addEventListener("hidden.bs.toast", () => {
+    toastElement.remove();
+  });
+}
+
+function createToastContainer() {
+  const container = document.createElement("div");
+  container.id = "toastContainer";
+  container.className = "toast-container position-fixed bottom-0 end-0 p-3";
+  document.body.appendChild(container);
+  return container;
 }
 
 // Global confirmation modal system

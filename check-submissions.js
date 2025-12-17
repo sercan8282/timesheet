@@ -1,5 +1,5 @@
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./database.sqlite');
+const sqlite3 = require("sqlite3").verbose();
+const db = new sqlite3.Database("./database.sqlite");
 
 const sql = `SELECT id, user_id, user_name, timesheet_ids, status, submission_date FROM submissions ORDER BY submission_date DESC LIMIT 10`;
 

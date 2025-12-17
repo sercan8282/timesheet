@@ -14,7 +14,10 @@ body {
 }
 
 .navbar-dark {
-  background-color: var(--branding-primary-color, var(--primary-color)) !important;
+  background-color: var(
+    --branding-primary-color,
+    var(--primary-color)
+  ) !important;
 }
 
 .btn-primary {
@@ -143,7 +146,10 @@ body {
 }
 
 .bg-primary {
-  background-color: var(--branding-primary-color, var(--primary-color)) !important;
+  background-color: var(
+    --branding-primary-color,
+    var(--primary-color)
+  ) !important;
 }
 
 .border-primary {

@@ -390,11 +390,11 @@ router.delete("/apk-alerts/:vehicleId", async (req, res) => {
       "DELETE FROM vehicle_apk_alerts WHERE vehicle_id = ?",
       [req.params.vehicleId]
     );
-    
+
     if (result.changes === 0) {
       return res.status(404).json({ error: "APK alert niet gevonden" });
     }
-    
+
     res.json({ message: "APK alert verwijderd" });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -448,7 +448,11 @@ router.post("/apk-alerts/send", async (req, res) => {
             scope: t.scope,
           });
         } catch (err) {
-          errors.push({ vehicleId: v.id, license_plate: v.license_plate, error: err.message });
+          errors.push({
+            vehicleId: v.id,
+            license_plate: v.license_plate,
+            error: err.message,
+          });
         }
       }
     }

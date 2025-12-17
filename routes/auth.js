@@ -37,11 +37,9 @@ router.post(
 
       // Blocked users cannot login
       if (user.is_blocked === 1) {
-        return res
-          .status(403)
-          .json({
-            error: "Your account has been blocked. Contact administrator.",
-          });
+        return res.status(403).json({
+          error: "Your account has been blocked. Contact administrator.",
+        });
       }
 
       // Verify password
@@ -73,11 +71,12 @@ router.post(
           id: user.id,
           username: user.username,
           fullName: user.full_name,
-          isAdmin: user.role === 'admin',
+          isAdmin: user.role === "admin",
           role: user.role || "user",
           companyId: primaryCompany?.id || user.company_id,
           companyName: primaryCompany?.name || user.company_name,
-          companyPauseTime: primaryCompany?.pause_time || user.company_pause_time,
+          companyPauseTime:
+            primaryCompany?.pause_time || user.company_pause_time,
           userCompanies: userCompanies.map((c) => ({
             id: c.id,
             name: c.name,
@@ -95,13 +94,15 @@ router.post(
           id: user.id,
           username: user.username,
           fullName: user.full_name,
-          isAdmin: user.role === 'admin',
+          isAdmin: user.role === "admin",
           role: user.role || "user",
           companyId: primaryCompany?.id || user.company_id,
           companyName: primaryCompany?.name || user.company_name,
-          companyPauseTime: primaryCompany?.pause_time || user.company_pause_time,
+          companyPauseTime:
+            primaryCompany?.pause_time || user.company_pause_time,
           company_name: primaryCompany?.name || user.company_name,
-          company_pause_time: primaryCompany?.pause_time || user.company_pause_time,
+          company_pause_time:
+            primaryCompany?.pause_time || user.company_pause_time,
           userCompanies: userCompanies.map((c) => ({
             id: c.id,
             name: c.name,

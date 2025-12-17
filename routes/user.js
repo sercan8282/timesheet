@@ -40,7 +40,7 @@ router.get("/me", async (req, res) => {
       id: user.id,
       username: user.username,
       fullName: user.full_name,
-      isAdmin: user.role === 'admin',
+      isAdmin: user.role === "admin",
       role: user.role || "user",
       createdAt: user.created_at,
       companyId: user.company_id,
@@ -169,7 +169,8 @@ router.post("/timesheets/details", async (req, res) => {
     // Enhance with user_name from users table (fallback to token fullName/username)
     const enrichedTimesheets = timesheets.map((ts) => ({
       ...ts,
-      user_name: req.user.fullName || req.user.username || ts.user_name || "Unknown",
+      user_name:
+        req.user.fullName || req.user.username || ts.user_name || "Unknown",
     }));
 
     res.json(enrichedTimesheets);
@@ -213,9 +214,7 @@ router.post(
       // Default pause based on company if not provided
       if (!pauseTime) {
         pauseTime =
-          req.user.company_pause_time ||
-          req.user.companyPauseTime ||
-          "00:30";
+          req.user.company_pause_time || req.user.companyPauseTime || "00:30";
       }
 
       try {
@@ -263,7 +262,9 @@ router.post(
         });
       } catch (calcError) {
         console.error("Error during calculation or insert:", calcError);
-        res.status(500).json({ error: "Failed to create timesheet: " + calcError.message });
+        res
+          .status(500)
+          .json({ error: "Failed to create timesheet: " + calcError.message });
       }
     } catch (error) {
       console.error("Error creating timesheet:", error);
@@ -324,9 +325,7 @@ router.put(
       // Default pause based on company if still missing
       if (!updatedPauseTime) {
         updatedPauseTime =
-          req.user.company_pause_time ||
-          req.user.companyPauseTime ||
-          "00:30";
+          req.user.company_pause_time || req.user.companyPauseTime || "00:30";
       }
       const updatedRitnumber =
         ritnumber !== undefined ? ritnumber : timesheet.ritnumber || "";
@@ -568,8 +567,12 @@ router.put(
     body("endDate").isISO8601().withMessage("Valid end date is required"),
     body("startTime").optional().isString(),
     body("endTime").optional().isString(),
-    body("hours").isFloat({ min: 0.25 }).withMessage("Hours must be at least 0.25"),
-    body("balanceType").isIn(["vacation", "overtime"]).withMessage("balanceType must be vacation or overtime"),
+    body("hours")
+      .isFloat({ min: 0.25 })
+      .withMessage("Hours must be at least 0.25"),
+    body("balanceType")
+      .isIn(["vacation", "overtime"])
+      .withMessage("balanceType must be vacation or overtime"),
     body("reason").optional().isString(),
   ],
   async (req, res) => {
@@ -580,7 +583,15 @@ router.put(
       }
 
       const { id } = req.params;
-      const { startDate, endDate, startTime, endTime, hours, balanceType, reason } = req.body;
+      const {
+        startDate,
+        endDate,
+        startTime,
+        endTime,
+        hours,
+        balanceType,
+        reason,
+      } = req.body;
 
       const existingRequest = await db.get(
         "SELECT * FROM leave_requests WHERE id = ? AND user_id = ?",
@@ -597,18 +608,26 @@ router.put(
 
       // Check if balance type changed
       if (balanceType !== existingRequest.balance_type) {
-        return res.status(400).json({ error: "Cannot change balance type. Delete and create a new request instead." });
+        return res
+          .status(400)
+          .json({
+            error:
+              "Cannot change balance type. Delete and create a new request instead.",
+          });
       }
 
       const balance = await ensureLeaveBalance(req.user.id);
-      const available = balanceType === "vacation" 
-        ? parseFloat(balance.vacation_hours || 0) 
-        : parseFloat(balance.overtime_hours || 0);
+      const available =
+        balanceType === "vacation"
+          ? parseFloat(balance.vacation_hours || 0)
+          : parseFloat(balance.overtime_hours || 0);
 
       // If increasing hours, check availability
       if (hoursDelta > 0 && hoursDelta > available) {
         return res.status(400).json({
-          error: `Insufficient ${balanceType} hours. Available: ${available.toFixed(2)}`,
+          error: `Insufficient ${balanceType} hours. Available: ${available.toFixed(
+            2
+          )}`,
         });
       }
 
@@ -619,12 +638,21 @@ router.put(
         `UPDATE leave_requests 
          SET start_date = ?, end_date = ?, start_time = ?, end_time = ?, hours_requested = ?, reason = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
-        [startDate, endDate, startTime || null, endTime || null, hoursRequested, reason || null, id]
+        [
+          startDate,
+          endDate,
+          startTime || null,
+          endTime || null,
+          hoursRequested,
+          reason || null,
+          id,
+        ]
       );
 
       // Adjust balance if hours changed
       if (hoursDelta !== 0) {
-        const column = balanceType === "vacation" ? "vacation_hours" : "overtime_hours";
+        const column =
+          balanceType === "vacation" ? "vacation_hours" : "overtime_hours";
         await db.run(
           `UPDATE leave_balances SET ${column} = ${column} - ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
           [hoursDelta, req.user.id]
@@ -658,7 +686,8 @@ router.delete("/leave/requests/:id", async (req, res) => {
     await db.run("BEGIN TRANSACTION");
 
     // Refund hours
-    const column = request.balance_type === "vacation" ? "vacation_hours" : "overtime_hours";
+    const column =
+      request.balance_type === "vacation" ? "vacation_hours" : "overtime_hours";
     await db.run(
       `UPDATE leave_balances SET ${column} = ${column} + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?`,
       [request.hours_requested, req.user.id]
