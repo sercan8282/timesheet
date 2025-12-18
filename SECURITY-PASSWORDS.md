@@ -9,17 +9,20 @@ Wachtwoorden worden **NOOIT in plain text** opgeslagen. Het systeem gebruikt **b
 #### Technische Details:
 
 **Hashing Algoritme:** `bcryptjs`
+
 - **Salt Rounds:** 10 (standaard, kan verhoogd worden voor extra beveiliging)
 - **One-way hashing:** Het is cryptografisch onmogelijk om het originele wachtwoord terug te halen
 - **Salt:** Elke hash heeft een unieke salt, beschermt tegen rainbow table attacks
 
 **Voorbeeld:**
+
 ```javascript
 // Plain text wachtwoord
 const password = "Admin@123456";
 
 // Opgeslagen in database (gehashed met bcrypt)
-const hashedPassword = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
+const hashedPassword =
+  "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy";
 ```
 
 ### Waar worden wachtwoorden opgeslagen?
@@ -29,6 +32,7 @@ const hashedPassword = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17
 **Kolom:** `password` (TEXT)
 
 **Schema:**
+
 ```sql
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,6 +45,7 @@ CREATE TABLE users (
 ```
 
 **Fysieke Locatie:**
+
 - Development: `c:\Users\Administrator\Documents\GitHub\timesheet\database.sqlite`
 - Production: `<project-root>/database.sqlite`
 
@@ -56,13 +61,14 @@ const hashedPassword = await bcrypt.hash(password, 10);
 
 // Opslaan in database
 await db.run(
-  `INSERT INTO users (username, password, full_name, role, ...) 
+  `INSERT INTO users (username, password, full_name, role, ...)
    VALUES (?, ?, ?, ?, ...)`,
   [username, hashedPassword, fullName, role, ...]
 );
 ```
 
 **Salt rounds betekenis:**
+
 - `10` = 2^10 = 1024 iterations
 - Elke round verdubbelt de berekeningstijd
 - Balans tussen beveiliging en performance
@@ -87,6 +93,7 @@ if (!isValidPassword) {
 ```
 
 **Hoe werkt `bcrypt.compare()`:**
+
 1. Extraheert de salt uit de opgeslagen hash
 2. Past dezelfde salt + rounds toe op input wachtwoord
 3. Vergelijkt resultaat met opgeslagen hash
@@ -134,23 +141,28 @@ if (password !== undefined) {
 ### ✅ Wat is al goed:
 
 1. **Bcrypt Hashing**
+
    - Industry-standard algoritme
    - Automatische salt generatie
    - Configureerbare cost factor (salt rounds)
 
 2. **No Plain Text**
+
    - Wachtwoorden worden NOOIT onversleuteld opgeslagen
    - Zelfs in logs/console verschijnen geen wachtwoorden
 
 3. **One-Way Encryption**
+
    - Onmogelijk om origineel wachtwoord terug te halen
    - Zelfs database administrator kan wachtwoorden niet zien
 
 4. **JWT Tokens**
+
    - Wachtwoorden worden niet in tokens opgeslagen
    - Tokens vervallen na 24 uur (configureerbaar)
 
 5. **SQL Injection Bescherming**
+
    - Prepared statements gebruikt overal
    - Parameters ge-escaped door sqlite3 library
 
@@ -160,6 +172,7 @@ if (password !== undefined) {
 ## ⚠️ Security Aanbevelingen
 
 ### Huidige Configuratie:
+
 ```javascript
 // Salt rounds = 10 (1024 iterations)
 const hashedPassword = await bcrypt.hash(password, 10);
@@ -168,6 +181,7 @@ const hashedPassword = await bcrypt.hash(password, 10);
 ### Mogelijke Verbeteringen:
 
 #### 1. Verhoog Salt Rounds (Optioneel)
+
 Voor extra beveiliging (langzamer maar veiliger):
 
 ```javascript
@@ -177,6 +191,7 @@ const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 ```
 
 **Trade-off:**
+
 - Rounds 10: ~100ms per hash
 - Rounds 12: ~400ms per hash
 - Rounds 14: ~1600ms per hash
@@ -225,6 +240,7 @@ app.use("/api/", limiter);
 ```
 
 **Beschermt tegen:**
+
 - Brute force attacks
 - Dictionary attacks
 - Automated login attempts
@@ -248,6 +264,7 @@ CREATE TABLE password_history (
 Voor extra beveiliging: TOTP (Time-based One-Time Password)
 
 Zou vereisen:
+
 - QR code generatie
 - OTP verificatie bij login
 - Backup codes
@@ -257,10 +274,12 @@ Zou vereisen:
 ### Wie heeft toegang tot de database?
 
 **Fysieke toegang:**
+
 - Server administrator (heeft toegang tot `database.sqlite` bestand)
 - Backup systemen
 
 **Applicatie toegang:**
+
 - Node.js proces (server.js)
 - SQLite3 library
 
@@ -269,10 +288,13 @@ Zou vereisen:
 **Technisch: Ja, maar...**
 
 1. **Hashes kunnen worden gekopieerd:**
+
    ```bash
    sqlite3 database.sqlite "SELECT username, password FROM users"
    ```
+
    Output:
+
    ```
    admin|$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
    ```
@@ -287,12 +309,14 @@ Zou vereisen:
 ### Best Practice: Bescherm Database Toegang
 
 1. **File Permissions:**
+
    ```bash
    # Linux/Mac - alleen owner kan lezen/schrijven
    chmod 600 database.sqlite
    ```
 
 2. **Backup Encryptie:**
+
    ```bash
    # Encrypt database backups
    gpg --encrypt database.sqlite
@@ -304,37 +328,41 @@ Zou vereisen:
 
 ## 📊 Vergelijking met Andere Systemen
 
-| Aspect | Dit Systeem | Alternatief (Slecht) | Alternatief (Goed) |
-|--------|-------------|---------------------|-------------------|
-| **Storage** | Bcrypt hash | Plain text ❌ | Argon2 hash ✅ |
-| **Salt** | Auto (uniek) | Geen ❌ | Auto (uniek) ✅ |
-| **Algoritme** | Bcrypt | MD5/SHA1 ❌ | Argon2/Scrypt ✅ |
-| **Cost Factor** | 10 rounds | Fixed ❌ | Configurabel ✅ |
-| **Reversible** | Nee ✅ | Ja (encryption) ❌ | Nee ✅ |
+| Aspect          | Dit Systeem  | Alternatief (Slecht) | Alternatief (Goed) |
+| --------------- | ------------ | -------------------- | ------------------ |
+| **Storage**     | Bcrypt hash  | Plain text ❌        | Argon2 hash ✅     |
+| **Salt**        | Auto (uniek) | Geen ❌              | Auto (uniek) ✅    |
+| **Algoritme**   | Bcrypt       | MD5/SHA1 ❌          | Argon2/Scrypt ✅   |
+| **Cost Factor** | 10 rounds    | Fixed ❌             | Configurabel ✅    |
+| **Reversible**  | Nee ✅       | Ja (encryption) ❌   | Nee ✅             |
 
 **Conclusie:** Dit systeem gebruikt industry-standard beveiliging. Bcrypt is een van de meest vertrouwde wachtwoord hashing algoritmes.
 
 ## 🚨 Wat NIET te doen
 
 ### ❌ Fout 1: Plain Text Logging
+
 ```javascript
 // NOOIT doen!
 console.log("User password:", password);
 ```
 
 ### ❌ Fout 2: Wachtwoord in URL
+
 ```javascript
 // NOOIT doen!
 fetch(`/api/login?username=john&password=secret123`);
 ```
 
 ### ❌ Fout 3: Wachtwoord in JWT Token
+
 ```javascript
 // NOOIT doen!
 const token = jwt.sign({ username, password }, JWT_SECRET);
 ```
 
 ### ❌ Fout 4: Eigen Encryption Algoritme
+
 ```javascript
 // NOOIT doen! Gebruik bewezen libraries
 const hash = btoa(password); // Base64 is GEEN encryptie!
@@ -366,6 +394,7 @@ const hash = btoa(password); // Base64 is GEEN encryptie!
 6. ✅ **Geen plain text** - Nergens in het systeem
 
 **Zelfs als een aanvaller:**
+
 - ✅ Toegang krijgt tot de database
 - ✅ Alle hashes kopieert
 - ✅ Moderne hardware gebruikt
@@ -377,6 +406,7 @@ const hash = btoa(password); // Base64 is GEEN encryptie!
 ---
 
 **Vragen? Check de broncode:**
+
 - Wachtwoord hashing: `routes/admin.js`, `routes/user.js`
 - Login verificatie: `routes/auth.js`
 - Database schema: `config/database.js`

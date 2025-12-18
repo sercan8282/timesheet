@@ -5,28 +5,34 @@ Voor gedetailleerde instructies, zie: **DEPLOYMENT-GUIDE.md**
 ## TL;DR - Nieuwe Installatie in 5 Stappen
 
 ### 1️⃣ Database Resetten
+
 ```bash
 npm run reset-db
 # Type 'JA' om te bevestigen
 ```
 
 ### 2️⃣ Dependencies Installeren
+
 ```bash
 npm install
 ```
 
 ### 3️⃣ Environment Variables
+
 Kopieer `.env.example` naar `.env` en pas aan:
+
 ```bash
 cp .env.example .env
 ```
 
 **Belangrijkste wijzigingen:**
+
 - `ADMIN_USERNAME` - Gewenste admin gebruikersnaam
 - `ADMIN_PASSWORD` - Gewenst admin wachtwoord (VERANDER!)
 - `JWT_SECRET` - Random string (genereer met: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`)
 
 ### 4️⃣ Database Initialiseren
+
 ```bash
 # Start server eerst (maakt database aan)
 npm start
@@ -38,6 +44,7 @@ npm run init-db
 ```
 
 ### 5️⃣ Systeem Starten
+
 ```bash
 npm start
 ```
@@ -48,11 +55,11 @@ Login op `http://localhost:3000` met je admin credentials!
 
 ## Beschikbare Scripts
 
-| Script | Beschrijving |
-|--------|-------------|
-| `npm start` | Start de server (productie) |
-| `npm run dev` | Start met nodemon (development) |
-| `npm run init-db` | Maakt admin account aan |
+| Script             | Beschrijving                     |
+| ------------------ | -------------------------------- |
+| `npm start`        | Start de server (productie)      |
+| `npm run dev`      | Start met nodemon (development)  |
+| `npm run init-db`  | Maakt admin account aan          |
 | `npm run reset-db` | Reset database (WIST ALLE DATA!) |
 
 ## Eerste Login
@@ -60,6 +67,7 @@ Login op `http://localhost:3000` met je admin credentials!
 **URL:** `http://localhost:3000`
 
 **Default Credentials:**
+
 - Username: `admin`
 - Password: `Admin@123456`
 

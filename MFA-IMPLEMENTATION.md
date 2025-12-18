@@ -12,17 +12,20 @@ This application now includes enterprise-grade Two-Factor Authentication (MFA) u
 ## Features
 
 ### 1. TOTP (Time-based One-Time Password)
+
 - Industry-standard 30-second time window
 - 6-digit codes compatible with all major authenticator apps
 - 2-step verification window for clock drift tolerance
 
 ### 2. Soft Enforcement Strategy
+
 - **New users**: Prompted after first login, can skip 3 times before MFA becomes mandatory
 - **Existing users**: Prompted on next login after MFA feature is deployed, same 3-skip limit applies
 - **No breaking changes**: Users without MFA continue working until skip limit is reached
 - **Required after 3 skips**: Users must set up MFA on 4th attempt to continue
 
 ### 3. Backup Codes
+
 - 8 unique backup codes generated during MFA setup
 - Each code can be used once if authenticator is unavailable
 - Codes are displayed after successful MFA setup
@@ -47,9 +50,11 @@ These columns are automatically added during server startup if they don't exist.
 All MFA endpoints require authentication (JWT token in Authorization header).
 
 ### POST /api/mfa/setup
+
 Generate secret and QR code for MFA enrollment.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -59,9 +64,11 @@ Generate secret and QR code for MFA enrollment.
 ```
 
 ### POST /api/mfa/verify
+
 Verify TOTP token and enable MFA.
 
 **Request:**
+
 ```json
 {
   "token": "123456"
@@ -69,6 +76,7 @@ Verify TOTP token and enable MFA.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -82,9 +90,11 @@ Verify TOTP token and enable MFA.
 ```
 
 ### POST /api/mfa/disable
+
 Disable MFA (requires password + current MFA token).
 
 **Request:**
+
 ```json
 {
   "password": "user_password",
@@ -93,9 +103,11 @@ Disable MFA (requires password + current MFA token).
 ```
 
 ### POST /api/mfa/skip
+
 Increment skip counter (max 3 skips).
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -106,9 +118,11 @@ Increment skip counter (max 3 skips).
 ```
 
 ### GET /api/mfa/status
+
 Get current MFA status for logged-in user.
 
 **Response:**
+
 ```json
 {
   "mfaEnabled": true,
@@ -120,9 +134,11 @@ Get current MFA status for logged-in user.
 ```
 
 ### POST /api/mfa/verify-backup
+
 Verify backup code during login.
 
 **Request:**
+
 ```json
 {
   "backupCode": "A1B2C3D4"
@@ -130,9 +146,11 @@ Verify backup code during login.
 ```
 
 ### GET /api/user/backup-codes
+
 Get backup codes for MFA-enabled users.
 
 **Response:**
+
 ```json
 {
   "codes": [
@@ -173,23 +191,27 @@ Get backup codes for MFA-enabled users.
 ### Login Modal (`/js/mfa.js`)
 
 **MFA Setup Mode:**
+
 - Display QR code
 - Show secret code for manual entry
 - Verification token input
 - Display 8 backup codes after successful setup
 
 **MFA Login Mode:**
+
 - 6-digit code input
 - Backup code option
 - Verification button
 
 **Backup Code Mode:**
+
 - 8-character backup code input
 - Back to code entry option
 
 ### MFA Settings Page (`/js/mfa-settings.js`)
 
 Accessible from user dashboard, allows users to:
+
 - View MFA status
 - Enable/disable MFA
 - View backup codes
@@ -215,21 +237,25 @@ Both are already installed via npm.
 ## Security Considerations
 
 1. **Secret Key Management:**
+
    - Secrets are stored in plaintext in the database
    - In production, consider encrypting sensitive data
    - Use proper database access controls
 
 2. **Backup Codes:**
+
    - Should be downloaded/saved by users immediately after setup
    - Codes are marked as used when consumed
    - Create new codes by disabling and re-enabling MFA
 
 3. **Time Sync:**
+
    - TOTP requires accurate system time on both server and client
    - The implementation allows ±2 time windows for tolerance
    - Ensure NTP is configured properly on production servers
 
 4. **Clock Drift:**
+
    - The implementation uses a 2-step verification window
    - This allows codes from the current, previous, and next time window
    - Users should have accurate time on their authenticator device
@@ -246,6 +272,7 @@ Both are already installed via npm.
 ## Testing
 
 ### New User Flow
+
 1. Create new account (via admin panel or registration)
 2. Log in
 3. MFA prompt should appear with QR code
@@ -256,6 +283,7 @@ Both are already installed via npm.
 8. Should be prompted for MFA token
 
 ### Skip Limit Flow
+
 1. Log in as user without MFA enabled
 2. Skip MFA setup (should show "2 skips remaining")
 3. Skip again (should show "1 skip remaining")
@@ -264,6 +292,7 @@ Both are already installed via npm.
 6. Should be forced to set up MFA (no skip button)
 
 ### Backup Code Recovery
+
 1. Log in with enabled MFA
 2. Enter wrong TOTP code (should fail)
 3. Click "Use backup code instead"
@@ -272,6 +301,7 @@ Both are already installed via npm.
 6. Backup code should be consumed (no longer available)
 
 ### Backward Compatibility
+
 1. Existing users without MFA should log in normally
 2. Should see MFA setup prompt with skip option
 3. After 3 skips, MFA becomes mandatory
@@ -284,27 +314,27 @@ Both are already installed via npm.
 To reset MFA for a user (if locked out):
 
 ```sql
-UPDATE users 
-SET mfa_enabled = 0, 
-    mfa_secret = NULL, 
-    mfa_backup_codes = NULL, 
-    mfa_skip_count = 0 
+UPDATE users
+SET mfa_enabled = 0,
+    mfa_secret = NULL,
+    mfa_backup_codes = NULL,
+    mfa_skip_count = 0
 WHERE id = ?;
 ```
 
 ### Viewing MFA Status
 
 ```sql
-SELECT id, username, full_name, mfa_enabled, mfa_skip_count 
-FROM users 
+SELECT id, username, full_name, mfa_enabled, mfa_skip_count
+FROM users
 WHERE mfa_enabled = 1;
 ```
 
 ### Exporting User MFA Configuration
 
 ```sql
-SELECT id, username, mfa_enabled, mfa_skip_count, mfa_prompted_at 
-FROM users 
+SELECT id, username, mfa_enabled, mfa_skip_count, mfa_prompted_at
+FROM users
 ORDER BY mfa_enabled DESC;
 ```
 
@@ -315,6 +345,7 @@ ORDER BY mfa_enabled DESC;
 **Cause:** Clock not synchronized between server and authenticator device
 
 **Solution:**
+
 - Ensure system time is correct on both server and client device
 - Sync phone/device time with NTP server
 - The 2-step verification window should account for minor discrepancies
@@ -322,6 +353,7 @@ ORDER BY mfa_enabled DESC;
 ### Issue: User locked out after losing authenticator device
 
 **Solution:**
+
 - Use backup codes if available
 - If no backup codes:
   1. Contact administrator
@@ -331,6 +363,7 @@ ORDER BY mfa_enabled DESC;
 ### Issue: QR code not scanning
 
 **Solution:**
+
 - Ensure QR code image is visible and clear
 - Use manual entry option (secret code)
 - Verify authenticator app supports TOTP standard
@@ -339,6 +372,7 @@ ORDER BY mfa_enabled DESC;
 ### Issue: Backup codes not working
 
 **Solution:**
+
 - Ensure code is typed correctly (case-insensitive)
 - Verify code hasn't been used already
 - Generate new backup codes by:
@@ -357,12 +391,14 @@ ORDER BY mfa_enabled DESC;
 ## Best Practices
 
 1. **For Users:**
+
    - Save backup codes in secure location immediately after setup
    - Don't share QR code or secret code with anyone
    - Keep authenticator device secure
    - Use official authenticator apps only
 
 2. **For Administrators:**
+
    - Require MFA for admin accounts immediately
    - Document MFA reset procedure
    - Monitor failed login attempts
@@ -379,11 +415,13 @@ ORDER BY mfa_enabled DESC;
 ## Compliance
 
 This MFA implementation supports:
+
 - **RFC 6238** - TOTP: Time-Based One-Time Password Algorithm
 - **RFC 4648** - Base32 encoding
 - **NIST SP 800-63B** - Authentication and Lifecycle Management
 
 The implementation is suitable for:
+
 - SOC 2 Type II compliance
 - GDPR requirements (user data protection)
 - ISO 27001 information security standards

@@ -60,7 +60,7 @@ router.post(
         if (!mfaToken) {
           return res.status(200).json({
             mfaRequired: true,
-            message: "MFA token required"
+            message: "MFA token required",
           });
         }
 
@@ -80,22 +80,24 @@ router.post(
 
             // Remove used backup code
             backupCodes.splice(codeIndex, 1);
-            await db.run(
-              'UPDATE users SET mfa_backup_codes = ? WHERE id = ?',
-              [JSON.stringify(backupCodes), user.id]
-            );
+            await db.run("UPDATE users SET mfa_backup_codes = ? WHERE id = ?", [
+              JSON.stringify(backupCodes),
+              user.id,
+            ]);
 
             // Backup code verified, continue with login
           } catch (error) {
-            return res.status(500).json({ error: "Failed to verify backup code" });
+            return res
+              .status(500)
+              .json({ error: "Failed to verify backup code" });
           }
         } else {
           // Verify TOTP token
           const verified = speakeasy.totp.verify({
             secret: user.mfa_secret,
-            encoding: 'base32',
+            encoding: "base32",
             token: mfaToken,
-            window: 2
+            window: 2,
           });
 
           if (!verified) {

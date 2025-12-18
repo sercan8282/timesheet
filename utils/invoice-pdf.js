@@ -358,12 +358,10 @@ async function generateInvoicePDF(invoiceId) {
           ? `${parseFloat(item.item_rate).toFixed(2)}%`
           : `€ ${parseFloat(item.item_rate).toFixed(2)}`;
 
-        doc.text(
-          rateLabel,
-          tableLeft + tableWidth * col5,
-          yPosition,
-          { width: tableWidth * 0.11, align: "right" }
-        );
+        doc.text(rateLabel, tableLeft + tableWidth * col5, yPosition, {
+          width: tableWidth * 0.11,
+          align: "right",
+        });
       }
 
       doc.text(

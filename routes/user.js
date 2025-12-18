@@ -236,8 +236,16 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      let { date, startTime, endTime, startKm, endKm, pauseTime, ritnumber, companyId } =
-        req.body;
+      let {
+        date,
+        startTime,
+        endTime,
+        startKm,
+        endKm,
+        pauseTime,
+        ritnumber,
+        companyId,
+      } = req.body;
 
       // Default pause based on company if not provided
       if (!pauseTime) {

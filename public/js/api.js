@@ -394,8 +394,57 @@ class API {
     return this.request(`/admin/fleet/vehicles/${id}`);
   }
 
+  // UI Menu endpoints
+  async getUiMenu() {
+    return this.request("/ui/menu");
+  }
+
+  async getUiMenuForLocale(locale) {
+    return this.request(`/ui/menu?locale=${encodeURIComponent(locale)}`);
+  }
+
+  async updateUiMenu(items) {
+    return this.request("/admin/ui/menu", {
+      method: "PUT",
+      body: JSON.stringify(items),
+    });
+  }
+
   async getFleetTypes() {
     return this.request(`/admin/fleet/types`);
+  }
+
+  // Translations
+  async getTranslations(locale, namespace) {
+    const qs = [];
+    if (locale) qs.push(`locale=${encodeURIComponent(locale)}`);
+    if (namespace) qs.push(`namespace=${encodeURIComponent(namespace)}`);
+    const q = qs.length ? `?${qs.join("&")}` : "";
+    return this.request(`/ui/i18n${q}`);
+  }
+
+  async updateTranslations(items) {
+    return this.request("/admin/i18n", {
+      method: "PUT",
+      body: JSON.stringify(items),
+    });
+  }
+
+  async getTranslationKeys(namespace) {
+    return this.request(
+      `/admin/i18n/keys?namespace=${encodeURIComponent(namespace)}`
+    );
+  }
+
+  async translateText({ text, target, source, provider }) {
+    return this.request(`/translate`, {
+      method: "POST",
+      body: JSON.stringify({ text, target, source, provider }),
+    });
+  }
+
+  async getTranslationImports(limit = 50) {
+    return this.request(`/admin/i18n/imports?limit=${limit}`);
   }
 
   async createFleetVehicle(data) {

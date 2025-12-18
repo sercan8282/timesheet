@@ -1,22 +1,28 @@
 async function renderLogin() {
-    // Fetch branding settings
-    let branding = { company_name: 'Timesheet System', logo_path: null, primary_color: '#0066CC', tagline: 'Please sign in to continue' };
-    try {
-        branding = await api.getPublicBranding();
-        if (!branding.tagline) branding.tagline = 'Please sign in to continue';
-    } catch (error) {
-        console.log('Using default branding');
-    }
+  // Fetch branding settings
+  let branding = {
+    company_name: "Timesheet System",
+    logo_path: null,
+    primary_color: "#0066CC",
+    tagline: "Please sign in to continue",
+  };
+  try {
+    branding = await api.getPublicBranding();
+    if (!branding.tagline) branding.tagline = "Please sign in to continue";
+  } catch (error) {
+    console.log("Using default branding");
+  }
 
-    return `
+  return `
         <div class="login-container">
             <div class="login-card card">
                 <div class="login-header">
-                    ${branding.logo_path ? 
-                        `<img src="${branding.logo_path}" alt="${branding.company_name}" style="max-height: 80px; max-width: 200px; margin-bottom: 15px;">` :
-                        `<h2><i class="bi bi-calendar-check"></i></h2>`
+                    ${
+                      branding.logo_path
+                        ? `<img src="${branding.logo_path}" alt="${branding.company_name}" style="max-height: 80px; max-width: 200px; margin-bottom: 15px;">`
+                        : `<h2><i class="bi bi-calendar-check"></i></h2>`
                     }
-                    <h4>${branding.company_name || 'Timesheet System'}</h4>
+                    <h4>${branding.company_name || "Timesheet System"}</h4>
                     <p class="mb-0">${branding.tagline}</p>
                 </div>
                 <div class="login-body">
@@ -41,57 +47,57 @@ async function renderLogin() {
 }
 
 function initLogin() {
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
-        const alertDiv = document.getElementById('loginAlert');
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const alertDiv = document.getElementById("loginAlert");
 
-        try {
-            const response = await api.login(username, password);
-            
-            // Check if MFA token is required
-            if (response.mfaRequired) {
-                showMFAModal({ 
-                    loginMode: true, 
-                    username: username, 
-                    password: password 
-                });
-                return;
-            }
-            
-            // Successful login
-            api.setToken(response.token);
-            localStorage.setItem('user', JSON.stringify(response.user));
-            
-            // Check if MFA setup prompt needed
-                if (response.mfaPromptRequired) {
-                    showMFAModal({ 
-                        setupMode: true, 
-                        required: false
-                    });
-            } else if (response.mfaSetupRequired) {
-                showMFAModal({ 
-                    setupMode: true, 
-                    required: true 
-                });
-            } else {
-                window.location.reload();
-            }
-        } catch (error) {
-            alertDiv.innerHTML = `
+    try {
+      const response = await api.login(username, password);
+
+      // Check if MFA token is required
+      if (response.mfaRequired) {
+        showMFAModal({
+          loginMode: true,
+          username: username,
+          password: password,
+        });
+        return;
+      }
+
+      // Successful login
+      api.setToken(response.token);
+      localStorage.setItem("user", JSON.stringify(response.user));
+
+      // Check if MFA setup prompt needed
+      if (response.mfaPromptRequired) {
+        showMFAModal({
+          setupMode: true,
+          required: false,
+        });
+      } else if (response.mfaSetupRequired) {
+        showMFAModal({
+          setupMode: true,
+          required: true,
+        });
+      } else {
+        window.location.reload();
+      }
+    } catch (error) {
+      alertDiv.innerHTML = `
                 <div class="alert alert-danger alert-dismissible fade show">
                     <i class="bi bi-exclamation-triangle"></i> ${error.message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-        }
-    });
+    }
+  });
 }
 
 function renderChangePassword() {
-    return `
+  return `
         <div class="container mt-4">
             <div class="row justify-content-center">
                 <div class="col-md-6">
@@ -131,40 +137,42 @@ function renderChangePassword() {
 }
 
 function initChangePassword() {
-    document.getElementById('changePasswordForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
+  document
+    .getElementById("changePasswordForm")
+    .addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-        const currentPassword = document.getElementById('currentPassword').value;
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        const alertDiv = document.getElementById('changePasswordAlert');
+      const currentPassword = document.getElementById("currentPassword").value;
+      const newPassword = document.getElementById("newPassword").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+      const alertDiv = document.getElementById("changePasswordAlert");
 
-        if (newPassword !== confirmPassword) {
-            alertDiv.innerHTML = `
+      if (newPassword !== confirmPassword) {
+        alertDiv.innerHTML = `
                 <div class="alert alert-danger alert-dismissible fade show">
                     Passwords do not match
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-            return;
-        }
+        return;
+      }
 
-        try {
-            await api.changePassword(currentPassword, newPassword);
-            alertDiv.innerHTML = `
+      try {
+        await api.changePassword(currentPassword, newPassword);
+        alertDiv.innerHTML = `
                 <div class="alert alert-success alert-dismissible fade show">
                     Password changed successfully!
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-            document.getElementById('changePasswordForm').reset();
-        } catch (error) {
-            alertDiv.innerHTML = `
+        document.getElementById("changePasswordForm").reset();
+      } catch (error) {
+        alertDiv.innerHTML = `
                 <div class="alert alert-danger alert-dismissible fade show">
                     ${error.message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             `;
-        }
+      }
     });
 }

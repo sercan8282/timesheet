@@ -14,6 +14,8 @@ const companyRoutes = require("./routes/company");
 const vehicleRoutes = require("./routes/vehicles");
 const planningRoutes = require("./routes/planning");
 const mfaRoutes = require("./routes/mfa");
+const uiRoutes = require("./routes/ui");
+const translateRoutes = require("./routes/translate");
 const db = require("./config/database");
 
 const app = express();
@@ -205,10 +207,12 @@ app.use("/api/submission", submissionRoutes);
 app.use("/api/admin/companies", companyRoutes);
 app.use("/api/admin/vehicles", vehicleRoutes);
 app.use("/api/admin/planning", planningRoutes);
+app.use("/api/translate", translateRoutes);
 
 // Invoice routes
 const invoiceRoutes = require("./routes/invoice");
 app.use("/api/admin/invoices", invoiceRoutes);
+app.use("/api/ui", uiRoutes);
 
 // Public branding endpoint (no auth required)
 app.get("/api/branding", async (req, res) => {

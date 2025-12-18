@@ -1,6 +1,6 @@
 // MFA Management Page
 function renderMFASettings() {
-    return `
+  return `
         <div class="container mt-4">
             <div class="row justify-content-center">
                 <div class="col-md-8">
@@ -47,28 +47,28 @@ function renderMFASettings() {
 }
 
 async function initMFASettings() {
-    const alertDiv = document.getElementById('mfaSettingsAlert');
-    const statusContainer = document.getElementById('mfaStatusContainer');
-    const actionsContainer = document.getElementById('mfaActionsContainer');
-    const backupCodesSection = document.getElementById('backupCodesSection');
+  const alertDiv = document.getElementById("mfaSettingsAlert");
+  const statusContainer = document.getElementById("mfaStatusContainer");
+  const actionsContainer = document.getElementById("mfaActionsContainer");
+  const backupCodesSection = document.getElementById("backupCodesSection");
 
-    try {
-        // Fetch MFA status
-        const response = await fetch(`${API_BASE_URL}/mfa/status`, {
-            headers: {
-                'Authorization': `Bearer ${api.getToken()}`
-            }
-        });
+  try {
+    // Fetch MFA status
+    const response = await fetch(`${API_BASE_URL}/mfa/status`, {
+      headers: {
+        Authorization: `Bearer ${api.getToken()}`,
+      },
+    });
 
-        if (!response.ok) {
-            throw new Error('Failed to fetch MFA status');
-        }
+    if (!response.ok) {
+      throw new Error("Failed to fetch MFA status");
+    }
 
-        const status = await response.json();
+    const status = await response.json();
 
-        // Display status
-        if (status.mfaEnabled) {
-            statusContainer.innerHTML = `
+    // Display status
+    if (status.mfaEnabled) {
+      statusContainer.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <i class="bi bi-check-circle-fill text-success"></i>
@@ -81,16 +81,16 @@ async function initMFASettings() {
                 </div>
             `;
 
-            // Show backup codes section
-            backupCodesSection.style.display = 'block';
+      // Show backup codes section
+      backupCodesSection.style.display = "block";
 
-            actionsContainer.innerHTML = `
+      actionsContainer.innerHTML = `
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i> To re-setup your MFA, disable it first then set it up again.
                 </div>
             `;
-        } else {
-            statusContainer.innerHTML = `
+    } else {
+      statusContainer.innerHTML = `
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <i class="bi bi-exclamation-circle text-warning"></i>
@@ -103,48 +103,47 @@ async function initMFASettings() {
                 </div>
             `;
 
-            if (status.setupRequired) {
-                actionsContainer.innerHTML = `
+      if (status.setupRequired) {
+        actionsContainer.innerHTML = `
                     <div class="alert alert-danger">
                         <i class="bi bi-exclamation-triangle"></i> MFA setup is required. Please set up MFA to continue using your account.
                     </div>
                 `;
-            }
-        }
+      }
+    }
 
-        // Load backup codes if MFA enabled
-        if (status.mfaEnabled) {
-            const codesResponse = await fetch(`${API_BASE_URL}/user/backup-codes`, {
-                headers: {
-                    'Authorization': `Bearer ${api.getToken()}`
-                }
-            });
+    // Load backup codes if MFA enabled
+    if (status.mfaEnabled) {
+      const codesResponse = await fetch(`${API_BASE_URL}/user/backup-codes`, {
+        headers: {
+          Authorization: `Bearer ${api.getToken()}`,
+        },
+      });
 
-            if (codesResponse.ok) {
-                const codesData = await codesResponse.json();
-                const codesDisplay = document.getElementById('backupCodesDisplay');
-                codesDisplay.innerHTML = codesData.codes.map(code => 
-                    `<div>${code}</div>`
-                ).join('');
-            }
-        }
-
-    } catch (error) {
-        alertDiv.innerHTML = `
+      if (codesResponse.ok) {
+        const codesData = await codesResponse.json();
+        const codesDisplay = document.getElementById("backupCodesDisplay");
+        codesDisplay.innerHTML = codesData.codes
+          .map((code) => `<div>${code}</div>`)
+          .join("");
+      }
+    }
+  } catch (error) {
+    alertDiv.innerHTML = `
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle"></i> Error: ${error.message}
             </div>
         `;
-    }
+  }
 }
 
 function mfaShowSetupForm() {
-    showMFAModal({ setupMode: true, required: false });
+  showMFAModal({ setupMode: true, required: false });
 }
 
 function mfaShowDisableForm() {
-    const actionsContainer = document.getElementById('mfaActionsContainer');
-    actionsContainer.innerHTML = `
+  const actionsContainer = document.getElementById("mfaActionsContainer");
+  actionsContainer.innerHTML = `
         <div class="card bg-light">
             <div class="card-body">
                 <h6>Disable Two-Factor Authentication</h6>
@@ -174,55 +173,57 @@ function mfaShowDisableForm() {
 }
 
 async function mfaDisableSubmit(event) {
-    event.preventDefault();
-    const alertDiv = document.getElementById('disableMfaAlert');
-    const password = document.getElementById('disableMfaPassword').value;
-    const code = document.getElementById('disableMfaCode').value;
+  event.preventDefault();
+  const alertDiv = document.getElementById("disableMfaAlert");
+  const password = document.getElementById("disableMfaPassword").value;
+  const code = document.getElementById("disableMfaCode").value;
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/mfa/disable`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${api.getToken()}`
-            },
-            body: JSON.stringify({
-                password: password,
-                token: code
-            })
-        });
+  try {
+    const response = await fetch(`${API_BASE_URL}/mfa/disable`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${api.getToken()}`,
+      },
+      body: JSON.stringify({
+        password: password,
+        token: code,
+      }),
+    });
 
-        const data = await response.json();
+    const data = await response.json();
 
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to disable MFA');
-        }
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to disable MFA");
+    }
 
-        alertDiv.innerHTML = `
+    alertDiv.innerHTML = `
             <div class="alert alert-success">
                 <i class="bi bi-check-circle"></i> MFA disabled successfully
             </div>
         `;
 
-        setTimeout(() => {
-            initMFASettings();
-        }, 2000);
-
-    } catch (error) {
-        alertDiv.innerHTML = `
+    setTimeout(() => {
+      initMFASettings();
+    }, 2000);
+  } catch (error) {
+    alertDiv.innerHTML = `
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle"></i> ${error.message}
             </div>
         `;
-    }
+  }
 }
 
 function mfaCopyBackupCodes() {
-    const display = document.getElementById('backupCodesDisplay');
-    const text = display.innerText;
-    navigator.clipboard.writeText(text).then(() => {
-        alert('Backup codes copied to clipboard');
-    }).catch(() => {
-        alert('Failed to copy to clipboard');
+  const display = document.getElementById("backupCodesDisplay");
+  const text = display.innerText;
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      alert("Backup codes copied to clipboard");
+    })
+    .catch(() => {
+      alert("Failed to copy to clipboard");
     });
 }

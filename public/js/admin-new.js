@@ -9,6 +9,18 @@
   let allCompanies = [];
   let selectedCompanyId = null;
 
+  // Lightweight translation helper for admin UI
+  function adminTr(key, fallback) {
+    try {
+      // Try UI namespace first, fallback to admin namespace
+      const tUi = window.app && typeof window.app.t === "function" ? window.app.t("ui", key) : null;
+      const tAdmin = window.app && typeof window.app.t === "function" ? window.app.t("admin", key) : null;
+      return tUi || tAdmin || fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+
   // ========== GLOBAL FUNCTIONS ==========
 
   function switchAdminTab(tab) {
@@ -57,10 +69,1223 @@
       case "branding":
         loadBrandingSettings();
         break;
+      case "menu":
+        loadMenuManagement();
+        break;
+      case "translations":
+        loadTranslationsManagement();
+        break;
       default:
         container.innerHTML =
           '<div class="alert alert-info">Module not found</div>';
     }
+  }
+
+  // ===== Menu Management =====
+  async function loadMenuManagement() {
+    const container = document.getElementById("adminContent");
+    container.innerHTML = `
+      <div class="admin-hero">
+        <div>
+          <h5 class="mb-1"><span data-i18n="ui:admin.menu_management">Menu Management</span></h5>
+          <small data-i18n="ui:menu.description">Arrange navigation, translations, and visibility.</small>
+          <div class="pill-group mt-2">
+            <span class="pill" data-i18n="ui:menu.drag_reorder">Drag to reorder</span>
+            <span class="pill" data-i18n="ui:menu.live_preview">Live after save</span>
+          </div>
+        </div>
+        <div class="text-end">
+          <span class="badge-soft" id="menuStatusBadge" data-i18n="ui:menu.workspace">Workspace</span>
+        </div>
+      </div>
+
+      <div class="glass-card p-3 shadow-soft" id="menuEditor">
+        <div class="text-center py-4"><div class="spinner-border"></div></div>
+      </div>
+    `;
+
+    try {
+      const items = await api.getUiMenu();
+      renderMenuEditor(items);
+    } catch (error) {
+      document.getElementById(
+        "menuEditor"
+      ).innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    }
+  }
+
+  function renderMenuEditor(items) {
+    const wrapper = document.getElementById("menuEditor");
+    if (!items) items = [];
+    wrapper.innerHTML = `
+      <div class="toolbar-card mb-3 d-flex flex-wrap align-items-center gap-2 justify-content-between">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <select id="menuLocaleSelect" class="form-select form-select-sm w-auto">
+            <option value="en">English</option>
+            <option value="nl">Nederlands</option>
+            <option value="de">Deutsch</option>
+          </select>
+          <div class="input-chip d-flex align-items-center gap-2">
+            <input id="menuLocaleAddInput" class="form-control form-control-sm" placeholder="add locale (e.g. fr)" style="max-width:120px" />
+            <button id="menuLocaleAddBtn" class="btn btn-sm btn-outline-secondary"><span data-i18n="ui:add">Add</span></button>
+          </div>
+          <button id="loadMenuTranslationsBtn" class="btn btn-sm btn-outline-secondary"><span data-i18n="ui:load_translations">Load Translations</span></button>
+          <button id="saveMenuTranslationsBtn" class="btn btn-sm btn-primary"><span data-i18n="ui:save_translations">Save Translations</span></button>
+          <button id="exportMenuTemplateBtn" class="btn btn-sm btn-outline-secondary"><span data-i18n="ui:export_template_csv">Export Template (CSV)</span></button>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-success" id="saveMenuBtn"><span data-i18n="ui:save">Save</span></button>
+        </div>
+      </div>
+
+      <div class="menu-grid">
+        <div class="menu-table-wrapper">
+          <table class="table table-sm align-middle menu-table">
+            <thead>
+              <tr>
+                <th style="width:50px;" data-i18n="ui:menu.order">#</th>
+                <th style="width:140px;" data-i18n="ui:menu.page_key">Page Key</th>
+                <th data-i18n="ui:menu.label">Label</th>
+                <th data-i18n="ui:menu.translation">Translation</th>
+                <th style="width:120px;" data-i18n="ui:menu.visible">Visible</th>
+                <th style="width:120px;" data-i18n="ui:menu.actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="menuTableBody">
+              ${items
+                .map(
+                  (it, idx) => `
+                <tr class="menu-row" data-index="${idx}">
+                  <td><span class="badge-soft text-uppercase">${idx + 1}</span></td>
+                  <td>
+                    <div class="text-muted small">${it.page_key}</div>
+                    <input type="hidden" class="page-key" value="${it.page_key}" />
+                  </td>
+                  <td>
+                    <input class="form-control form-control-sm label" value="${
+                      it.label
+                    }" />
+                  </td>
+                  <td>
+                    <input class="form-control form-control-sm translation-input" data-key="${
+                      it.page_key
+                    }" value="" placeholder="(not loaded)" />
+                  </td>
+                  <td>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input visible" type="checkbox" ${
+                        it.visible ? "checked" : ""
+                      } />
+                    </div>
+                  </td>
+                  <td>
+                    <div class="btn-group" role="group">
+                      <button class="btn btn-sm btn-outline-secondary move-up" ${
+                        idx === 0 ? "disabled" : ""
+                      }><i class="bi bi-chevron-up"></i></button>
+                      <button class="btn btn-sm btn-outline-secondary move-down" ${
+                        idx === items.length - 1 ? "disabled" : ""
+                      }><i class="bi bi-chevron-down"></i></button>
+                    </div>
+                  </td>
+                </tr>`
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    // Hook up move buttons
+    wrapper.querySelectorAll(".move-up").forEach((btn) => {
+      btn.onclick = (e) => {
+        const item = e.target.closest(".menu-row");
+        const tbody = item?.parentElement;
+        if (!item || !tbody) return;
+        const idx = parseInt(item.getAttribute("data-index"), 10);
+        if (idx <= 0) return;
+        const above = tbody.querySelector(`[data-index="${idx - 1}"]`);
+        if (!above) return;
+        tbody.insertBefore(item, above);
+        reindexMenuList();
+      };
+    });
+    wrapper.querySelectorAll(".move-down").forEach((btn) => {
+      btn.onclick = (e) => {
+        const item = e.target.closest(".menu-row");
+        const tbody = item?.parentElement;
+        if (!item || !tbody) return;
+        const idx = parseInt(item.getAttribute("data-index"), 10);
+        const below = tbody.querySelector(`[data-index="${idx + 1}"]`);
+        if (!below) return;
+        tbody.insertBefore(below, item);
+        reindexMenuList();
+      };
+    });
+
+    const saveMenuBtn = document.getElementById("saveMenuBtn");
+    if (saveMenuBtn) {
+      saveMenuBtn.onclick = saveMenuConfig;
+    }
+
+    // Apply translations to any newly rendered elements
+    try {
+      if (
+        window.app &&
+        typeof window.app.applyTranslationsToDom === "function"
+      ) {
+        window.app.applyTranslationsToDom();
+      }
+    } catch (err) {
+      // ignore
+    }
+
+    // Translation buttons
+    const loadBtn = document.getElementById("loadMenuTranslationsBtn");
+    const saveTransBtn = document.getElementById("saveMenuTranslationsBtn");
+    const localeSelect = document.getElementById("menuLocaleSelect");
+
+    if (loadBtn) {
+      loadBtn.onclick = async () => {
+        const locale = localeSelect.value;
+        loadBtn.disabled = true;
+        try {
+          const trans = await api.getTranslations(locale, "menu");
+          const map = {};
+          (trans || []).forEach((t) => {
+            map[t.key] = t.text;
+          });
+          wrapper.querySelectorAll(".translation-input").forEach((inp) => {
+            const key = inp.getAttribute("data-key");
+            inp.value = map[key] || "";
+          });
+          showToast(adminTr("loaded_translations", "Loaded translations"), "success");
+        } catch (err) {
+          console.error("Error loading translations", err);
+          showToast(adminTr("error_loading_translations", "Error loading translations"), "danger");
+        } finally {
+          loadBtn.disabled = false;
+        }
+      };
+    }
+
+    if (saveTransBtn) {
+      saveTransBtn.onclick = async () => {
+        const locale = localeSelect.value;
+        const items = Array.from(
+          wrapper.querySelectorAll(".translation-input")
+        ).map((inp) => ({
+          namespace: "menu",
+          key: inp.getAttribute("data-key"),
+          locale,
+          text: inp.value || "",
+        }));
+        try {
+          await api.updateTranslations(items);
+          showToast(adminTr("translations_saved", "Translations saved"), "success");
+          // ensure locale is selectable in the locales select if newly added via save
+          ensureLocaleInSelect(localeSelect, locale);
+          // Reload translations to refresh cache
+          if (window.app && typeof window.app.loadTranslations === "function") {
+            try {
+              await window.app.loadTranslations(window.app.locale);
+              await window.app.loadAndRenderMenu();
+              console.log("✓ Menu translations cache refreshed");
+            } catch (err) {
+              console.error("Failed to refresh menu translations:", err);
+            }
+          }
+        } catch (err) {
+          console.error("Error saving translations", err);
+          showToast("Error saving translations", "danger");
+        }
+      };
+    }
+
+    // add locale to select
+    const addLocaleBtn = document.getElementById("menuLocaleAddBtn");
+    const addLocaleInput = document.getElementById("menuLocaleAddInput");
+    addLocaleBtn.onclick = () => {
+      const l = (addLocaleInput.value || "").trim().toLowerCase();
+      if (!l) return;
+      ensureLocaleInSelect(localeSelect, l);
+      addLocaleInput.value = "";
+      showToast(adminTr("added_locale", "Added locale") + " " + l, "success");
+    };
+
+    document.getElementById("exportMenuTemplateBtn").onclick = async () => {
+      const ns = "menu";
+      const locale = document.getElementById("menuLocaleSelect").value;
+      try {
+        const keys = await api.getTranslationKeys(ns);
+        const header = "namespace,key,locale,text";
+        const lines = [header].concat(
+          (keys || []).map((k) => `${ns},${escapeCsv(k)},${locale},`)
+        );
+        const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `translations-template-${ns}-${locale}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast(adminTr("exported_template", "Exported template"), "success");
+      } catch (err) {
+        console.error("Export template error", err);
+        showToast(adminTr("error_exporting_template", "Error exporting template"), "danger");
+      }
+    };
+  }
+
+  function reindexMenuList() {
+    const list = document.getElementById("menuTableBody");
+    if (!list) return;
+    Array.from(list.querySelectorAll(".menu-row")).forEach((el, idx) => {
+      el.setAttribute("data-index", idx);
+      // enable/disable arrows
+      const up = el.querySelector(".move-up");
+      const down = el.querySelector(".move-down");
+      if (up) up.disabled = idx === 0;
+      if (down) down.disabled = idx === list.querySelectorAll(".menu-row").length - 1;
+    });
+  }
+
+  async function saveMenuConfig() {
+    const list = document.getElementById("menuTableBody");
+    if (!list) return;
+    const rows = Array.from(list.querySelectorAll(".menu-row"));
+    const items = rows.map((el, idx) => {
+      const pageInput = el.querySelector(".page-key");
+      const visibleInput = el.querySelector(".visible");
+      return {
+        page_key: pageInput ? pageInput.value : "",
+        label: el.querySelector(".label")?.value || "",
+        visible: !!(visibleInput && visibleInput.checked),
+        sort_order: idx,
+      };
+    });
+
+    try {
+      await api.updateUiMenu(items);
+      // Re-render frontend menu immediately
+      await app.loadAndRenderMenu();
+      document.getElementById("menuEditor").innerHTML =
+        '<div class="alert alert-success">Saved!</div>';
+      setTimeout(() => loadMenuManagement(), 800);
+    } catch (error) {
+      document.getElementById(
+        "menuEditor"
+      ).innerHTML = `<div class="alert alert-danger">Error saving: ${error.message}</div>`;
+    }
+  }
+
+  // ===== Translations Management =====
+  async function loadTranslationsManagement() {
+    const container = document.getElementById("adminContent");
+    container.innerHTML = `
+      <div class="admin-hero">
+        <div>
+          <h5 class="mb-1"><span data-i18n="ui:admin.translations">Translations</span></h5>
+          <small data-i18n="ui:translations.subtitle">Manage UI copy across locales with live preview.</small>
+          <div class="pill-group mt-2">
+            <span class="pill">CSV / JSON</span>
+            <span class="pill" data-i18n="ui:translations.live_preview">Live preview ready</span>
+            <span class="pill" data-i18n="ui:translations.bulk_edit">Bulk edit friendly</span>
+          </div>
+        </div>
+        <div class="text-end">
+          <span class="badge-soft" id="translationsStatusBadge" data-i18n="ui:translations.workspace">Workspace</span>
+        </div>
+      </div>
+
+      <div class="glass-card p-3 shadow-soft" id="translationsEditor">
+        <div class="toolbar-card mb-3 d-flex flex-wrap align-items-center justify-content-between">
+          <div>
+            <button class="btn btn-sm btn-outline-secondary" id="exportTranslationsJson"><span data-i18n="ui:export_json">Export JSON</span></button>
+            <button class="btn btn-sm btn-outline-secondary" id="exportTranslationsCsv"><span data-i18n="ui:export_csv">Export CSV</span></button>
+            <button class="btn btn-sm btn-outline-secondary" id="exportTranslationsTemplate"><span data-i18n="ui:export_template_csv">Export Template (CSV)</span></button>
+            <input type="file" id="importTranslationsFile" style="display:none" accept="application/json,text/json,text/csv" />
+            <button class="btn btn-sm btn-outline-secondary" id="importTranslationsBtn"><span data-i18n="ui:import">Import</span></button>
+            <button class="btn btn-sm btn-primary" id="saveTranslationsBtn"><span data-i18n="ui:save">Save</span></button>
+          </div>
+          <div class="text-muted small" data-i18n="ui:translations.toolbar_hint">Import/export or bulk edit below.</div>
+        </div>
+
+        <div class="toolbar-card mb-3">
+          <div class="toolbar-filters">
+            <div>
+              <label class="form-label" data-i18n="ui:namespace">Namespace</label>
+              <select id="translationsNamespace" class="form-select form-select-sm">
+                <option value="menu">menu</option>
+                <option value="ui">ui</option>
+                <option value="field">field</option>
+                <option value="branding">branding</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" data-i18n="ui:locale">Locale</label>
+              <div class="input-chip d-flex align-items-center gap-2">
+                <select id="translationsLocale" class="form-select form-select-sm" style="min-width:90px">
+                  <option value="en">en</option>
+                  <option value="nl">nl</option>
+                  <option value="de">de</option>
+                </select>
+                <input id="translationsLocaleAdd" class="form-control form-control-sm" placeholder="add locale (fr)" style="max-width:90px" />
+                <button id="translationsLocaleAddBtn" class="btn btn-sm btn-outline-secondary"><span data-i18n="ui:add">Add</span></button>
+              </div>
+            </div>
+            <div>
+              <label class="form-label" data-i18n="ui:translations.source_locale">Source locale</label>
+              <select id="translationsSourceLocale" class="form-select form-select-sm" style="min-width:90px">
+                <option value="en">en</option>
+                <option value="nl">nl</option>
+                <option value="de">de</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label" data-i18n="ui:translations.provider">Provider</label>
+              <select id="translationsProvider" class="form-select form-select-sm" style="min-width:110px">
+                <option value="deepl" data-i18n="ui:translations.provider.deepl">DeepL</option>
+                <option value="google" data-i18n="ui:translations.provider.google">Google</option>
+              </select>
+              <div class="text-muted small" data-i18n="ui:translations.auto_translate_hint">Fill empty texts using the selected provider.</div>
+            </div>
+            <div class="flex-grow-1">
+              <label class="form-label" data-i18n="ui:translations.filter">Filter</label>
+              <input id="translationsSearch" class="form-control form-control-sm" data-i18n-placeholder="ui:translations.filter_placeholder" placeholder="Filter by key or text" />
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" id="loadTranslationsBtn"><span data-i18n="ui:load">Load</span></button>
+              <button class="btn btn-sm btn-primary" id="addTranslationBtn"><span data-i18n="ui:add">Add</span></button>
+              <button class="btn btn-sm btn-success" id="autoTranslateBtn"><span data-i18n="ui:translations.auto_translate">Auto-translate missing</span></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="translations-table-wrapper" id="translationsTableWrapper">
+          <div class="text-center py-4"><div class="spinner-border"></div></div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("loadTranslationsBtn").onclick = async () => {
+      await loadTranslationsForSelected();
+    };
+
+    document.getElementById("addTranslationBtn").onclick = () => {
+      appendTranslationRow({
+        namespace: document.getElementById("translationsNamespace").value,
+        key: "",
+        locale: document.getElementById("translationsLocale").value,
+        text: "",
+      });
+    };
+
+    document.getElementById("saveTranslationsBtn").onclick = async () => {
+      await saveTranslationsFromTable();
+    };
+    document.getElementById("translationsLocaleAddBtn").onclick = () => {
+      const val = (document.getElementById("translationsLocaleAdd").value || "")
+        .trim()
+        .toLowerCase();
+      if (!val) return;
+      ensureLocaleInSelect(document.getElementById("translationsLocale"), val);
+      document.getElementById("translationsLocaleAdd").value = "";
+      showToast(adminTr("added_locale", "Added locale"), "success");
+    };
+
+    // auto-refresh when namespace or locale changes
+    document.getElementById("translationsNamespace").onchange = async () => {
+      await loadTranslationsForSelected();
+    };
+    document.getElementById("translationsLocale").onchange = async () => {
+      await loadTranslationsForSelected();
+    };
+
+    document.getElementById("autoTranslateBtn").onclick = async () => {
+      await autoTranslateMissing();
+    };
+    document.getElementById("translationsSearch").oninput = () => {
+      const q = (
+        document.getElementById("translationsSearch").value || ""
+      ).toLowerCase();
+      document.querySelectorAll("#translationsTableBody tr").forEach((tr) => {
+        const keyElement = tr.querySelector(".trans-key");
+        const key = (keyElement.textContent || keyElement.value || "").toLowerCase();
+        const text = (
+          tr.querySelector(".trans-text").value || ""
+        ).toLowerCase();
+        tr.style.display =
+          !q || key.includes(q) || text.includes(q) ? "" : "none";
+      });
+    };
+
+    document.getElementById("exportTranslationsJson").onclick = () => {
+      exportTranslationsJson();
+    };
+
+    document.getElementById("exportTranslationsCsv").onclick = () => {
+      exportTranslationsCsv();
+    };
+
+    document.getElementById("exportTranslationsTemplate").onclick =
+      async () => {
+        const ns = document.getElementById("translationsNamespace").value;
+        const locale = document.getElementById("translationsLocale").value;
+        try {
+          const keys = await api.getTranslationKeys(ns);
+          const header = "namespace,key,locale,text";
+          const lines = [header].concat(
+            (keys || []).map((k) => `${ns},${escapeCsv(k)},${locale},`)
+          );
+          const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `translations-template-${ns}-${locale}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          showToast(adminTr("exported_template", "Exported template"), "success");
+        } catch (err) {
+          console.error("Export template error", err);
+          showToast(adminTr("error_exporting_template", "Error exporting template"), "danger");
+        }
+      };
+
+    document.getElementById("importTranslationsBtn").onclick = () => {
+      document.getElementById("importTranslationsFile").click();
+    };
+
+    document.getElementById("importTranslationsFile").onchange = async (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      try {
+        const text = await f.text();
+        // Try JSON first
+        let items = null;
+        try {
+          items = JSON.parse(text);
+        } catch (err) {
+          items = null;
+        }
+        if (!items) {
+          // Parse CSV robustly (handles quoted fields).
+          const rows = parseCsv(text)
+            .map((r) => r.map((c) => (typeof c === "string" ? c.trim() : c)))
+            .filter((r) => r.length > 0);
+          // If header present, map by header names
+          let mapped = [];
+          const header =
+            rows[0] && rows[0].map((h) => (h || "").toString().toLowerCase());
+          if (
+            header &&
+            header.includes("namespace") &&
+            header.includes("key") &&
+            header.includes("locale")
+          ) {
+            const idxNamespace = header.indexOf("namespace");
+            const idxKey = header.indexOf("key");
+            const idxLocale = header.indexOf("locale");
+            const idxText = header.indexOf("text");
+            for (let i = 1; i < rows.length; i++) {
+              const r = rows[i];
+              if (!r || r.length === 0) continue;
+              mapped.push({
+                namespace: r[idxNamespace] || "",
+                key: r[idxKey] || "",
+                locale: (r[idxLocale] || "").toLowerCase(),
+                text: r[idxText] || "",
+              });
+            }
+          } else {
+            // assume columns: namespace,key,locale,text
+            mapped = rows.map((r) => ({
+              namespace: r[0] || "",
+              key: r[1] || "",
+              locale: (r[2] || "").toLowerCase(),
+              text: r.slice(3).join(",") || "",
+            }));
+          }
+          items = mapped.filter((it) => it.key || it.text);
+        }
+        // If multiple namespaces present but current selection differs, adjust or filter
+        const nsSelect = document.getElementById("translationsNamespace");
+        const localesAdded = new Set();
+        const namespaces = Array.from(
+          new Set(
+            (items || [])
+              .map((it) => (it.namespace || "").trim())
+              .filter(Boolean)
+          )
+        );
+        if (namespaces.length === 1) {
+          nsSelect.value = namespaces[0];
+        } else if (namespaces.length > 1) {
+          // Keep current selection but filter to it
+          const sel = nsSelect.value;
+          items = items.filter((it) => (it.namespace || "") === sel);
+          if (items.length === 0) {
+            showToast(
+              "Imported file contains multiple namespaces; no rows match the selected namespace",
+              "warning"
+            );
+          } else {
+            showToast(
+              "Imported file contains multiple namespaces; rows filtered to the selected namespace",
+              "warning"
+            );
+          }
+        }
+        // Ensure any imported locales are shown in locale select
+        (items || []).forEach((it) => {
+          if (it.locale) localesAdded.add(it.locale);
+        });
+        localesAdded.forEach((l) =>
+          ensureLocaleInSelect(document.getElementById("translationsLocale"), l)
+        );
+
+        // Show preview modal for import validation and confirm
+        showImportPreviewModal(items);
+      } catch (err) {
+        console.error("Import error", err);
+        showToast("Failed to import file", "danger");
+      }
+    };
+
+    // initial load for defaults
+    await loadTranslationsForSelected();
+
+    try {
+      if (window.app && typeof window.app.applyTranslationsToDom === "function") {
+        window.app.applyTranslationsToDom();
+      }
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  async function loadTranslationsForSelected() {
+    const ns = document.getElementById("translationsNamespace").value;
+    const locale = document.getElementById("translationsLocale").value;
+    const wrapper = document.getElementById("translationsTableWrapper");
+    wrapper.innerHTML =
+      '<div class="text-center py-4"><div class="spinner-border"></div></div>';
+    try {
+      const items = await api.getTranslations(locale, ns);
+      renderTranslationsTable(items || []);
+      const badge = document.getElementById("translationsStatusBadge");
+      if (badge) badge.textContent = `${ns.toUpperCase()} · ${locale.toUpperCase()}`;
+      try {
+        if (window.app && typeof window.app.applyTranslationsToDom === "function") {
+          window.app.applyTranslationsToDom();
+        }
+      } catch (err) {
+        // ignore
+      }
+      showToast(adminTr("loaded_translations", "Loaded translations"), "success");
+    } catch (err) {
+      console.error("Error loading translations", err);
+      wrapper.innerHTML = `<div class="alert alert-danger">Error loading translations: ${err.message}</div>`;
+    }
+  }
+
+  function renderTranslationsTable(items) {
+    const wrapper = document.getElementById("translationsTableWrapper");
+    wrapper.innerHTML = `
+      <div class="translations-table-wrapper">
+        <table class="table table-sm translations-table">
+          <thead>
+            <tr>
+              <th style="width:40px;" data-i18n="ui:menu.order">#</th>
+              <th style="width:180px;" data-i18n="ui:key">Key</th>
+              <th style="width:80px;" data-i18n="ui:locale">Locale</th>
+              <th data-i18n="ui:text">Text</th>
+              <th style="width:70px;" data-i18n="ui:menu.actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="translationsTableBody"></tbody>
+        </table>
+      </div>
+    `;
+    const body = document.getElementById("translationsTableBody");
+    (items || []).forEach((it, idx) => appendTranslationRow(it, idx + 1));
+  }
+
+  function appendTranslationRow(it, rowNum) {
+    const body = document.getElementById("translationsTableBody");
+    const tr = document.createElement("tr");
+    tr.className = "trans-row";
+    const localeVal = (
+      it.locale ||
+      document.getElementById("translationsLocale")?.value ||
+      ""
+    ).toLowerCase();
+    tr.dataset.namespace =
+      it.namespace || document.getElementById("translationsNamespace").value;
+    tr.innerHTML = `
+      <td><span class="badge-soft text-uppercase">${rowNum || ""}</span></td>
+      <td>
+        <div class="trans-key" style="font-family:monospace;font-size:0.85rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(
+          it.key || ""
+        )}</div>
+      </td>
+      <td>
+        <input class="form-control form-control-sm trans-locale" value="${escapeHtml(
+          localeVal
+        )}" readonly />
+      </td>
+      <td>
+        <input type="text" class="form-control form-control-sm trans-text" placeholder="Enter translation..." value="${escapeHtml(
+          it.text || ""
+        )}" />
+      </td>
+      <td>
+        <button class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button>
+      </td>
+    `;
+    body.appendChild(tr);
+    tr.querySelector(".remove-row").onclick = () => tr.remove();
+  }
+
+  async function autoTranslateMissing() {
+    const target = document.getElementById("translationsLocale").value;
+    const source = document.getElementById("translationsSourceLocale").value || "en";
+    const provider = document.getElementById("translationsProvider").value || "deepl";
+    const namespace = document.getElementById("translationsNamespace").value;
+    const btn = document.getElementById("autoTranslateBtn");
+    const rows = Array.from(document.querySelectorAll("#translationsTableBody tr"));
+    const pending = rows.filter((tr) => {
+      const key = tr.querySelector(".trans-key")?.value?.trim();
+      const text = tr.querySelector(".trans-text")?.value?.trim();
+      return key && !text;
+    });
+
+    if (!pending.length) {
+      showToast("No empty texts to translate", "info");
+      return;
+    }
+
+    btn.disabled = true;
+    const original = btn.innerHTML;
+    btn.innerHTML = `<span data-i18n="ui:translations.translating">Translating...</span>`;
+
+    // Fetch source-locale texts to translate from
+    let sourceMap = {};
+    try {
+      const srcRows = await api.getTranslations(source, namespace);
+      (srcRows || []).forEach((r) => {
+        sourceMap[r.key] = r.text;
+      });
+    } catch (err) {
+      console.warn("Could not load source translations; falling back to key", err);
+    }
+
+    for (const tr of pending) {
+      const key = tr.querySelector(".trans-key").value.trim();
+      const textArea = tr.querySelector(".trans-text");
+      try {
+        const textToTranslate = sourceMap[key] || key.replace(/_/g, " ");
+        const resp = await api.translateText({
+          text: textToTranslate,
+          target,
+          source,
+          provider,
+        });
+        if (resp && resp.text) {
+          textArea.value = resp.text;
+        }
+      } catch (err) {
+        console.error("Auto-translate failed for", key, err);
+      }
+    }
+
+    btn.innerHTML = original;
+    btn.disabled = false;
+    showToast(adminTr("translations.auto_translated", "Auto-translated"), "success");
+
+    try {
+      if (window.app && typeof window.app.applyTranslationsToDom === "function") {
+        window.app.applyTranslationsToDom();
+      }
+    } catch (err) {
+      // ignore
+    }
+  }
+
+  function escapeHtml(s) {
+    return String(s || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function ensureLocaleInSelect(selectEl, locale) {
+    if (!locale) return;
+    const l = String(locale).trim().toLowerCase();
+    if (!l) return;
+    const existing = Array.from(selectEl.options).some(
+      (o) => o.value.toLowerCase() === l
+    );
+    if (!existing) {
+      const opt = document.createElement("option");
+      opt.value = l;
+      opt.text = l;
+      selectEl.appendChild(opt);
+    }
+    selectEl.value = l;
+  }
+
+  // Robust CSV parser: returns array of arrays (rows). Handles quoted fields with commas/newlines
+  function parseCsv(text) {
+    const rows = [];
+    let i = 0;
+    const len = text.length;
+    let cur = "";
+    let row = [];
+    let inQuotes = false;
+    while (i < len) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (i + 1 < len && text[i + 1] === '"') {
+            cur += '"';
+            i += 2;
+            continue;
+          } else {
+            inQuotes = false;
+            i++;
+            continue;
+          }
+        } else {
+          cur += ch;
+          i++;
+          continue;
+        }
+      } else {
+        if (ch === ",") {
+          row.push(cur);
+          cur = "";
+          i++;
+          continue;
+        } else if (ch === "\r") {
+          // ignore, handle with \n
+          i++;
+          continue;
+        } else if (ch === "\n") {
+          row.push(cur);
+          rows.push(row);
+          row = [];
+          cur = "";
+          i++;
+          continue;
+        } else if (ch === '"') {
+          inQuotes = true;
+          i++;
+          continue;
+        } else {
+          cur += ch;
+          i++;
+          continue;
+        }
+      }
+    }
+    // push last
+    if (cur !== "" || row.length) {
+      row.push(cur);
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  // Show import preview modal with validation and dry-run/apply
+  async function showImportPreviewModal(items) {
+    // items: array of {namespace,key,locale,text}
+    if (!items || !Array.isArray(items))
+      return showToast("No items to import", "warning");
+
+    // normalize and filter empty rows
+    items = items
+      .map((it) => ({
+        namespace: (it.namespace || "").trim(),
+        key: (it.key || "").trim(),
+        locale: (it.locale || "").trim().toLowerCase(),
+        text: it.text || "",
+      }))
+      .filter((it) => it.namespace || it.key || it.locale || it.text);
+
+    // gather unique namespace/locale pairs to fetch existing translations
+    const pairs = {};
+    items.forEach((it) => {
+      if (it.namespace && it.locale)
+        pairs[`${it.namespace}::${it.locale}`] = {
+          namespace: it.namespace,
+          locale: it.locale,
+        };
+    });
+
+    const existingMaps = {}; // key: namespace::locale => map key->text
+    for (const k of Object.keys(pairs)) {
+      try {
+        const { namespace, locale } = pairs[k];
+        const rows = await api.getTranslations(locale, namespace);
+        const m = {};
+        (rows || []).forEach((r) => {
+          m[r.key] = r.text;
+        });
+        existingMaps[k] = m;
+      } catch (err) {
+        existingMaps[k] = {};
+      }
+    }
+
+    // Build modal HTML
+    const modalId = "importPreviewModal";
+    const container = document.createElement("div");
+    container.className = "modal fade";
+    container.id = modalId;
+    container.tabIndex = -1;
+    container.innerHTML = `
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Import Preview</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-2">
+              <label class="form-check form-switch">
+                <input class="form-check-input" id="importAllowCreate" type="checkbox" checked>
+                <span class="form-check-label">Allow creating new translation keys</span>
+              </label>
+            </div>
+            <div class="table-responsive" style="max-height:420px; overflow:auto;">
+              <table class="table table-sm table-striped">
+                <thead><tr><th style="width:40px">Use</th><th>Namespace</th><th>Key</th><th>Locale</th><th>Existing Text</th><th>New Text</th><th>Validation</th></tr></thead>
+                <tbody id="importPreviewBody"></tbody>
+              </table>
+            </div>
+            <div id="importPreviewSummary" class="mt-2"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" id="importDryRunBtn">Dry Run</button>
+            <button type="button" class="btn btn-primary" id="importApplyBtn">Apply</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(container);
+    const body = container.querySelector("#importPreviewBody");
+
+    items.forEach((it, idx) => {
+      const pairKey = `${it.namespace}::${it.locale}`;
+      const existing = (existingMaps[pairKey] || {})[it.key] || "";
+      const tr = document.createElement("tr");
+      const valid = !!(it.namespace && it.key && it.locale);
+      tr.innerHTML = `
+        <td><input type="checkbox" class="importUse" data-idx="${idx}" ${
+        valid ? "checked" : ""
+      } ${!valid ? "disabled" : ""} /></td>
+        <td><input class="form-control form-control-sm import-namespace" value="${escapeHtml(
+          it.namespace
+        )}" /></td>
+        <td><input class="form-control form-control-sm import-key" value="${escapeHtml(
+          it.key
+        )}" /></td>
+        <td><input class="form-control form-control-sm import-locale" value="${escapeHtml(
+          it.locale
+        )}" /></td>
+        <td><div class="text-muted small existing-text">${escapeHtml(
+          existing
+        )}</div></td>
+        <td><textarea class="form-control form-control-sm import-text" rows="1">${escapeHtml(
+          it.text
+        )}</textarea></td>
+        <td class="validation-cell">${
+          valid
+            ? ""
+            : '<span class="text-danger">missing namespace/key/locale</span>'
+        }</td>
+      `;
+      body.appendChild(tr);
+    });
+
+    const modal = new bootstrap.Modal(container, { backdrop: "static" });
+    modal.show();
+
+    function collectPreviewSelected() {
+      const rows = Array.from(
+        container.querySelectorAll("#importPreviewBody tr")
+      );
+      return rows
+        .map((r) => ({
+          namespace: r.querySelector(".import-namespace").value.trim(),
+          key: r.querySelector(".import-key").value.trim(),
+          locale: r.querySelector(".import-locale").value.trim().toLowerCase(),
+          text: r.querySelector(".import-text").value || "",
+          use: r.querySelector(".importUse").checked,
+        }))
+        .filter((it) => it.use);
+    }
+
+    async function doDryRun() {
+      const selected = collectPreviewSelected();
+      if (!selected.length) return showToast("No rows selected", "warning");
+      const allowCreate =
+        !!container.querySelector("#importAllowCreate").checked;
+      // run dry-run on server
+      try {
+        const resp = await fetch("/api/admin/i18n?dryRun=1", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${api.getToken()}`,
+          },
+          body: JSON.stringify(selected),
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+          throw new Error(data.error || JSON.stringify(data));
+        }
+        // Summarize
+        const s = data.summary || {};
+        container.querySelector(
+          "#importPreviewSummary"
+        ).innerHTML = `<div>Dry run summary: <strong>inserts</strong>=${
+          s.insert || 0
+        }, <strong>updates</strong>=${s.update || 0}, <strong>noop</strong>=${
+          s.noop || 0
+        }, <strong>invalid</strong>=${s.invalid || 0}</div>`;
+        // Highlight rows that would be inserts when allowCreate is false
+        if (!allowCreate && (s.insert || 0) > 0) {
+          container.querySelector("#importPreviewSummary").innerHTML +=
+            ' <span class="text-danger">(inserts detected; enable "Allow creating new translation keys" to proceed)</span>';
+        }
+        showToast("Dry run completed", "success");
+        return data;
+      } catch (err) {
+        console.error("Dry run error", err);
+        showToast("Dry run failed", "danger");
+        return null;
+      }
+    }
+
+    async function doApply() {
+      const selected = collectPreviewSelected();
+      if (!selected.length) return showToast("No rows selected", "warning");
+      const allowCreate =
+        !!container.querySelector("#importAllowCreate").checked;
+      // If not allowing create, filter out rows that are inserts (we need to know which)
+      // Perform a dry-run first to check what would be inserted
+      const dry = await doDryRun();
+      if (!dry) return;
+      const inserts =
+        dry.summary && dry.summary.insert ? dry.summary.insert : 0;
+      if (inserts > 0 && !allowCreate) {
+        return showToast(
+          "Import contains new keys; enable allow create to proceed",
+          "danger"
+        );
+      }
+
+      // Confirm large imports
+      if (selected.length > 100) {
+        if (
+          !confirm(
+            `You are about to import ${selected.length} translations. Continue?`
+          )
+        )
+          return;
+      }
+
+      try {
+        // Apply and request recording of the import (for audit) using filename if available
+        const filename =
+          (document.getElementById("importTranslationsFile").files &&
+            document.getElementById("importTranslationsFile").files[0] &&
+            document.getElementById("importTranslationsFile").files[0].name) ||
+          null;
+        const resp = await fetch(
+          `/api/admin/i18n?recordImport=1&filename=${encodeURIComponent(
+            filename || ""
+          )}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${api.getToken()}`,
+            },
+            body: JSON.stringify(selected),
+          }
+        );
+        const data = await resp.json();
+        if (!resp.ok) {
+          throw new Error(data.error || JSON.stringify(data));
+        }
+        showToast(`Imported ${selected.length} translations`, "success");
+        // Add any new locales to selects
+        const localeSet = new Set(
+          selected.map((s) => s.locale).filter(Boolean)
+        );
+        for (const l of localeSet)
+          ensureLocaleInSelect(
+            document.getElementById("translationsLocale"),
+            l
+          );
+        // Reload translations to refresh cache
+        if (window.app && typeof window.app.loadTranslations === "function") {
+          try {
+            await window.app.loadTranslations(window.app.locale);
+            console.log("✓ Translations cache refreshed after import");
+          } catch (err) {
+            console.error("Failed to refresh translations cache:", err);
+          }
+        }
+        // Close modal and refresh table
+        modal.hide();
+        // cleanup
+        container.remove();
+        // reload current view
+        await loadTranslationsForSelected();
+      } catch (err) {
+        console.error("Apply import error", err);
+        showToast("Import failed", "danger");
+      }
+    }
+
+    container.querySelector("#importDryRunBtn").onclick = async () => {
+      await doDryRun();
+    };
+    container.querySelector("#importApplyBtn").onclick = async () => {
+      await doApply();
+    };
+
+    container.addEventListener("hidden.bs.modal", () => {
+      // cleanup DOM
+      try {
+        container.remove();
+      } catch (e) {}
+    });
+  }
+
+  // Import logs viewer (simple)
+  async function loadImportLogs() {
+    try {
+      const rows = await api.getTranslationImports(50);
+      let html = `<div class="card"><div class="card-header bg-secondary text-white">Recent Translation Imports</div><div class="card-body"><table class="table table-sm table-striped"><thead><tr><th>When</th><th>By</th><th>File</th><th>Total</th><th>Inserted</th><th>Updated</th><th>Invalid</th></tr></thead><tbody>`;
+      (rows || []).forEach((r) => {
+        html += `<tr><td>${r.created_at}</td><td>${
+          r.admin_username || r.admin_user_id
+        }</td><td>${r.filename || ""}</td><td>${r.total_rows}</td><td>${
+          r.inserted
+        }</td><td>${r.updated}</td><td>${r.invalid}</td></tr>`;
+      });
+      html += `</tbody></table></div></div>`;
+      // show in admin content area
+      const container = document.getElementById("adminContent");
+      container.innerHTML = html;
+    } catch (err) {
+      console.error("Error loading import logs", err);
+      showToast("Failed to load import logs", "danger");
+    }
+  }
+
+  function collectTableTranslations() {
+    const rows = Array.from(
+      document.querySelectorAll("#translationsTableBody tr")
+    );
+    const items = rows
+      .map((row) => {
+        const keyElement = row.querySelector(".trans-key");
+        const key = (keyElement.textContent || keyElement.value || "").trim();
+        const text = row.querySelector(".trans-text").value;
+        const locale = (row.querySelector(".trans-locale").value || "")
+          .trim()
+          .toLowerCase();
+        const namespace =
+          row.dataset.namespace ||
+          document.getElementById("translationsNamespace").value;
+        return { namespace, key, locale, text };
+      })
+      .filter((it) => it.key);
+    return items;
+  }
+
+  async function saveTranslationsFromTable() {
+    const items = collectTableTranslations();
+    if (!items.length) {
+      showToast("No translations to save", "warning");
+      return;
+    }
+    try {
+      await api.updateTranslations(items);
+      showToast("Translations saved", "success");
+      // Ensure any locales in saved items are available in select
+      const localeSet = new Set(
+        items.map((i) => (i.locale || "").toLowerCase()).filter(Boolean)
+      );
+      for (const l of localeSet) {
+        ensureLocaleInSelect(document.getElementById("translationsLocale"), l);
+      }
+      // Reload translations in the current app locale to refresh the cache
+      if (window.app && typeof window.app.loadTranslations === "function") {
+        try {
+          await window.app.loadTranslations(window.app.locale);
+          console.log("✓ Translations cache refreshed after save");
+        } catch (err) {
+          console.error("Failed to refresh translations cache:", err);
+        }
+      }
+    } catch (err) {
+      console.error("Save translations error", err);
+      showToast("Error saving translations", "danger");
+    }
+  }
+
+  function exportTranslationsJson() {
+    const items = collectTableTranslations();
+    const data = JSON.stringify(items, null, 2);
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `translations-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportTranslationsCsv() {
+    const items = collectTableTranslations();
+    const header = "namespace,key,locale,text";
+    const lines = items.map(
+      (it) =>
+        `${it.namespace},${escapeCsv(it.key)},${it.locale},${escapeCsv(
+          it.text
+        )}`
+    );
+    const blob = new Blob([[header].concat(lines).join("\n")], {
+      type: "text/csv",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `translations-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function escapeCsv(s) {
+    return '"' + String(s || "").replace(/"/g, '""') + '"';
   }
 
   async function initAdmin() {
@@ -137,13 +1362,10 @@
       ? "1"
       : "0";
 
-      // Populate truck types and set current value
-      populateUserTruckTypeOptions("editMegaKast", user.mega_kast || "only_mega");
+    // Populate truck types and set current value
+    populateUserTruckTypeOptions("editMegaKast", user.mega_kast || "only_mega");
 
-      loadCompaniesForModal(
-        "editCompany",
-        "editFillInCompany"
-      );
+    loadCompaniesForModal("editCompany", "editFillInCompany");
 
     document.getElementById("editFillInCompanyContainer").style.display =
       user.can_fill_in ? "block" : "none";
@@ -324,42 +1546,42 @@
       console.error("[ADMIN] Error loading companies for modal:", error);
     }
   }
-    async function populateUserTruckTypeOptions(selectId, selectedValue) {
-      const select = document.getElementById(selectId);
-      if (!select) return;
-      select.innerHTML = "";
-      try {
-        const types = await api.getFleetTypes();
-        if (types && types.length > 0) {
-          const emptyOpt = document.createElement("option");
-          emptyOpt.value = "";
-          emptyOpt.textContent = "(No selection)";
-          select.appendChild(emptyOpt);
-          types.forEach((t) => {
-            const opt = document.createElement("option");
-            opt.value = t;
-            opt.textContent = t;
-            if (t === selectedValue) opt.selected = true;
-            select.appendChild(opt);
-          });
-        } else {
-          const fallback = [
-            { v: "only_mega", t: "Mega Only" },
-            { v: "mega_and_kast", t: "Mega + Kast" },
-            { v: "nvt", t: "N.v.t." },
-          ];
-          fallback.forEach((f) => {
-            const opt = document.createElement("option");
-            opt.value = f.v;
-            opt.textContent = f.t;
-            if (f.v === selectedValue) opt.selected = true;
-            select.appendChild(opt);
-          });
-        }
-      } catch (error) {
-        console.error("Error loading truck types:", error);
+  async function populateUserTruckTypeOptions(selectId, selectedValue) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+    select.innerHTML = "";
+    try {
+      const types = await api.getFleetTypes();
+      if (types && types.length > 0) {
+        const emptyOpt = document.createElement("option");
+        emptyOpt.value = "";
+        emptyOpt.textContent = "(No selection)";
+        select.appendChild(emptyOpt);
+        types.forEach((t) => {
+          const opt = document.createElement("option");
+          opt.value = t;
+          opt.textContent = t;
+          if (t === selectedValue) opt.selected = true;
+          select.appendChild(opt);
+        });
+      } else {
+        const fallback = [
+          { v: "only_mega", t: "Mega Only" },
+          { v: "mega_and_kast", t: "Mega + Kast" },
+          { v: "nvt", t: "N.v.t." },
+        ];
+        fallback.forEach((f) => {
+          const opt = document.createElement("option");
+          opt.value = f.v;
+          opt.textContent = f.t;
+          if (f.v === selectedValue) opt.selected = true;
+          select.appendChild(opt);
+        });
       }
+    } catch (error) {
+      console.error("Error loading truck types:", error);
     }
+  }
 
   // ========== RENDER ADMIN PORTAL ==========
 
@@ -419,6 +1641,8 @@
                     <i class="bi bi-palette"></i> Branding
                   </a>
                 </li>
+                <!-- Menu tab intentionally hidden for now; functionality retained for future use -->
+                <!-- Translations tab intentionally hidden for now; functionality kept for future use -->
               </ul>
               <div id="adminContent"></div>
             </div>
@@ -441,31 +1665,31 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Username *</label>
+                    <label class="form-label" data-i18n="field:users.username">Username *</label>
                     <input type="text" class="form-control" id="addUsername" required>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Password *</label>
+                    <label class="form-label" data-i18n="field:users.password">Password *</label>
                     <input type="password" class="form-control" id="addPassword" required>
                   </div>
                 </div>
               </div>
               <div class="mb-3">
-                <label class="form-label">Full Name *</label>
+                <label class="form-label" data-i18n="field:users.fullName">Full Name *</label>
                 <input type="text" class="form-control" id="addFullName" required>
               </div>
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Phone Number</label>
+                    <label class="form-label" data-i18n="field:users.phone">Phone Number</label>
                     <input type="tel" class="form-control" id="addPhone">
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Rit Number</label>
+                    <label class="form-label" data-i18n="field:users.ritnumber">Rit Number</label>
                     <input type="text" class="form-control" id="addRitnumber">
                   </div>
                 </div>
@@ -473,7 +1697,7 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Role</label>
+                    <label class="form-label" data-i18n="field:users.role">Role</label>
                     <select class="form-select" id="addRole">
                       <option value="user">User</option>
                       <option value="admin">Admin</option>
@@ -482,7 +1706,7 @@
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Truck Type</label>
+                    <label class="form-label" data-i18n="field:users.truckType">Truck Type</label>
                     <select class="form-select" id="addMegaKast">
                       <option value="only_mega">Mega Only</option>
                       <option value="mega_and_kast">Mega + Kast</option>
@@ -494,7 +1718,7 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">ADR</label>
+                    <label class="form-label" data-i18n="field:users.adr">ADR</label>
                     <select class="form-select" id="addAdr">
                       <option value="0">No</option>
                       <option value="1">Yes</option>
@@ -503,7 +1727,7 @@
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Company</label>
+                    <label class="form-label" data-i18n="field:users.company">Company</label>
                     <select class="form-select" id="addUserCompany">
                       <option value="">No company</option>
                     </select>
@@ -513,7 +1737,7 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Can Fill In (Invallen)</label>
+                    <label class="form-label" data-i18n="field:users.canFillIn">Can Fill In (Invallen)</label>
                     <select class="form-select" id="addCanFillIn" onchange="toggleAddFillInCompany()">
                       <option value="0">No</option>
                       <option value="1">Yes</option>
@@ -522,7 +1746,7 @@
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3" id="addFillInCompanyContainer" style="display: none;">
-                    <label class="form-label">Fill In Company</label>
+                    <label class="form-label" data-i18n="field:users.fillInCompany">Fill In Company</label>
                     <select class="form-select" id="addFillInCompany">
                       <option value="">Select company</option>
                     </select>
@@ -554,13 +1778,13 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Username</label>
+                    <label class="form-label" data-i18n="field:users.username">Username</label>
                     <input type="text" class="form-control" id="editUsername" readonly>
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Full Name</label>
+                    <label class="form-label" data-i18n="field:users.fullName">Full Name</label>
                     <input type="text" class="form-control" id="editFullName" required>
                   </div>
                 </div>
@@ -568,13 +1792,13 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Phone Number</label>
+                    <label class="form-label" data-i18n="field:users.phone">Phone Number</label>
                     <input type="tel" class="form-control" id="editPhone">
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Rit Number</label>
+                    <label class="form-label" data-i18n="field:users.ritnumber">Rit Number</label>
                     <input type="text" class="form-control" id="editRitnumber">
                   </div>
                 </div>
@@ -582,7 +1806,7 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Role</label>
+                    <label class="form-label" data-i18n="field:users.role">Role</label>
                     <select class="form-select" id="editRole">
                       <option value="user">User</option>
                       <option value="admin">Admin</option>
@@ -591,7 +1815,7 @@
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">Truck Type</label>
+                    <label class="form-label" data-i18n="field:users.truckType">Truck Type</label>
                     <select class="form-select" id="editMegaKast">
                       <option value="only_mega">Mega Only</option>
                       <option value="mega_and_kast">Mega + Kast</option>
@@ -603,7 +1827,7 @@
               <div class="row">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    <label class="form-label">ADR</label>
+                    <label class="form-label" data-i18n="field:users.adr">ADR</label>
                     <select class="form-select" id="editAdr">
                       <option value="0">No</option>
                       <option value="1">Yes</option>
@@ -871,14 +2095,20 @@
                 })">
                   <i class="bi bi-pencil"></i> Edit
                 </button>
-                <button class="btn btn-sm btn-outline-danger mt-1" onclick="openResetMfaModal(${user.id}, '${user.username}')">
+                <button class="btn btn-sm btn-outline-danger mt-1" onclick="openResetMfaModal(${
+                  user.id
+                }, '${user.username}')">
                   <i class="bi bi-shield-lock"></i> Reset MFA
                 </button>
-                ${adminMfaEnabled ? `
+                ${
+                  adminMfaEnabled
+                    ? `
                 <button class="btn btn-sm btn-outline-primary mt-1" onclick="openResetPasswordModal(${user.id}, '${user.username}')">
                   <i class="bi bi-key"></i> Reset wachtwoord
                 </button>
-                ` : ''}
+                `
+                    : ""
+                }
               </td>
             </tr>
           `
@@ -906,14 +2136,14 @@
             </div>
             <div class="modal-body">
               <div id="resetMfaAlert"></div>
-              <p class="text-muted">Bevestig met je eigen MFA code om de MFA van deze gebruiker te resetten.</p>
+              <p class="text-muted">${adminTr("mfa.reset_confirm", "Confirm with your own MFA code to reset this user's MFA")}</p>
               <div class="mb-3">
-                <label class="form-label">Admin MFA code</label>
+                <label class="form-label">${adminTr("mfa.admin_code", "Admin MFA code")}</label>
                 <input type="text" class="form-control text-center" id="resetMfaToken" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${adminTr("cancel", "Cancel")}</button>
               <button type="button" class="btn btn-danger" onclick="submitResetMfa()">
                 <i class="bi bi-shield-lock"></i> Reset MFA
               </button>
@@ -979,23 +2209,29 @@
     document.getElementById("resetPasswordShow").checked = true;
 
     const modalEl = document.getElementById("resetPasswordModal");
-    modalEl.querySelector(".modal-title").innerHTML = `<i class="bi bi-key"></i> Reset wachtwoord voor <strong>${username}</strong>`;
+    modalEl.querySelector(
+      ".modal-title"
+    ).innerHTML = `<i class="bi bi-key"></i> Reset wachtwoord voor <strong>${username}</strong>`;
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
   }
 
   async function submitResetPassword() {
     const alertDiv = document.getElementById("resetPasswordAlert");
-    const mfaToken = document.getElementById("resetPasswordMfaToken").value.trim();
+    const mfaToken = document
+      .getElementById("resetPasswordMfaToken")
+      .value.trim();
     const newPassword = document.getElementById("resetPasswordNew").value;
     const showPassword = !!document.getElementById("resetPasswordShow").checked;
 
     if (!mfaToken || mfaToken.length !== 6) {
-      alertDiv.innerHTML = '<div class="alert alert-warning">Voer een geldige 6-cijferige admin MFA-code in.</div>';
+      alertDiv.innerHTML =
+        '<div class="alert alert-warning">Voer een geldige 6-cijferige admin MFA-code in.</div>';
       return;
     }
 
-    alertDiv.innerHTML = '<div class="alert alert-info">Bezig met resetten...</div>';
+    alertDiv.innerHTML =
+      '<div class="alert alert-info">Bezig met resetten...</div>';
 
     try {
       const resp = await api.resetUserPassword(resetPasswordUserId, {
@@ -1013,7 +2249,9 @@
       }
 
       setTimeout(() => {
-        const modal = bootstrap.Modal.getInstance(document.getElementById("resetPasswordModal"));
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("resetPasswordModal")
+        );
         if (modal) modal.hide();
         loadAdminUsers();
       }, 2200);
@@ -1029,7 +2267,9 @@
     document.getElementById("resetMfaToken").value = "";
 
     const modalEl = document.getElementById("resetMfaModal");
-    modalEl.querySelector(".modal-title").innerHTML = `<i class="bi bi-shield-lock"></i> Reset MFA voor <strong>${username}</strong>`;
+    modalEl.querySelector(
+      ".modal-title"
+    ).innerHTML = `<i class="bi bi-shield-lock"></i> Reset MFA voor <strong>${username}</strong>`;
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
   }
@@ -1039,15 +2279,19 @@
     const token = document.getElementById("resetMfaToken").value.trim();
 
     if (!token || token.length !== 6) {
-      alertDiv.innerHTML = '<div class="alert alert-warning">Voer een geldige 6-cijferige code in.</div>';
+      alertDiv.innerHTML =
+        `<div class="alert alert-warning">${adminTr("mfa.invalid_code", "Enter a valid 6-digit code")}</div>`;
       return;
     }
 
     try {
       await api.resetUserMfa(resetMfaUserId, token);
-      alertDiv.innerHTML = '<div class="alert alert-success">MFA is gereset. Gebruiker moet opnieuw MFA instellen bij volgende login.</div>';
+      alertDiv.innerHTML =
+        `<div class="alert alert-success">${adminTr("mfa.reset_success", "MFA reset. User must setup MFA again at next login.")}</div>`;
       setTimeout(() => {
-        const modal = bootstrap.Modal.getInstance(document.getElementById("resetMfaModal"));
+        const modal = bootstrap.Modal.getInstance(
+          document.getElementById("resetMfaModal")
+        );
         modal.hide();
         loadAdminUsers();
       }, 1200);
@@ -1850,7 +3094,7 @@
 
       if (!requests || requests.length === 0) {
         document.getElementById("leaveRequestsWrapper").innerHTML =
-          '<div class="alert alert-info m-3">Geen verlofaanvragen</div>';
+          `<div class="alert alert-info m-3">${adminTr("leave.no_requests", "No leave requests")}</div>`;
       } else {
         const badge = (status) => {
           switch (status) {
@@ -1998,9 +3242,9 @@
     if (!wrapper) return;
 
     if (!vehicles || vehicles.length === 0) {
-      wrapper.innerHTML = '<div class="p-3 text-muted">Geen voertuigen</div>';
+      wrapper.innerHTML = `<div class="p-3 text-muted">${adminTr("fleet.no_vehicles", "No vehicles")}</div>`;
       document.getElementById("fleetDetailWrapper").innerHTML =
-        '<div class="alert alert-info mt-2">Voeg eerst een voertuig toe.</div>';
+        `<div class="alert alert-info mt-2">${adminTr("fleet.add_first", "Add a vehicle first.")}</div>`;
       return;
     }
 
@@ -2016,7 +3260,7 @@
             <div>
               <strong>${v.license_plate}</strong>
               <small class="d-block text-muted">KM: ${v.km ?? 0} | ${
-            v.company_name || "Geen bedrijf"
+            v.company_name || adminTr("no_company", "No company")
           }</small>
             </div>
             <span class="badge bg-secondary">APK ${
@@ -2067,7 +3311,7 @@
     const detail = document.getElementById("fleetDetailWrapper");
     if (!vehicle) {
       detail.innerHTML =
-        '<div class="alert alert-info">Selecteer een voertuig</div>';
+        `<div class="alert alert-info">${adminTr("fleet.select_vehicle", "Select a vehicle")}</div>`;
       return;
     }
 
@@ -2091,7 +3335,7 @@
       `
           )
           .join("")
-      : '<tr><td colspan="4" class="text-center text-muted">Geen onderhoud geregistreerd</td></tr>';
+      : `<tr><td colspan="4" class="text-center text-muted">${adminTr("fleet.no_maintenance", "No maintenance records")}</td></tr>`;
 
     detail.innerHTML = `
     <div class="card">
@@ -2174,36 +3418,36 @@
           </div>
           <div class="modal-body">
             <div class="mb-3">
-              <label class="form-label">Kenteken</label>
+              <label class="form-label" data-i18n="field:fleet.license_plate">Kenteken</label>
               <input type="text" class="form-control" id="vehicleLicense" required>
             </div>
             <div class="mb-3">
-              <label class="form-label">Bedrijf</label>
+              <label class="form-label" data-i18n="field:fleet.company">Bedrijf</label>
               <select class="form-select" id="vehicleCompany">
                 <option value="">Geen bedrijf</option>
               </select>
             </div>
             <div class="mb-3">
-              <label class="form-label">KM</label>
+              <label class="form-label" data-i18n="field:fleet.km">KM</label>
               <input type="number" class="form-control" id="vehicleKm" value="0" step="0.1">
             </div>
             <div class="mb-3">
-              <label class="form-label">APK geldig tot</label>
+              <label class="form-label" data-i18n="field:fleet.apk_due_date">APK geldig tot</label>
               <input type="date" class="form-control" id="vehicleApk">
             </div>
             <div class="mb-3">
-              <label class="form-label">Rit nummer</label>
+              <label class="form-label" data-i18n="field:fleet.rit_number">Rit nummer</label>
               <input type="text" class="form-control" id="vehicleRit">
             </div>
             <div class="mb-3">
-              <label class="form-label">Truck Type</label>
+              <label class="form-label" data-i18n="field:fleet.truck_type">Truck Type</label>
               <input type="text" class="form-control" id="vehicleTruckType" placeholder="E.g. Mega, Mega+Kast, N.v.t.">
             </div>
             <div id="vehicleAlert"></div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="submitAddVehicle()">Opslaan</button>
+            <button type="button" class="btn btn-primary" onclick="submitAddVehicle()">${adminTr("save", "Save")}</button>
           </div>
         </div>
       </div>
@@ -2238,7 +3482,7 @@
     const btn = event.target;
     const originalText = btn.textContent;
     btn.disabled = true;
-    btn.textContent = "Opslaan...";
+    btn.textContent = adminTr("saving", "Saving...");
     try {
       await api.createFleetVehicle({
         license_plate: license,
@@ -2305,13 +3549,15 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Truck Type</label>
-              <input type="text" class="form-control" id="editVehicleTruckType" value="${v.truck_type || ""}" placeholder="E.g. Mega, Mega+Kast, N.v.t.">
+              <input type="text" class="form-control" id="editVehicleTruckType" value="${
+                v.truck_type || ""
+              }" placeholder="E.g. Mega, Mega+Kast, N.v.t.">
             </div>
             <div id="editVehicleAlert"></div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="submitEditVehicle(${id})">Opslaan</button>
+            <button type="button" class="btn btn-primary" onclick="submitEditVehicle(${id})">${adminTr("save", "Save")}</button>
           </div>
         </div>
       </div>
@@ -2340,7 +3586,7 @@
     const btn = event.target;
     const originalText = btn.textContent;
     btn.disabled = true;
-    btn.textContent = "Opslaan...";
+    btn.textContent = adminTr("saving", "Saving...");
     try {
       await api.updateFleetVehicle(id, {
         license_plate:
@@ -2349,7 +3595,8 @@
         km: parseFloat(document.getElementById("editVehicleKm").value || "0"),
         apk_due_date: document.getElementById("editVehicleApk").value || null,
         rit_number: document.getElementById("editVehicleRit").value || null,
-        truck_type: document.getElementById("editVehicleTruckType").value || null,
+        truck_type:
+          document.getElementById("editVehicleTruckType").value || null,
       });
       const modal = document.getElementById("editVehicleModal");
       const bsModal = bootstrap.Modal.getInstance(modal);
@@ -2391,7 +3638,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="submitMaintenance(${vehicleId})">Opslaan</button>
+            <button type="button" class="btn btn-primary" onclick="submitMaintenance(${vehicleId})">${adminTr("save", "Save")}</button>
           </div>
         </div>
       </div>
@@ -2413,7 +3660,7 @@
     const btn = event.target;
     const originalText = btn.textContent;
     btn.disabled = true;
-    btn.textContent = "Opslaan...";
+    btn.textContent = adminTr("saving", "Saving...");
     try {
       await api.addFleetMaintenance(vehicleId, {
         maintenance_date: date,
@@ -2478,7 +3725,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="submitEditMaintenance(${maintenanceId}, ${vehicleId})">Opslaan</button>
+            <button type="button" class="btn btn-primary" onclick="submitEditMaintenance(${maintenanceId}, ${vehicleId})">${adminTr("save", "Save")}</button>
           </div>
         </div>
       </div>
@@ -2500,7 +3747,7 @@
     const btn = event.target;
     const originalText = btn.textContent;
     btn.disabled = true;
-    btn.textContent = "Opslaan...";
+    btn.textContent = adminTr("saving", "Saving...");
     try {
       await api.updateFleetMaintenance(maintenanceId, {
         maintenance_date: date,
@@ -2531,15 +3778,15 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title">Onderhoud verwijderen</h5>
+            <h5 class="modal-title">${adminTr("fleet.delete_maintenance", "Delete maintenance")}</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <p>Weet je zeker dat je dit onderhoudrecord wilt verwijderen? Dit kan niet ongedaan gemaakt worden.</p>
+            <p>${adminTr("confirm_delete", "Are you sure you want to delete? This cannot be undone.")}</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
-            <button type="button" class="btn btn-danger" onclick="confirmDeleteMaintenance(${maintenanceId})">Verwijderen</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${adminTr("cancel", "Cancel")}</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteMaintenance(${maintenanceId})">${adminTr("delete", "Delete")}</button>
           </div>
         </div>
       </div>
@@ -2556,7 +3803,7 @@
   async function confirmDeleteMaintenance(maintenanceId) {
     const btn = event.target;
     btn.disabled = true;
-    btn.textContent = "Verwijderen...";
+    btn.textContent = adminTr("deleting", "Deleting...");
     try {
       await api.deleteFleetMaintenance(maintenanceId);
       // Find the vehicle ID from the current detail
@@ -2568,7 +3815,7 @@
       await selectVehicle(vehicleId);
     } catch (error) {
       btn.disabled = false;
-      btn.textContent = "Verwijderen";
+      btn.textContent = adminTr("delete", "Delete");
       alert(`Error: ${error.message}`);
     }
   }
@@ -2705,12 +3952,12 @@
     const wrapper = document.getElementById("planningList");
     if (!entries || entries.length === 0) {
       wrapper.innerHTML =
-        '<div class="alert alert-info">Geen planning voor deze week.</div>';
+        `<div class="alert alert-info">${adminTr("planning.no_planning", "No planning for this week")}</div>`;
       return;
     }
 
     const dayName = (d) =>
-      ({ 1: "Ma", 2: "Di", 3: "Wo", 4: "Do", 5: "Vr" }[d] || d);
+      ({ 1: adminTr("day.mon", "Mon"), 2: adminTr("day.tue", "Tue"), 3: adminTr("day.wed", "Wed"), 4: adminTr("day.thu", "Thu"), 5: adminTr("day.fri", "Fri") }[d] || d);
 
     // Sort by day then ritnumber ascending
     const sorted = [...entries].sort((a, b) => {
@@ -3429,7 +4676,7 @@
   }
 
   async function loadBrandingSettings() {
-    const defaultCustomCss = `:root {\n  --branding-primary-color-fallback: #0066CC;\n}\n\n.btn-primary, .bg-brand, .badge-primary, .nav-pills .nav-link.active {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.text-brand, .icon-brand, .nav-link.active i, .sidebar .nav-link i {\n  color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.login-card .btn-primary {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n`;
+    const defaultCustomCss = `:root {\n  --branding-primary-color-fallback: #0066CC;\n}\n\n.btn-primary, .bg-brand, .badge-primary, .nav-pills .nav-link.active {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.text-brand, .icon-brand, .sidebar .nav-link i {\n  color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n/* Ensure active nav icons contrast with the active background */\n.nav-link.active i, .navbar .nav-link.active i {\n  color: #ffffff;\n}\n\n.login-card .btn-primary {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n`;
     const container = document.getElementById("adminContent");
     container.innerHTML = `
     <div class="card">
@@ -3586,7 +4833,8 @@
       const btn = document.getElementById(example.id);
       if (btn) {
         btn.onclick = () => {
-          document.getElementById("brandingCustomCss").value = example.css.trim();
+          document.getElementById("brandingCustomCss").value =
+            example.css.trim();
           showToast("Voorbeeld ingevuld in editor", "info");
         };
       }
@@ -3595,7 +4843,8 @@
     const resetDefaultBtn = document.getElementById("cssResetDefault");
     if (resetDefaultBtn) {
       resetDefaultBtn.onclick = () => {
-        document.getElementById("brandingCustomCss").value = defaultCustomCss.trim();
+        document.getElementById("brandingCustomCss").value =
+          defaultCustomCss.trim();
         showToast("Standaard CSS hersteld", "info");
       };
     }
@@ -3798,6 +5047,11 @@
   window.emailPlanningPDF = emailPlanningPDF;
   window.submitEmailPlanning = submitEmailPlanning;
   window.updatePlanningDriver = updatePlanningDriver;
+  window.loadTranslationsManagement = loadTranslationsManagement;
+  window.saveTranslationsFromTable = saveTranslationsFromTable;
+  // Helpers exported for testing/debugging
+  window.parseCsv = parseCsv;
+  window.ensureLocaleInSelect = ensureLocaleInSelect;
   window.loadSMTPSettings = loadSMTPSettings;
   window.saveSMTPSettings = saveSMTPSettings;
   window.testSMTPConnection = testSMTPConnection;

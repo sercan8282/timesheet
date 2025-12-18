@@ -1,9 +1,20 @@
-const DEFAULT_CUSTOM_CSS = `:root {\n  --branding-primary-color-fallback: #0066CC;\n}\n\n.btn-primary, .bg-brand, .badge-primary, .nav-pills .nav-link.active {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.text-brand, .icon-brand, .nav-link.active i, .sidebar .nav-link i {\n  color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.login-card .btn-primary {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n`;
+const DEFAULT_CUSTOM_CSS = `:root {\n  --branding-primary-color-fallback: #0066CC;\n}\n\n.btn-primary, .bg-brand, .badge-primary, .nav-pills .nav-link.active {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.text-brand, .icon-brand, .sidebar .nav-link i {\n  color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n/* Ensure active nav icons contrast with the active background */\n.nav-link.active i, .navbar .nav-link.active i {\n  color: #ffffff;\n}\n\n.login-card .btn-primary {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n`;
+
+// Global translation helper function
+window.t = function(namespace, key) {
+  if (window.app && window.app.translations) {
+    return window.app.translations[`${namespace}:${key}`] || `${namespace}:${key}`;
+  }
+  return `${namespace}:${key}`;
+};
 
 class App {
   constructor() {
     this.user = null;
     this.branding = null;
+    this.locale = localStorage.getItem("locale") || "nl";
+    this.translations = {}; // cache for loaded translations: { 'namespace.key.locale': text }
+    this.currentPage = null; // Track current page
 
     this.init();
   }
@@ -54,10 +65,134 @@ class App {
         "[DEBUG app.init] Final this.user before showApp:",
         this.user
       );
+      // Load menu configuration then show app
+      try {
+        await this.loadAndRenderMenu();
+      } catch (e) {
+        console.warn("Could not load menu config, using default navbar", e);
+      }
+      // Load translations for current locale into cache
+      try {
+        await this.loadTranslations(this.locale);
+      } catch (err) {
+        console.warn("Could not load translations:", err);
+      }
+      // hook up language selector
+      const ls = document.getElementById("langSelect");
+      if (ls) {
+        ls.value = this.locale;
+        ls.onchange = async () => {
+          this.setLocale(ls.value);
+        };
+      }
       this.showApp();
       this.loadPage("dashboard");
     } else {
       this.showLogin();
+    }
+  }
+
+  setLocale(locale) {
+    this.locale = locale;
+    localStorage.setItem("locale", locale);
+    // reload menu in selected locale
+    this.loadTranslations(locale).then(() => {
+      this.loadAndRenderMenu();
+      // Reload current page to apply translations
+      const currentPage = this.currentPage || this.getCurrentPage();
+      if (currentPage) {
+        this.loadPage(currentPage);
+      }
+    });
+  }
+
+  getCurrentPage() {
+    // Try to determine current page from active nav
+    const activeNav = document.querySelector(".navbar-nav .nav-link.active");
+    if (activeNav) {
+      const navItem = activeNav.closest("li");
+      if (navItem && navItem.id && navItem.id.startsWith("nav-")) {
+        return navItem.id.replace("nav-", "");
+      }
+    }
+    return this.currentPage || "dashboard";
+  }
+
+  async loadTranslations(locale) {
+    try {
+      const rows = await api.getTranslations(locale);
+      this.translations = {};
+      (rows || []).forEach((r) => {
+        // key uses namespace:key
+        this.translations[`${r.namespace}:${r.key}`] = r.text;
+      });
+      this.applyTranslationsToDom();
+      return this.translations;
+    } catch (error) {
+      console.error("Error loading translations:", error);
+      throw error;
+    }
+  }
+
+  t(namespace, key) {
+    return this.translations[`${namespace}:${key}`] || null;
+  }
+
+  applyTranslationsToDom() {
+    // Find elements with data-i18n attribute in the form namespace:key
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      try {
+        const attr = el.getAttribute("data-i18n");
+        const [namespace, k] = attr.split(":");
+        const txt = this.t(namespace, k);
+        if (txt !== null && typeof txt !== "undefined") {
+          el.textContent = txt;
+        }
+      } catch (err) {
+        // ignore
+      }
+    });
+  }
+
+  // Load menu configuration from server and render nav items dynamically
+  async loadAndRenderMenu() {
+    try {
+      const items = this.locale
+        ? await api.getUiMenuForLocale(this.locale)
+        : await api.getUiMenu();
+      if (!items || items.length === 0) return;
+
+      const container = document.querySelector(".navbar-nav.me-auto");
+      if (!container) return;
+
+      // Map page_key to default icons to preserve look & feel
+      const iconMap = {
+        dashboard: "bi-house",
+        history: "bi-clock-history",
+        "weekly-hours": "bi-bar-chart",
+        leave: "bi-airplane",
+        invoices: "bi-receipt",
+        revenue: "bi-graph-up",
+        admin: "bi-gear",
+      };
+
+      const html = items
+        .map((it) => {
+          const visible = it.visible ? "" : 'style="display:none"';
+          const icon = iconMap[it.page_key] || "bi-circle";
+          return `<li class="nav-item" id="nav-${it.page_key}" ${visible}>
+            <a class="nav-link" href="#" onclick="app.loadPage('${it.page_key}')">
+              <i class="bi ${icon}"></i> ${it.label}
+            </a>
+          </li>`;
+        })
+        .join("\n");
+
+      // Replace current nav; keep user dropdown intact
+      container.innerHTML = html;
+    } catch (error) {
+      console.error("Error rendering menu:", error);
+      throw error;
     }
   }
 
@@ -114,7 +249,10 @@ class App {
       styleTag.id = styleId;
       document.head.appendChild(styleTag);
     }
-    styleTag.textContent = cssText || "";
+    // Always append a small override to ensure active nav icons remain visible
+    // even if admin-provided CSS sets icon colors that blend into the active background.
+    const override = `\n/* Ensure active nav icons contrast with the active background */\n.nav-link.active i, .navbar .nav-link.active i { color: #ffffff !important; }\n`;
+    styleTag.textContent = (cssText || "") + override;
   }
 
   async showLogin() {
@@ -145,20 +283,26 @@ class App {
       console.log(
         "[DEBUG showApp] Setting nav-admin and nav-invoices to display: block"
       );
-      adminMenu.style.display = "block";
-      if (invoicesMenu) invoicesMenu.style.display = "block";
-      if (revenueMenu) revenueMenu.style.display = "block";
+      if (adminMenu && adminMenu.style.display !== "none")
+        adminMenu.style.display = "block";
+      if (invoicesMenu && invoicesMenu.style.display !== "none")
+        invoicesMenu.style.display = "block";
+      if (revenueMenu && revenueMenu.style.display !== "none")
+        revenueMenu.style.display = "block";
     } else {
       console.log(
         "[DEBUG showApp] Setting nav-admin and nav-invoices to display: none"
       );
-      adminMenu.style.display = "none";
+      if (adminMenu) adminMenu.style.display = "none";
       if (invoicesMenu) invoicesMenu.style.display = "none";
       if (revenueMenu) revenueMenu.style.display = "none";
     }
   }
 
   loadPage(page) {
+    // Track current page
+    this.currentPage = page;
+    
     // Update active nav
     document.querySelectorAll(".navbar-nav .nav-link").forEach((link) => {
       link.classList.remove("active");
@@ -174,18 +318,22 @@ class App {
       case "dashboard":
         document.getElementById("app").innerHTML = renderDashboard();
         initDashboard();
+        this.applyTranslationsToDom();
         break;
       case "history":
         document.getElementById("app").innerHTML = renderHistory();
         initHistory();
+        this.applyTranslationsToDom();
         break;
       case "weekly-hours":
         document.getElementById("app").innerHTML = renderWeeklySummary();
         initWeeklySummary();
+        this.applyTranslationsToDom();
         break;
       case "leave":
         document.getElementById("app").innerHTML = renderLeave();
         initLeave();
+        this.applyTranslationsToDom();
         break;
       case "invoices":
         if (this.user.isAdmin) {
@@ -196,6 +344,7 @@ class App {
             document.getElementById("app").innerHTML =
               '<div class="alert alert-danger">Invoice module failed to load.</div>';
           }
+          this.applyTranslationsToDom();
         } else {
           alert("Access denied");
         }
@@ -204,6 +353,7 @@ class App {
         if (this.user.isAdmin) {
           document.getElementById("app").innerHTML = renderRevenue();
           initRevenue();
+          this.applyTranslationsToDom();
         } else {
           alert("Access denied");
         }
@@ -224,6 +374,7 @@ class App {
                     console.log("[ADMIN] Calling initAdmin()");
                     initAdmin();
                   }
+                  this.applyTranslationsToDom();
                 }, 50);
               } else if (retries > 50) {
                 clearInterval(waitForAdmin);
@@ -243,6 +394,7 @@ class App {
             } else {
               console.error("[ADMIN] initAdmin function not found");
             }
+            this.applyTranslationsToDom();
           }, 50);
         } else {
           alert("Access denied");
@@ -251,6 +403,7 @@ class App {
       case "change-password":
         document.getElementById("app").innerHTML = renderChangePassword();
         initChangePassword();
+        this.applyTranslationsToDom();
         break;
       default:
         this.loadPage("dashboard");

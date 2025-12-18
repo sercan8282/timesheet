@@ -18,6 +18,181 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
+// Update or insert translations (bulk)
+router.put("/i18n", async (req, res) => {
+  try {
+    const items = req.body;
+    if (!items || !Array.isArray(items))
+      return res
+        .status(400)
+        .json({ error: "Expected an array of translations" });
+    const dryRun =
+      req.query &&
+      (req.query.dryRun === "1" ||
+        String(req.query.dryRun) === "true" ||
+        req.query.dry_run === "1");
+
+    const resultDetails = [];
+    let processed = 0;
+
+    for (const it of items) {
+      const namespace = it.namespace && String(it.namespace).trim();
+      const key = it.key && String(it.key).trim();
+      const locale = it.locale && String(it.locale).trim().toLowerCase();
+      const text =
+        typeof it.text === "undefined" || it.text === null
+          ? ""
+          : String(it.text);
+
+      const detail = { namespace, key, locale, text, action: "skip" };
+      if (!namespace || !key || !locale) {
+        detail.action = "invalid";
+        resultDetails.push(detail);
+        continue;
+      }
+
+      // Check existing translation
+      const existing = await db.get(
+        `SELECT text FROM translations WHERE namespace = ? AND key = ? AND locale = ?`,
+        [namespace, key, locale]
+      );
+
+      if (existing) {
+        if (existing.text === text) {
+          detail.action = "noop";
+        } else {
+          detail.action = "update";
+          detail.currentText = existing.text;
+        }
+      } else {
+        detail.action = "insert";
+      }
+
+      resultDetails.push(detail);
+
+      if (dryRun) {
+        // don't apply changes
+        processed++;
+        continue;
+      }
+
+      // Apply changes
+      if (detail.action === "update") {
+        await db.run(
+          `UPDATE translations SET text = ?, updated_by = ?, updated_at = CURRENT_TIMESTAMP WHERE namespace = ? AND key = ? AND locale = ?`,
+          [text, req.user.id, namespace, key, locale]
+        );
+      } else if (detail.action === "insert") {
+        await db.run(
+          `INSERT INTO translations (namespace, key, locale, text, updated_by) VALUES (?, ?, ?, ?, ?)`,
+          [namespace, key, locale, text, req.user.id]
+        );
+      }
+      processed++;
+    }
+
+    if (dryRun) {
+      // Summarize actions
+      const summary = resultDetails.reduce((acc, d) => {
+        acc[d.action] = (acc[d.action] || 0) + 1;
+        return acc;
+      }, {});
+      return res.json({ dryRun: true, summary, details: resultDetails });
+    }
+
+    // Optionally record import audit if requested
+    try {
+      const record =
+        req.query &&
+        (req.query.recordImport === "1" ||
+          String(req.query.recordImport) === "true");
+      if (record) {
+        const inserted = resultDetails.filter(
+          (d) => d.action === "insert"
+        ).length;
+        const updatedCount = resultDetails.filter(
+          (d) => d.action === "update"
+        ).length;
+        const invalid = resultDetails.filter(
+          (d) => d.action === "invalid"
+        ).length;
+        const total = resultDetails.length;
+        const filename = req.query.filename ? String(req.query.filename) : null;
+        await db.run(
+          `INSERT INTO translation_imports (admin_user_id, filename, total_rows, inserted, updated, invalid, details) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            req.user.id,
+            filename,
+            total,
+            inserted,
+            updatedCount,
+            invalid,
+            JSON.stringify(resultDetails),
+          ]
+        );
+      }
+    } catch (err) {
+      console.error("Error recording import audit:", err);
+    }
+
+    res.json({ updated: processed, details: resultDetails });
+  } catch (error) {
+    console.error("Error updating translations:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// List import audit logs (admin only)
+router.get("/i18n/imports", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const rows = await db.all(
+      `SELECT ti.id, ti.admin_user_id, u.username AS admin_username, ti.filename, ti.total_rows, ti.inserted, ti.updated, ti.invalid, ti.details, ti.created_at
+       FROM translation_imports ti
+       LEFT JOIN users u ON u.id = ti.admin_user_id
+       ORDER BY ti.created_at DESC LIMIT ?`,
+      [limit]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching import logs:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Get all keys for a namespace (includes ui_menu page_keys for 'menu')
+router.get("/i18n/keys", async (req, res) => {
+  try {
+    const namespace = req.query.namespace && String(req.query.namespace).trim();
+    if (!namespace)
+      return res.status(400).json({ error: "namespace is required" });
+
+    let rows;
+    if (namespace === "menu") {
+      // include page_key from ui_menu as well
+      rows = await db.all(
+        `SELECT DISTINCT key FROM (
+           SELECT key FROM translations WHERE namespace = ?
+           UNION
+           SELECT page_key AS key FROM ui_menu
+         ) ORDER BY key`,
+        [namespace]
+      );
+    } else {
+      rows = await db.all(
+        `SELECT DISTINCT key FROM translations WHERE namespace = ? ORDER BY key`,
+        [namespace]
+      );
+    }
+
+    const keys = (rows || []).map((r) => r.key);
+    res.json(keys);
+  } catch (error) {
+    console.error("Error fetching translation keys:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Get all users
 router.get("/users", async (req, res) => {
   try {
@@ -1235,10 +1410,9 @@ router.put(
           [custom_css, existing.id]
         );
       } else {
-        await db.run(
-          `INSERT INTO branding_settings (custom_css) VALUES (?)`,
-          [custom_css]
-        );
+        await db.run(`INSERT INTO branding_settings (custom_css) VALUES (?)`, [
+          custom_css,
+        ]);
       }
 
       const updated = await db.get(
@@ -1355,6 +1529,47 @@ router.get("/fleet/vehicles", async (_req, res) => {
   }
 });
 
+// Update menu configuration (admin only)
+router.put("/ui/menu", async (req, res) => {
+  try {
+    const items = req.body;
+    if (!Array.isArray(items))
+      return res.status(400).json({ error: "Invalid payload" });
+
+    // Basic validation
+    for (const it of items) {
+      if (!it.page_key || typeof it.label !== "string") {
+        return res
+          .status(400)
+          .json({ error: "Each item must include page_key and label" });
+      }
+    }
+
+    // Replace existing config in a transaction-like way: delete all and insert
+    await db.run("BEGIN TRANSACTION");
+    await db.run("DELETE FROM ui_menu");
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      await db.run(
+        "INSERT INTO ui_menu (page_key, label, sort_order, visible) VALUES (?, ?, ?, ?)",
+        [it.page_key, it.label, i, it.visible ? 1 : 0]
+      );
+    }
+    await db.run("COMMIT");
+
+    const rows = await db.all(
+      "SELECT page_key, label, sort_order, visible FROM ui_menu ORDER BY sort_order ASC"
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error("Error updating UI menu:", error);
+    try {
+      await db.run("ROLLBACK");
+    } catch (e) {}
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Get single vehicle with maintenance history
 router.get("/fleet/vehicles/:id", async (req, res) => {
   try {
@@ -1403,8 +1618,14 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { license_plate, km, apk_due_date, rit_number, company_id, truck_type } =
-        req.body;
+      const {
+        license_plate,
+        km,
+        apk_due_date,
+        rit_number,
+        company_id,
+        truck_type,
+      } = req.body;
 
       const result = await db.run(
         `INSERT INTO fleet_vehicles (license_plate, km, apk_due_date, rit_number, company_id, truck_type) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -1450,8 +1671,14 @@ router.put(
       );
       if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
 
-      const { license_plate, km, apk_due_date, rit_number, company_id, truck_type } =
-        req.body;
+      const {
+        license_plate,
+        km,
+        apk_due_date,
+        rit_number,
+        company_id,
+        truck_type,
+      } = req.body;
       await db.run(
         `UPDATE fleet_vehicles 
          SET license_plate = COALESCE(?, license_plate),
@@ -1903,7 +2130,11 @@ router.post("/users/:id/reset-password", async (req, res) => {
       // continue - we still return success but note email failed
     }
 
-    const response = { success: true, message: "Password reset successfully", emailed };
+    const response = {
+      success: true,
+      message: "Password reset successfully",
+      emailed,
+    };
     if (showPassword) response.tempPassword = passwordToSet;
 
     res.json(response);

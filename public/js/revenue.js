@@ -6,23 +6,23 @@ function renderRevenue() {
     <div class="container-fluid mt-4">
       <div class="row mb-4 g-3 align-items-center">
         <div class="col">
-          <h2><i class="bi bi-graph-up"></i> Omzet</h2>
-          <div class="text-muted">Overzicht per week / maand / kwartaal op basis van factuur totaalbedragen.</div>
+          <h2><i class="bi bi-graph-up"></i> <span data-i18n="ui:revenue.title">Omzet</span></h2>
+          <div class="text-muted" data-i18n="ui:revenue.subtitle">Overzicht per week / maand / kwartaal op basis van factuur totaalbedragen.</div>
         </div>
         <div class="col-auto d-flex gap-2 align-items-center">
           <select id="revenue-customer" class="form-select" title="Filter op klant">
-            <option value="">Alle klanten</option>
+            <option value="" data-i18n="ui:revenue.all_customers">Alle klanten</option>
           </select>
           <select id="revenue-year" class="form-select" title="Filter op jaar">
-            <option value="">Alle jaren</option>
+            <option value="" data-i18n="ui:revenue.all_years">Alle jaren</option>
           </select>
           <select id="revenue-period" class="form-select" title="Periode">
-            <option value="week">Per week</option>
-            <option value="month" selected>Per maand</option>
-            <option value="quarter">Per kwartaal</option>
+            <option value="week" data-i18n="ui:revenue.per_week">Per week</option>
+            <option value="month" selected data-i18n="ui:revenue.per_month">Per maand</option>
+            <option value="quarter" data-i18n="ui:revenue.per_quarter">Per kwartaal</option>
           </select>
           <button class="btn btn-outline-primary" id="revenue-refresh">
-            <i class="bi bi-arrow-repeat"></i> Vernieuwen
+            <i class="bi bi-arrow-repeat"></i> <span data-i18n="ui:refresh">Vernieuwen</span>
           </button>
         </div>
       </div>
@@ -35,7 +35,7 @@ function renderRevenue() {
 
       <div class="card">
         <div class="card-header">
-          <h5>Samenvatting</h5>
+          <h5><span data-i18n="ui:summary">Samenvatting</span></h5>
         </div>
         <div class="card-body">
           <div class="table-responsive">
@@ -70,7 +70,8 @@ function initRevenue() {
       );
     } catch (err) {
       console.error("Error loading invoices for revenue:", err);
-      showToast("Fout bij laden omzetgegevens", "error");
+      const errorMsg = window.app && window.app.t ? window.app.t("ui", "revenue.error_loading") : "Error loading revenue data";
+      showToast(errorMsg || "Error loading revenue data", "error");
     }
   };
 

@@ -1,6 +1,26 @@
 let leaveRequests = [];
 let leaveBalance = { vacation_hours: 0, overtime_hours: 0 };
 
+function translate(namespace, key, fallback = `${namespace}:${key}`) {
+  const value = t(namespace, key);
+  if (!value || value === `${namespace}:${key}`) {
+    return fallback;
+  }
+  return value;
+}
+
+function getCurrentLocale() {
+  const locale =
+    (window.app && app.locale) ||
+    localStorage.getItem("locale") ||
+    navigator.language ||
+    "en-US";
+
+  if (locale.startsWith("nl")) return "nl-NL";
+  if (locale.startsWith("de")) return "de-DE";
+  return "en-US";
+}
+
 function renderLeave() {
   return `
     <div class="container mt-4">
@@ -8,76 +28,76 @@ function renderLeave() {
         <div class="col-lg-4">
           <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center">
-              <h5 class="mb-0"><i class="bi bi-wallet2"></i> Verlofsaldo</h5>
+              <h5 class="mb-0"><i class="bi bi-wallet2"></i> <span data-i18n="ui:leave.balance">Verlofsaldo</span></h5>
               <span class="badge bg-info" id="leaveBalanceUpdated">-</span>
             </div>
             <div class="card-body" id="leaveBalanceCard">
-              <div class="text-center text-muted">Loading...</div>
+              <div class="text-center text-muted" data-i18n="ui:loading">Loading...</div>
             </div>
           </div>
         </div>
         <div class="col-lg-8">
           <div class="card mb-3">
-            <div class="card-header"><h5 class="mb-0"><i class="bi bi-send"></i> Verlofaanvraag</h5></div>
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-send"></i> <span data-i18n="ui:leave.request">Verlofaanvraag</span></h5></div>
             <div class="card-body">
               <div id="leaveFormAlert"></div>
               <div class="row g-2">
                 <div class="col-md-3">
-                  <label class="form-label">Type</label>
+                  <label class="form-label" data-i18n="ui:leave.type">Type</label>
                   <select class="form-select" id="leaveType">
-                    <option value="vacation">Verlof</option>
-                    <option value="overtime">Overuren</option>
+                    <option value="vacation" data-i18n="ui:leave.type_vacation">Verlof</option>
+                    <option value="overtime" data-i18n="ui:leave.type_overtime">Overuren</option>
                   </select>
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">Vanaf datum</label>
+                  <label class="form-label" data-i18n="ui:leave.start_date">Vanaf datum</label>
                   <input type="date" class="form-control" id="leaveStart" onchange="calculateLeaveHours()" />
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">Tot en met</label>
+                  <label class="form-label" data-i18n="ui:leave.end_date">Tot en met</label>
                   <input type="date" class="form-control" id="leaveEnd" onchange="calculateLeaveHours()" />
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">Uren (auto)</label>
+                  <label class="form-label" data-i18n="ui:leave.hours_auto">Uren (auto)</label>
                   <input type="number" step="0.25" min="0.25" class="form-control" id="leaveHours" readonly />
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">Vanaf tijd</label>
+                  <label class="form-label" data-i18n="ui:leave.start_time">Vanaf tijd</label>
                   <input type="time" class="form-control" id="leaveStartTime" value="09:00" onchange="calculateLeaveHours()" />
                 </div>
                 <div class="col-md-3">
-                  <label class="form-label">Tot tijd</label>
+                  <label class="form-label" data-i18n="ui:leave.end_time">Tot tijd</label>
                   <input type="time" class="form-control" id="leaveEndTime" value="18:00" onchange="calculateLeaveHours()" />
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Toelichting (optioneel)</label>
+                  <label class="form-label" data-i18n="ui:leave.reason">Toelichting (optioneel)</label>
                   <textarea class="form-control" id="leaveReason" rows="1"></textarea>
                 </div>
                 <div class="col-12 d-flex justify-content-end">
                   <button class="btn btn-primary" onclick="submitLeaveRequestForm()">
-                    <i class="bi bi-send"></i> Aanvraag indienen
+                    <i class="bi bi-send"></i> <span data-i18n="ui:leave.submit_request">Aanvraag indienen</span>
                   </button>
                 </div>
               </div>
             </div>
           </div>
           <div class="card">
-            <div class="card-header"><h5 class="mb-0"><i class="bi bi-list-check"></i> Mijn aanvragen</h5></div>
+            <div class="card-header"><h5 class="mb-0"><i class="bi bi-list-check"></i> <span data-i18n="ui:leave.my_requests">Mijn aanvragen</span></h5></div>
             <div class="card-body">
               <div class="table-responsive">
                 <table class="table table-sm table-hover">
                   <thead>
                     <tr>
-                      <th>Periode</th>
-                      <th>Uren</th>
-                      <th>Type</th>
-                      <th>Status</th>
-                      <th>Opmerking</th>
-                      <th>Acties</th>
+                      <th><span data-i18n="ui:leave.period">Periode</span></th>
+                      <th><span data-i18n="ui:leave.hours">Uren</span></th>
+                      <th><span data-i18n="ui:leave.type_col">Type</span></th>
+                      <th><span data-i18n="ui:leave.status">Status</span></th>
+                      <th><span data-i18n="ui:leave.note">Opmerking</span></th>
+                      <th><span data-i18n="ui:actions">Acties</span></th>
                     </tr>
                   </thead>
                   <tbody id="leaveRequestsBody">
-                    <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted" data-i18n="ui:loading">Loading...</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -91,22 +111,22 @@ function renderLeave() {
         <div class="col-12">
           <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-              <h5 class="mb-0"><i class="bi bi-calendar3"></i> Verlofkalender - Team Overzicht</h5>
+              <h5 class="mb-0"><i class="bi bi-calendar3"></i> <span data-i18n="ui:leave.calendar_title">Verlofkalender - Team Overzicht</span></h5>
               <div class="btn-group btn-group-sm">
                 <button class="btn btn-outline-secondary" onclick="shiftCalendar(-1)">
-                  <i class="bi bi-chevron-left"></i> Vorige maand
+                  <i class="bi bi-chevron-left"></i> <span data-i18n="ui:leave.prev_month">Vorige maand</span>
                 </button>
                 <button class="btn btn-outline-secondary" onclick="shiftCalendar(0)">
-                  Vandaag
+                  <span data-i18n="ui:leave.today">Vandaag</span>
                 </button>
                 <button class="btn btn-outline-secondary" onclick="shiftCalendar(1)">
-                  Volgende maand <i class="bi bi-chevron-right"></i>
+                  <span data-i18n="ui:leave.next_month">Volgende maand</span> <i class="bi bi-chevron-right"></i>
                 </button>
               </div>
             </div>
             <div class="card-body p-0">
               <div id="leaveCalendar" style="overflow-x: auto; overflow-y: visible;">
-                <div class="text-center p-4 text-muted">Loading calendar...</div>
+                <div class="text-center p-4 text-muted" data-i18n="ui:leave.calendar_loading">Loading calendar...</div>
               </div>
             </div>
           </div>
@@ -212,25 +232,36 @@ async function loadLeaveBalance() {
   try {
     const balance = await api.getLeaveBalance();
     leaveBalance = balance;
+    const hoursUnit = translate("ui", "leave.hours_unit", "u");
+    const vacationLabel = translate("ui", "leave.type_vacation", "Vacation");
+    const overtimeLabel = translate("ui", "leave.type_overtime", "Overtime");
+    const balanceHint = translate(
+      "ui",
+      "leave.balance_hint",
+      "Available for requests. Requests are deducted immediately."
+    );
+    const locale = getCurrentLocale();
     card.innerHTML = `
       <div class="mb-2 d-flex justify-content-between align-items-center">
-        <span>Verlofuren</span>
+        <span>${vacationLabel}</span>
         <span class="fw-bold text-primary" id="vacationHours">${
           balance.vacation_hours?.toFixed?.(2) ??
           Number(balance.vacation_hours || 0).toFixed(2)
-        } u</span>
+        } ${hoursUnit}</span>
       </div>
       <div class="mb-2 d-flex justify-content-between align-items-center">
-        <span>Overuren</span>
+        <span>${overtimeLabel}</span>
         <span class="fw-bold text-success" id="overtimeHours">${
           balance.overtime_hours?.toFixed?.(2) ??
           Number(balance.overtime_hours || 0).toFixed(2)
-        } u</span>
+        } ${hoursUnit}</span>
       </div>
-      <small class="text-muted">Beschikbaar voor aanvragen. Aanvragen worden direct verrekend.</small>
+      <small class="text-muted">${balanceHint}</small>
     `;
     document.getElementById("leaveBalanceUpdated").textContent =
-      balance.updated_at ? new Date(balance.updated_at).toLocaleString() : "-";
+      balance.updated_at
+        ? new Date(balance.updated_at).toLocaleString(locale)
+        : "-";
   } catch (error) {
     card.innerHTML = `<div class="alert alert-danger mb-0">${error.message}</div>`;
   }
@@ -240,50 +271,59 @@ async function loadLeaveRequests() {
   const tbody = document.getElementById("leaveRequestsBody");
   try {
     leaveRequests = await api.getLeaveRequests();
+    const hoursUnit = translate("ui", "leave.hours_unit", "u");
+    const noRequestsText = translate("ui", "leave.no_requests", "No requests");
+    const toLabel = translate("ui", "leave.to", "to");
+    const timeSeparator = translate("ui", "leave.time_separator", " - ");
     if (!leaveRequests.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted"><i class="bi bi-inbox"></i> Geen aanvragen</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted"><i class="bi bi-inbox"></i> ${noRequestsText}</td></tr>`;
       return;
     }
 
     tbody.innerHTML = leaveRequests
       .map((req) => {
+        const vacationLabel = translate("ui", "leave.type_vacation", "Vacation");
+        const overtimeLabel = translate("ui", "leave.type_overtime", "Overtime");
         const statusBadge =
           req.status === "approved"
             ? "badge bg-success"
             : req.status === "rejected"
             ? "badge bg-danger"
             : "badge bg-warning text-dark";
+        const statusLabel =
+          req.status === "approved"
+            ? translate("ui", "leave.status_approved", "Approved")
+            : req.status === "rejected"
+            ? translate("ui", "leave.status_rejected", "Rejected")
+            : translate("ui", "leave.status_pending", "Pending");
         const approver = req.approver_name ? ` (${req.approver_name})` : "";
 
-        // Format date/time display
         let dateTimeDisplay = `${req.start_date}`;
         if (req.start_date === req.end_date && req.start_time && req.end_time) {
-          dateTimeDisplay += ` (${req.start_time} - ${req.end_time})`;
+          dateTimeDisplay += ` (${req.start_time}${timeSeparator}${req.end_time})`;
         } else if (req.start_date !== req.end_date) {
-          dateTimeDisplay += ` t/m ${req.end_date}`;
+          dateTimeDisplay += ` ${toLabel} ${req.end_date}`;
           if (req.start_time && req.end_time) {
-            dateTimeDisplay += ` (${req.start_time} - ${req.end_time})`;
+            dateTimeDisplay += ` (${req.start_time}${timeSeparator}${req.end_time})`;
           }
         }
 
         return `
           <tr>
             <td>${dateTimeDisplay}</td>
-            <td>${Number(req.hours_requested).toFixed(2)} u</td>
-            <td>${req.balance_type === "vacation" ? "Verlof" : "Overuren"}</td>
-            <td><span class="${statusBadge}">${
-          req.status
-        }${approver}</span></td>
+            <td>${Number(req.hours_requested).toFixed(2)} ${hoursUnit}</td>
+            <td>${req.balance_type === "vacation" ? vacationLabel : overtimeLabel}</td>
+            <td><span class="${statusBadge}">${statusLabel}${approver}</span></td>
             <td>${req.reason || req.admin_note || "-"}</td>
             <td>
               <button class="btn btn-sm btn-warning" onclick="editLeaveRequest(${
                 req.id
-              })" title="Bewerken">
+              })" title="${translate("ui", "edit", "Edit")}">
                 <i class="bi bi-pencil"></i>
               </button>
               <button class="btn btn-sm btn-danger" onclick="deleteLeaveRequest(${
                 req.id
-              })" title="Intrekken">
+              })" title="${translate("ui", "withdraw", "Withdraw")}">
                 <i class="bi bi-trash"></i>
               </button>
             </td>
@@ -312,8 +352,8 @@ async function editLeaveRequest(id) {
   // Change submit button to update mode
   const alertDiv = document.getElementById("leaveFormAlert");
   alertDiv.innerHTML = `<div class="alert alert-info">
-    <strong>Bewerken:</strong> Pas de gegevens aan en klik op "Bijwerken"
-    <button class="btn btn-sm btn-secondary ms-2" onclick="cancelEdit()">Annuleren</button>
+    <strong>${t('ui', 'edit')}:</strong> ${t('ui', 'leave_edit_hint')}
+    <button class="btn btn-sm btn-secondary ms-2" onclick="cancelEdit()">${t('ui', 'cancel')}</button>
   </div>`;
 
   // Replace submit button
@@ -321,7 +361,7 @@ async function editLeaveRequest(id) {
     'button[onclick="submitLeaveRequestForm()"]'
   );
   submitBtn.setAttribute("onclick", `updateLeaveRequest(${id})`);
-  submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Bijwerken';
+  submitBtn.innerHTML = `<i class="bi bi-check-circle"></i> ${t('ui', 'update')}`;
 
   // Scroll to form
   document.querySelector(".card-header").scrollIntoView({ behavior: "smooth" });
@@ -334,7 +374,11 @@ function cancelEdit() {
     document.querySelector('button[onclick^="updateLeaveRequest"]') ||
     document.querySelector('button[onclick="submitLeaveRequestForm()"]');
   submitBtn.setAttribute("onclick", "submitLeaveRequestForm()");
-  submitBtn.innerHTML = '<i class="bi bi-send"></i> Aanvraag indienen';
+  submitBtn.innerHTML = `<i class="bi bi-send"></i> ${translate(
+    "ui",
+    "leave.submit_request",
+    "Submit Request"
+  )}`;
 }
 
 async function updateLeaveRequest(id) {
@@ -355,11 +399,19 @@ async function updateLeaveRequest(id) {
     !hours ||
     hours <= 0
   ) {
-    alertDiv.innerHTML = `<div class="alert alert-warning">Vul alle verplichte velden in en gebruik een geldige urenwaarde.</div>`;
+    alertDiv.innerHTML = `<div class="alert alert-warning">${translate(
+      "ui",
+      "leave.validation_required",
+      "Please fill all required fields and use a valid hours value."
+    )}</div>`;
     return;
   }
 
-  alertDiv.innerHTML = `<div class="alert alert-info">Aanvraag wordt bijgewerkt...</div>`;
+  alertDiv.innerHTML = `<div class="alert alert-info">${translate(
+    "ui",
+    "leave.updating",
+    "Updating request..."
+  )}</div>`;
 
   try {
     await api.updateLeaveRequest(id, {
@@ -371,7 +423,11 @@ async function updateLeaveRequest(id) {
       balanceType,
       reason,
     });
-    alertDiv.innerHTML = `<div class="alert alert-success">Aanvraag bijgewerkt en saldo aangepast.</div>`;
+    alertDiv.innerHTML = `<div class="alert alert-success">${translate(
+      "ui",
+      "leave.updated_success",
+      "Request updated and balance adjusted."
+    )}</div>`;
     cancelEdit();
     await Promise.all([
       loadLeaveBalance(),
@@ -386,7 +442,11 @@ async function updateLeaveRequest(id) {
 async function deleteLeaveRequest(id) {
   if (
     !confirm(
-      "Weet je zeker dat je deze verlofaanvraag wilt intrekken? De uren worden teruggestort."
+      translate(
+        "ui",
+        "leave.withdraw_confirm",
+        "Are you sure you want to withdraw this leave request? The hours will be refunded."
+      )
     )
   ) {
     return;
@@ -400,7 +460,12 @@ async function deleteLeaveRequest(id) {
       loadLeaveCalendar(),
     ]);
   } catch (error) {
-    alert(`Fout bij intrekken: ${error.message}`);
+    const withdrawError = translate(
+      "ui",
+      "leave.withdraw_error",
+      "Error while withdrawing"
+    );
+    alert(`${withdrawError}: ${error.message}`);
   }
 }
 
@@ -422,11 +487,19 @@ async function submitLeaveRequestForm() {
     !hours ||
     hours <= 0
   ) {
-    alertDiv.innerHTML = `<div class="alert alert-warning">Vul alle verplichte velden in en gebruik een geldige urenwaarde.</div>`;
+    alertDiv.innerHTML = `<div class="alert alert-warning">${translate(
+      "ui",
+      "leave.validation_required",
+      "Please fill all required fields and use a valid hours value."
+    )}</div>`;
     return;
   }
 
-  alertDiv.innerHTML = `<div class="alert alert-info">Aanvraag wordt verzonden...</div>`;
+  alertDiv.innerHTML = `<div class="alert alert-info">${translate(
+    "ui",
+    "leave.submitting",
+    "Submitting request..."
+  )}</div>`;
 
   try {
     await api.submitLeaveRequest({
@@ -438,7 +511,11 @@ async function submitLeaveRequestForm() {
       balanceType,
       reason,
     });
-    alertDiv.innerHTML = `<div class="alert alert-success">Aanvraag verzonden en saldo bijgewerkt.</div>`;
+    alertDiv.innerHTML = `<div class="alert alert-success">${translate(
+      "ui",
+      "leave.submitted",
+      "Request submitted and balance updated."
+    )}</div>`;
     document.getElementById("leaveReason").value = "";
     await Promise.all([
       loadLeaveBalance(),
@@ -475,6 +552,14 @@ function shiftCalendar(months) {
 
 function renderLeaveCalendar(requests) {
   const container = document.getElementById("leaveCalendar");
+  const locale = getCurrentLocale();
+  const hoursUnit = translate("ui", "leave.hours_unit", "u");
+  const employeeHeader = translate("ui", "leave.employee", "Employee");
+  const calendarEmpty = translate(
+    "ui",
+    "leave.calendar_empty",
+    "No approved leave requests found"
+  );
 
   // Calculate date range: 3 months from view date
   const startDate = new Date(calendarViewDate);
@@ -507,8 +592,7 @@ function renderLeaveCalendar(requests) {
   const users = Object.values(userRequests);
 
   if (users.length === 0) {
-    container.innerHTML =
-      '<div class="text-center p-4 text-muted">Geen goedgekeurde verlofaanvragen gevonden</div>';
+    container.innerHTML = `<div class="text-center p-4 text-muted">${calendarEmpty}</div>`;
     return;
   }
 
@@ -521,14 +605,14 @@ function renderLeaveCalendar(requests) {
 
   // Header with dates
   html += `<div style="display: flex; border-bottom: 2px solid #dee2e6; background: #f8f9fa; position: sticky; top: 0; z-index: 10;">`;
-  html += `<div style="width: ${nameColumnWidth}px; padding: 10px; font-weight: bold; border-right: 2px solid #dee2e6; background: #f8f9fa;">Medewerker</div>`;
+  html += `<div style="width: ${nameColumnWidth}px; padding: 10px; font-weight: bold; border-right: 2px solid #dee2e6; background: #f8f9fa;">${employeeHeader}</div>`;
 
   let currentMonth = null;
   let monthStartCol = 0;
   const monthHeaders = [];
 
   days.forEach((day, index) => {
-    const monthYear = day.toLocaleDateString("nl-NL", {
+    const monthYear = day.toLocaleDateString(locale, {
       month: "long",
       year: "numeric",
     });
@@ -569,7 +653,7 @@ function renderLeaveCalendar(requests) {
     const isToday = day.toDateString() === new Date().toDateString();
     const bgColor = isToday ? "#fff3cd" : isWeekend ? "#f8f9fa" : "#ffffff";
     const dayNum = day.getDate();
-    const dayName = day.toLocaleDateString("nl-NL", { weekday: "short" });
+    const dayName = day.toLocaleDateString(locale, { weekday: "short" });
 
     html += `<div style="width: ${cellWidth}px; text-align: center; font-size: 0.7rem; padding: 4px 2px; border-right: 1px solid #e9ecef; background: ${bgColor}; ${
       isWeekend ? "color: #6c757d;" : ""
@@ -609,15 +693,17 @@ function renderLeaveCalendar(requests) {
 
         // Show tooltip on hover
         const startDate = new Date(leaveRequest.start_date).toLocaleDateString(
-          "nl-NL"
+          locale
         );
         const endDate = new Date(leaveRequest.end_date).toLocaleDateString(
-          "nl-NL"
+          locale
         );
         const typeLabel =
-          leaveRequest.balance_type === "vacation" ? "Verlof" : "Overuren";
+          leaveRequest.balance_type === "vacation"
+            ? translate("ui", "leave.type_vacation", "Vacation")
+            : translate("ui", "leave.type_overtime", "Overtime");
 
-        cellContent = `<div style="height: 100%; background: ${cellBg}; border-left: 3px solid ${color};" title="${typeLabel}: ${startDate} - ${endDate} (${leaveRequest.hours_requested}u)"></div>`;
+        cellContent = `<div style="height: 100%; background: ${cellBg}; border-left: 3px solid ${color};" title="${typeLabel}: ${startDate} - ${endDate} (${leaveRequest.hours_requested}${hoursUnit})"></div>`;
       }
 
       html += `<div style="width: ${cellWidth}px; border-right: 1px solid #e9ecef; background: ${cellBg}; min-height: 40px;">

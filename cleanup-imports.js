@@ -11,14 +11,15 @@ async function cleanupImports() {
       "SELECT id, invoice_number, original_pdf_path FROM invoices WHERE original_pdf_path IS NOT NULL AND original_pdf_path != ''"
     );
 
-    console.log(`Found ${importedInvoices.length} imported invoices in database\n`);
+    console.log(
+      `Found ${importedInvoices.length} imported invoices in database\n`
+    );
 
     // 2. Delete line items for each invoice
     for (const invoice of importedInvoices) {
-      await db.run(
-        "DELETE FROM invoice_line_items WHERE invoice_id = ?",
-        [invoice.id]
-      );
+      await db.run("DELETE FROM invoice_line_items WHERE invoice_id = ?", [
+        invoice.id,
+      ]);
       console.log(`✓ Deleted line items for invoice ${invoice.invoice_number}`);
     }
 
@@ -31,10 +32,7 @@ async function cleanupImports() {
     );
 
     // 4. Delete PDF files from disk
-    const importsDir = path.join(
-      __dirname,
-      "public/uploads/invoices/imports"
-    );
+    const importsDir = path.join(__dirname, "public/uploads/invoices/imports");
 
     if (fs.existsSync(importsDir)) {
       const files = fs.readdirSync(importsDir);

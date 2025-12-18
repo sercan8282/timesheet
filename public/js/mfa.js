@@ -1,16 +1,16 @@
 // MFA Modal and functionality
 let mfaModal = null;
 let mfaState = {
-    username: null,
-    password: null,
-    setupMode: false,
-    loginMode: false
+  username: null,
+  password: null,
+  setupMode: false,
+  loginMode: false,
 };
 
 function showMFAModal(config = {}) {
-    // Create modal if it doesn't exist
-    if (!mfaModal) {
-        const modalHTML = `
+  // Create modal if it doesn't exist
+  if (!mfaModal) {
+    const modalHTML = `
             <div class="modal fade" id="mfaModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -27,21 +27,21 @@ function showMFAModal(config = {}) {
                 </div>
             </div>
         `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        mfaModal = new bootstrap.Modal(document.getElementById('mfaModal'));
-    }
 
-    const modalBody = document.getElementById('mfaModalBody');
-    const closeBtn = document.getElementById('mfaCloseBtn');
+    document.body.insertAdjacentHTML("beforeend", modalHTML);
+    mfaModal = new bootstrap.Modal(document.getElementById("mfaModal"));
+  }
 
-    if (config.setupMode) {
-        // MFA Setup mode
-        mfaState.setupMode = true;
-        mfaState.loginMode = false;
-        closeBtn.style.display = config.required ? 'none' : 'block';
-        
-        modalBody.innerHTML = `
+  const modalBody = document.getElementById("mfaModalBody");
+  const closeBtn = document.getElementById("mfaCloseBtn");
+
+  if (config.setupMode) {
+    // MFA Setup mode
+    mfaState.setupMode = true;
+    mfaState.loginMode = false;
+    closeBtn.style.display = config.required ? "none" : "block";
+
+    modalBody.innerHTML = `
             <div id="mfaSetupAlert"></div>
             <div id="mfaSetupStep1" style="display: block;">
                 <p>Enhance your account security with Two-Factor Authentication.</p>
@@ -62,11 +62,15 @@ function showMFAModal(config = {}) {
                     <i class="bi bi-qr-code"></i> Start Setup
                 </button>
                 <!-- Skipping MFA setup has been removed -->
-                ${config.required ? `
+                ${
+                  config.required
+                    ? `
                     <div class="alert alert-warning mt-3">
                         <i class="bi bi-exclamation-triangle"></i> MFA setup is now required. You've reached the maximum number of skips.
                     </div>
-                ` : ''}
+                `
+                    : ""
+                }
             </div>
             <div id="mfaSetupStep2" style="display: none;">
                 <div class="text-center mb-3">
@@ -104,15 +108,15 @@ function showMFAModal(config = {}) {
                 </button>
             </div>
         `;
-    } else if (config.loginMode) {
-        // MFA Login mode (token required)
-        mfaState.loginMode = true;
-        mfaState.setupMode = false;
-        mfaState.username = config.username;
-        mfaState.password = config.password;
-        closeBtn.style.display = 'none';
-        
-        modalBody.innerHTML = `
+  } else if (config.loginMode) {
+    // MFA Login mode (token required)
+    mfaState.loginMode = true;
+    mfaState.setupMode = false;
+    mfaState.username = config.username;
+    mfaState.password = config.password;
+    closeBtn.style.display = "none";
+
+    modalBody.innerHTML = `
             <div id="mfaLoginAlert"></div>
             <p>Enter the 6-digit code from your authenticator app:</p>
             <div class="mb-3">
@@ -127,9 +131,9 @@ function showMFAModal(config = {}) {
                 Use backup code instead
             </button>
         `;
-    } else if (config.backupCodeMode) {
-        // Backup code mode
-        modalBody.innerHTML = `
+  } else if (config.backupCodeMode) {
+    // Backup code mode
+    modalBody.innerHTML = `
             <div id="mfaBackupAlert"></div>
             <p>Enter one of your backup codes:</p>
             <div class="mb-3">
@@ -143,211 +147,209 @@ function showMFAModal(config = {}) {
                 Back to code entry
             </button>
         `;
-    }
+  }
 
-    // Skipping is not supported anymore; no skip UI to update.
+  // Skipping is not supported anymore; no skip UI to update.
 
-    mfaModal.show();
+  mfaModal.show();
 }
 
 async function mfaStartSetup() {
-    const alertDiv = document.getElementById('mfaSetupAlert');
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/mfa/setup`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${api.getToken()}`
-            }
-        });
+  const alertDiv = document.getElementById("mfaSetupAlert");
 
-        const data = await response.json();
+  try {
+    const response = await fetch(`${API_BASE_URL}/mfa/setup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${api.getToken()}`,
+      },
+    });
 
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to setup MFA');
-        }
+    const data = await response.json();
 
-        // Show QR code and secret
-        document.getElementById('mfaSetupStep1').style.display = 'none';
-        document.getElementById('mfaSetupStep2').style.display = 'block';
-        
-        document.getElementById('qrCodeContainer').innerHTML = `
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to setup MFA");
+    }
+
+    // Show QR code and secret
+    document.getElementById("mfaSetupStep1").style.display = "none";
+    document.getElementById("mfaSetupStep2").style.display = "block";
+
+    document.getElementById("qrCodeContainer").innerHTML = `
             <img src="${data.qrCode}" alt="QR Code" style="max-width: 250px;">
         `;
-        document.getElementById('mfaSecretCode').value = data.secret;
-
-    } catch (error) {
-        alertDiv.innerHTML = `
+    document.getElementById("mfaSecretCode").value = data.secret;
+  } catch (error) {
+    alertDiv.innerHTML = `
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle"></i> ${error.message}
             </div>
         `;
-    }
+  }
 }
 
 async function mfaVerifySetup() {
-    const alertDiv = document.getElementById('mfaSetupAlert');
-    const code = document.getElementById('mfaVerifyCode').value;
+  const alertDiv = document.getElementById("mfaSetupAlert");
+  const code = document.getElementById("mfaVerifyCode").value;
 
-    if (!code || code.length !== 6) {
-        alertDiv.innerHTML = `
+  if (!code || code.length !== 6) {
+    alertDiv.innerHTML = `
             <div class="alert alert-warning">
                 Please enter a valid 6-digit code
             </div>
         `;
-        return;
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/mfa/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${api.getToken()}`,
+      },
+      body: JSON.stringify({ token: code }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Invalid code");
     }
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/mfa/verify`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${api.getToken()}`
-            },
-            body: JSON.stringify({ token: code })
-        });
+    // Show backup codes
+    document.getElementById("mfaSetupStep2").style.display = "none";
+    document.getElementById("mfaSetupStep3").style.display = "block";
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Invalid code');
-        }
-
-        // Show backup codes
-        document.getElementById('mfaSetupStep2').style.display = 'none';
-        document.getElementById('mfaSetupStep3').style.display = 'block';
-        
-        const backupCodesContainer = document.getElementById('backupCodesContainer');
-        backupCodesContainer.innerHTML = data.backupCodes.map(code => 
-            `<div>${code}</div>`
-        ).join('');
-
-    } catch (error) {
-        alertDiv.innerHTML = `
+    const backupCodesContainer = document.getElementById(
+      "backupCodesContainer"
+    );
+    backupCodesContainer.innerHTML = data.backupCodes
+      .map((code) => `<div>${code}</div>`)
+      .join("");
+  } catch (error) {
+    alertDiv.innerHTML = `
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle"></i> ${error.message}
             </div>
         `;
-    }
+  }
 }
 
 async function mfaSkipSetup() {
-    // Skipping MFA setup is no longer supported.
-    const alertDiv = document.getElementById('mfaSetupAlert');
-    if (alertDiv) {
-        alertDiv.innerHTML = `
+  // Skipping MFA setup is no longer supported.
+  const alertDiv = document.getElementById("mfaSetupAlert");
+  if (alertDiv) {
+    alertDiv.innerHTML = `
             <div class="alert alert-warning">
                 <i class="bi bi-exclamation-triangle"></i> Skipping MFA setup is no longer supported. Please complete the setup to continue.
             </div>
         `;
-    }
+  }
 }
 
 function mfaCompleteSetup() {
-    mfaModal.hide();
-    if (mfaState.setupMode) {
-        // Refresh page to reflect MFA enabled status
-        window.location.reload();
-    }
+  mfaModal.hide();
+  if (mfaState.setupMode) {
+    // Refresh page to reflect MFA enabled status
+    window.location.reload();
+  }
 }
 
 async function mfaSubmitLoginCode() {
-    const code = document.getElementById('mfaLoginCode').value;
-    const alertDiv = document.getElementById('mfaLoginAlert');
+  const code = document.getElementById("mfaLoginCode").value;
+  const alertDiv = document.getElementById("mfaLoginAlert");
 
-    if (!code || code.length !== 6) {
-        alertDiv.innerHTML = `
+  if (!code || code.length !== 6) {
+    alertDiv.innerHTML = `
             <div class="alert alert-warning">
                 Please enter a valid 6-digit code
             </div>
         `;
-        return;
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: mfaState.username,
+        password: mfaState.password,
+        mfaToken: code,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Invalid code");
     }
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username: mfaState.username,
-                password: mfaState.password,
-                mfaToken: code
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Invalid code');
-        }
-
-        // Login successful
-        api.setToken(data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        mfaModal.hide();
-        window.location.reload();
-
-    } catch (error) {
-        alertDiv.innerHTML = `
+    // Login successful
+    api.setToken(data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    mfaModal.hide();
+    window.location.reload();
+  } catch (error) {
+    alertDiv.innerHTML = `
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle"></i> ${error.message}
             </div>
         `;
-    }
+  }
 }
 
 function mfaUseBackupCode() {
-    showMFAModal({ backupCodeMode: true });
+  showMFAModal({ backupCodeMode: true });
 }
 
 async function mfaSubmitBackupCode() {
-    const code = document.getElementById('mfaBackupCode').value;
-    const alertDiv = document.getElementById('mfaBackupAlert');
+  const code = document.getElementById("mfaBackupCode").value;
+  const alertDiv = document.getElementById("mfaBackupAlert");
 
-    if (!code || code.length !== 8) {
-        alertDiv.innerHTML = `
+  if (!code || code.length !== 8) {
+    alertDiv.innerHTML = `
             <div class="alert alert-warning">
                 Please enter a valid backup code
             </div>
         `;
-        return;
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        username: mfaState.username,
+        password: mfaState.password,
+        mfaToken: code,
+        useBackupCode: true,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Invalid backup code");
     }
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                username: mfaState.username,
-                password: mfaState.password,
-                mfaToken: code,
-                useBackupCode: true
-            })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Invalid backup code');
-        }
-
-        // Login successful
-        api.setToken(data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        mfaModal.hide();
-        window.location.reload();
-
-    } catch (error) {
-        alertDiv.innerHTML = `
+    // Login successful
+    api.setToken(data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    mfaModal.hide();
+    window.location.reload();
+  } catch (error) {
+    alertDiv.innerHTML = `
             <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle"></i> ${error.message}
             </div>
         `;
-    }
+  }
 }

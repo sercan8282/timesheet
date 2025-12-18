@@ -29,7 +29,7 @@
     >
       <div class="container-fluid">
         <a class="navbar-brand" href="#" onclick="app.loadPage('dashboard')">
-          <i class="bi bi-calendar-check"></i> Timesheet System
+          <i class="bi bi-calendar-check"></i> <span data-i18n="ui:brand.title">Timesheet System</span>
         </a>
         <button
           class="navbar-toggler"
@@ -43,12 +43,12 @@
           <ul class="navbar-nav me-auto">
             <li class="nav-item" id="nav-dashboard">
               <a class="nav-link" href="#" onclick="app.loadPage('dashboard')">
-                <i class="bi bi-house"></i> Dashboard
+                <i class="bi bi-house"></i> <span data-i18n="menu:dashboard">Dashboard</span>
               </a>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="#" onclick="app.loadPage('history')">
-                <i class="bi bi-clock-history"></i> History
+                <i class="bi bi-clock-history"></i> <span data-i18n="menu:history">History</span>
               </a>
             </li>
             <li class="nav-item" id="nav-weekly-hours">
@@ -57,27 +57,27 @@
                 href="#"
                 onclick="app.loadPage('weekly-hours')"
               >
-                <i class="bi bi-bar-chart"></i> Weekly Hours
+                <i class="bi bi-bar-chart"></i> <span data-i18n="menu:weekly_hours">Weekly Hours</span>
               </a>
             </li>
             <li class="nav-item" id="nav-leave">
               <a class="nav-link" href="#" onclick="app.loadPage('leave')">
-                <i class="bi bi-airplane"></i> Verlof
+                <i class="bi bi-airplane"></i> <span data-i18n="menu:leave">Verlof</span>
               </a>
             </li>
             <li class="nav-item" id="nav-invoices" style="display: none">
               <a class="nav-link" href="#" onclick="app.loadPage('invoices')">
-                <i class="bi bi-receipt"></i> Invoices
+                <i class="bi bi-receipt"></i> <span data-i18n="menu:invoices">Invoices</span>
               </a>
             </li>
             <li class="nav-item" id="nav-revenue" style="display: none">
               <a class="nav-link" href="#" onclick="app.loadPage('revenue')">
-                <i class="bi bi-graph-up"></i> Omzet
+                <i class="bi bi-graph-up"></i> <span data-i18n="menu:revenue">Omzet</span>
               </a>
             </li>
             <li class="nav-item" id="nav-admin" style="display: none">
               <a class="nav-link" href="#" onclick="app.loadPage('admin')">
-                <i class="bi bi-gear"></i> Admin
+                <i class="bi bi-gear"></i> <span data-i18n="menu:admin">Admin</span>
               </a>
             </li>
           </ul>
@@ -90,7 +90,7 @@
                 role="button"
                 data-bs-toggle="dropdown"
               >
-                <i class="bi bi-person-circle"></i> Welcome,
+                <i class="bi bi-person-circle"></i> <span data-i18n="ui:welcome">Welcome,</span>
                 <span id="userName"></span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
@@ -100,13 +100,13 @@
                     href="#"
                     onclick="app.loadPage('change-password')"
                   >
-                    <i class="bi bi-key"></i> Change Password
+                    <i class="bi bi-key"></i> <span data-i18n="ui:change_password">Change Password</span>
                   </a>
                 </li>
-                <li><hr class="dropdown-divider" /></li>
+                <!-- Language selector hidden for now; keep structure for future use -->
                 <li>
                   <a class="dropdown-item" href="#" onclick="app.logout()">
-                    <i class="bi bi-box-arrow-right"></i> Logout
+                    <i class="bi bi-box-arrow-right"></i> <span data-i18n="ui:logout">Logout</span>
                   </a>
                 </li>
               </ul>

@@ -7,7 +7,7 @@ function renderWeeklySummary() {
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Weekly Hours Summary</h5>
+                    <h5 class="mb-0"><i class="bi bi-calendar-week"></i> <span data-i18n="ui:weekly.title">Weekly Hours Summary</span></h5>
                         </div>
                         <div class="card-body">
                             <div id="weeklySummaryAlert"></div>
@@ -15,17 +15,19 @@ function renderWeeklySummary() {
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
-                                            <th>Week Number</th>
-                                            <th>Work Days</th>
-                                            <th>Total Hours</th>
-                                            <th>Overworked</th>
+                                              <th><span data-i18n="ui:weekly.week_number">Week Number</span></th>
+                                              <th><span data-i18n="ui:weekly.work_days">Work Days</span></th>
+                                              <th><span data-i18n="ui:weekly.total_hours">Total Hours</span></th>
+                                              <th><span data-i18n="ui:weekly.overworked">Overworked</span></th>
                                         </tr>
                                     </thead>
                                     <tbody id="weeklySummaryTableBody">
                                         <tr>
                                             <td colspan="4" class="text-center">
                                                 <div class="spinner-border spinner-border-sm" role="status">
-                                                    <span class="visually-hidden">Loading...</span>
+                                                  <span class="visually-hidden" data-i18n="ui:loading">Loading...</span>
+                                                                            <a class="page-link" href="#" onclick="loadWeeklySummary(${currentPage - 1}); return false;"><span data-i18n="ui:previous">Previous</span></a>
+                                                                            <a class="page-link" href="#" onclick="loadWeeklySummary(${currentPage + 1}); return false;"><span data-i18n="ui:next">Next</span></a>
                                                 </div>
                                             </td>
                                         </tr>

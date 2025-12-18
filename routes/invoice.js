@@ -163,7 +163,15 @@ router.get("/templates/:id", auth, async (req, res) => {
 // Create new template
 router.post("/templates", auth, async (req, res) => {
   try {
-    const { name, description, is_default, hourly_rate, km_rate, dot_rate, dot_rate_is_percent } = req.body;
+    const {
+      name,
+      description,
+      is_default,
+      hourly_rate,
+      km_rate,
+      dot_rate,
+      dot_rate_is_percent,
+    } = req.body;
 
     // If setting as default, unset other defaults
     if (is_default) {
@@ -198,7 +206,15 @@ router.post("/templates", auth, async (req, res) => {
 // Update template
 router.put("/templates/:id", auth, async (req, res) => {
   try {
-    const { name, description, is_default, hourly_rate, km_rate, dot_rate, dot_rate_is_percent } = req.body;
+    const {
+      name,
+      description,
+      is_default,
+      hourly_rate,
+      km_rate,
+      dot_rate,
+      dot_rate_is_percent,
+    } = req.body;
 
     // If setting as default, unset other defaults
     if (is_default) {
@@ -587,7 +603,10 @@ router.post("/invoices", auth, async (req, res) => {
       notes,
     } = req.body;
 
-    console.log("[POST /invoices] Received line_items:", JSON.stringify(line_items, null, 2));
+    console.log(
+      "[POST /invoices] Received line_items:",
+      JSON.stringify(line_items, null, 2)
+    );
 
     // Calculate totals
     let subtotal = 0;
@@ -634,7 +653,7 @@ router.post("/invoices", auth, async (req, res) => {
         const line_total =
           parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0);
 
-        console.log(`[Invoice ${invoiceId}] Saving line item ${i+1}:`, {
+        console.log(`[Invoice ${invoiceId}] Saving line item ${i + 1}:`, {
           description: item.description,
           item_date: item.item_date,
           item_km: item.item_km,
@@ -680,23 +699,28 @@ router.post("/invoices", auth, async (req, res) => {
         const kmRate = parseFloat(template.km_rate);
         const kmLineTotal = totalKm * kmRate;
 
-          await db.run(
-            `INSERT INTO invoice_line_items 
+        await db.run(
+          `INSERT INTO invoice_line_items 
              (invoice_id, description, quantity, unit_price, line_total, position_order, item_km, item_rate, is_total_row, total_row_type)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-              invoiceId,
-              "Totaal Kilometers",
-              1,
-              kmLineTotal.toFixed(2),
-              kmLineTotal.toFixed(2),
-              nextPosition,
-              totalKm,
-              kmRate, // Add km_rate to item_rate column
-              1, // Mark as total row
-              "km_total",
-            ]
-          );        console.log(`[Invoice ${invoiceId}] Added KM total line: ${totalKm} km × €${kmRate} = €${kmLineTotal.toFixed(2)}`);
+          [
+            invoiceId,
+            "Totaal Kilometers",
+            1,
+            kmLineTotal.toFixed(2),
+            kmLineTotal.toFixed(2),
+            nextPosition,
+            totalKm,
+            kmRate, // Add km_rate to item_rate column
+            1, // Mark as total row
+            "km_total",
+          ]
+        );
+        console.log(
+          `[Invoice ${invoiceId}] Added KM total line: ${totalKm} km × €${kmRate} = €${kmLineTotal.toFixed(
+            2
+          )}`
+        );
 
         totalLinesAmount += kmLineTotal;
         nextPosition++;
@@ -720,23 +744,28 @@ router.post("/invoices", auth, async (req, res) => {
         }
 
         if (dotLineTotal > 0) {
-            await db.run(
-              `INSERT INTO invoice_line_items 
+          await db.run(
+            `INSERT INTO invoice_line_items 
                (invoice_id, description, quantity, unit_price, line_total, position_order, item_km, item_rate, is_total_row, total_row_type)
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-              [
-                invoiceId,
-                dotDescription,
-                1,
-                dotLineTotal.toFixed(2),
-                dotLineTotal.toFixed(2),
-                nextPosition,
-                dotItemKm,
-                dotRate,
-                1,
-                "dot_total",
-              ]
-            );        console.log(`[Invoice ${invoiceId}] Added DOT total line (${isPercent ? "percentage" : "per km"}): value €${dotLineTotal.toFixed(2)}`);
+            [
+              invoiceId,
+              dotDescription,
+              1,
+              dotLineTotal.toFixed(2),
+              dotLineTotal.toFixed(2),
+              nextPosition,
+              dotItemKm,
+              dotRate,
+              1,
+              "dot_total",
+            ]
+          );
+          console.log(
+            `[Invoice ${invoiceId}] Added DOT total line (${
+              isPercent ? "percentage" : "per km"
+            }): value €${dotLineTotal.toFixed(2)}`
+          );
 
           totalLinesAmount += dotLineTotal;
         }
@@ -910,7 +939,13 @@ router.put("/invoices/:id", auth, async (req, res) => {
             ]
           );
 
-          console.log(`[Invoice ${req.params.id}] Added KM total line: ${totalKm} km × €${kmRate} = €${kmLineTotal.toFixed(2)}`);
+          console.log(
+            `[Invoice ${
+              req.params.id
+            }] Added KM total line: ${totalKm} km × €${kmRate} = €${kmLineTotal.toFixed(
+              2
+            )}`
+          );
 
           totalLinesAmount += kmLineTotal;
           nextPosition++;
@@ -953,7 +988,9 @@ router.put("/invoices/:id", auth, async (req, res) => {
             );
 
             console.log(
-              `[Invoice ${req.params.id}] Added DOT total line (${isPercent ? "percentage" : "per km"}): value €${dotLineTotal.toFixed(2)}`
+              `[Invoice ${req.params.id}] Added DOT total line (${
+                isPercent ? "percentage" : "per km"
+              }): value €${dotLineTotal.toFixed(2)}`
             );
 
             totalLinesAmount += dotLineTotal;
@@ -1022,8 +1059,16 @@ router.get("/invoices/:id/original-pdf", auth, async (req, res) => {
     }
 
     // Normalize path and strip any leading slash so path.join doesn't drop earlier segments
-    const normalizedOriginalPath = invoice.original_pdf_path.replace(/^[/\\]+/, "");
-    const pdfPath = path.join(__dirname, "..", "public", normalizedOriginalPath);
+    const normalizedOriginalPath = invoice.original_pdf_path.replace(
+      /^[/\\]+/,
+      ""
+    );
+    const pdfPath = path.join(
+      __dirname,
+      "..",
+      "public",
+      normalizedOriginalPath
+    );
 
     if (!fs.existsSync(pdfPath)) {
       return res

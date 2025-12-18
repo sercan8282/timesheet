@@ -10,10 +10,10 @@ function renderDashboard() {
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Timesheet Entry</h5>
+                            <h5 class="mb-0"><i class="bi bi-calendar-week"></i> <span data-i18n="ui:dashboard.timesheet_entry">Timesheet Entry</span></h5>
                             <div id="companySelector" style="display: none;">
                                 <select class="form-select form-select-sm" id="selectedCompanyDropdown" onchange="handleCompanyChange()" style="max-width: 250px;">
-                                    <option value="">Selecteer bedrijf...</option>
+                                    <option value=""><span data-i18n="ui:dashboard.select_company">Select company...</span></option>
                                 </select>
                             </div>
                         </div>
@@ -21,24 +21,24 @@ function renderDashboard() {
                             <div id="timesheetAlert"></div>
                             <div id="timesheetRows"></div>
                             <button type="button" class="btn btn-success mb-3" onclick="addTimesheetRow()">
-                                <i class="bi bi-plus-circle"></i> Add Row
+                              <i class="bi bi-plus-circle"></i> <span data-i18n="ui:add_row">Add Row</span>
                             </button>
                             <hr>
                             <div class="d-flex gap-2 flex-wrap">
                                 <button type="button" class="btn btn-primary" onclick="saveTimesheets()">
-                                    <i class="bi bi-save"></i> Save All
+                                  <i class="bi bi-save"></i> <span data-i18n="ui:save_all">Save All</span>
                                 </button>
                                 <button type="button" class="btn btn-info" onclick="submitTimesheetsOnly()">
-                                    <i class="bi bi-check-circle"></i> Submit
+                                  <i class="bi bi-check-circle"></i> <span data-i18n="ui:submit">Submit</span>
                                 </button>
                                 <button type="button" class="btn btn-danger" onclick="previewPDF()">
-                                    <i class="bi bi-file-pdf"></i> Preview PDF
+                                  <i class="bi bi-file-pdf"></i> <span data-i18n="ui:preview_pdf">Preview PDF</span>
                                 </button>
                                 <button type="button" class="btn btn-success" onclick="previewXLSX()">
-                                    <i class="bi bi-file-earmark-excel"></i> Preview Excel
+                                  <i class="bi bi-file-earmark-excel"></i> <span data-i18n="ui:preview_excel">Preview Excel</span>
                                 </button>
                                 <button type="button" class="btn btn-primary" onclick="submitTimesheets()">
-                                    <i class="bi bi-send"></i> Submit & Send Email
+                                  <i class="bi bi-send"></i> <span data-i18n="ui:submit_send_email">Submit & Send Email</span>
                                 </button>
                             </div>
                         </div>
@@ -53,17 +53,17 @@ function renderDashboard() {
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="deleteConfirmationLabel">
-                            <i class="bi bi-exclamation-triangle text-warning"></i> Confirm Delete
+                            <i class="bi bi-exclamation-triangle text-warning"></i> <span data-i18n="ui:confirm_delete">Confirm Delete</span>
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <p>Are you sure you want to delete this timesheet entry?</p>
-                        <p class="text-muted small">This action cannot be undone.</p>
+                        <p data-i18n="ui:delete_timesheet_confirm">Are you sure you want to delete this timesheet entry?</p>
+                        <p class="text-muted small" data-i18n="ui:this_action_cannot_be_undone">This action cannot be undone.</p>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete Entry</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><span data-i18n="ui:cancel">Cancel</span></button>
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete()"><span data-i18n="ui:delete_entry">Delete Entry</span></button>
                     </div>
                 </div>
             </div>
@@ -89,7 +89,7 @@ async function initDashboard() {
 
       // Populate dropdown
       dropdown.innerHTML =
-        '<option value="">Selecteer bedrijf...</option>' +
+        `<option value="">${t('ui', 'dashboard.select_company')}</option>` +
         userCompanies
           .map(
             (c) =>
@@ -264,70 +264,70 @@ function renderTimesheetRows() {
       return `
             <div class="timesheet-row row g-1 mb-2 align-items-end">
                 <div class="col-auto" style="width: 60px;">
-                    <label class="form-label small mb-1">Week</label>
+                    <label class="form-label small mb-1">${t('field', 'week')}</label>
                     <input type="text" class="form-control form-control-sm" value="${weekNumber}" readonly>
                 </div>
                 <div class="col-auto" style="width: 90px;">
-                    <label class="form-label small mb-1">Ritnumber</label>
+                    <label class="form-label small mb-1">${t('field', 'ritnumber')}</label>
                     <input type="text" class="form-control form-control-sm" value="${
                       ts.ritnumber || ""
                     }" 
                            onchange="updateTimesheet(${index}, 'ritnumber', this.value)">
                 </div>
                 <div class="col-auto" style="width: 140px;">
-                    <label class="form-label small mb-1">Name</label>
+                    <label class="form-label small mb-1">${t('field', 'name')}</label>
                     <input type="text" class="form-control form-control-sm" value="${
                       user.fullName
                     }" readonly>
                 </div>
                 <div class="col-auto" style="width: 130px;">
-                    <label class="form-label small mb-1">Date</label>
+                    <label class="form-label small mb-1">${t('field', 'date')}</label>
                     <input type="date" class="form-control form-control-sm" value="${
                       ts.date
                     }" 
                            onchange="updateTimesheet(${index}, 'date', this.value)">
                 </div>
                 <div class="col-auto" style="width: 85px;">
-                    <label class="form-label small mb-1">Start</label>
+                    <label class="form-label small mb-1">${t('field', 'start')}</label>
                     <input type="time" class="form-control form-control-sm" value="${
                       ts.startTime
                     }" 
                            onchange="updateTimesheet(${index}, 'startTime', this.value)">
                 </div>
                 <div class="col-auto" style="width: 85px;">
-                    <label class="form-label small mb-1">End</label>
+                    <label class="form-label small mb-1">${t('field', 'end')}</label>
                     <input type="time" class="form-control form-control-sm" value="${
                       ts.endTime
                     }" 
                            onchange="updateTimesheet(${index}, 'endTime', this.value)">
                 </div>
                 <div class="col-auto" style="width: 80px;">
-                    <label class="form-label small mb-1">Start KM</label>
+                    <label class="form-label small mb-1">${t('field', 'start_km')}</label>
                     <input type="number" class="form-control form-control-sm" value="${
                       ts.startKm
                     }" step="0.1"
                            onchange="updateTimesheet(${index}, 'startKm', parseFloat(this.value))">
                 </div>
                 <div class="col-auto" style="width: 80px;">
-                    <label class="form-label small mb-1">End KM</label>
+                    <label class="form-label small mb-1">${t('field', 'end_km')}</label>
                     <input type="number" class="form-control form-control-sm" value="${
                       ts.endKm
                     }" step="0.1"
                            onchange="updateTimesheet(${index}, 'endKm', parseFloat(this.value))">
                 </div>
                 <div class="col-auto" style="width: 85px;">
-                    <label class="form-label small mb-1">Pause</label>
+                    <label class="form-label small mb-1">${t('field', 'pause')}</label>
                     <input type="time" class="form-control form-control-sm" value="${
                       ts.pauseTime
                     }" 
                            onchange="updateTimesheet(${index}, 'pauseTime', this.value)">
                 </div>
                 <div class="col-auto" style="width: 70px;">
-                    <label class="form-label small mb-1">Hours</label>
+                    <label class="form-label small mb-1">${t('field', 'hours')}</label>
                     <input type="text" class="form-control form-control-sm" value="${totalHours}" readonly>
                 </div>
                 <div class="col-auto" style="width: 70px;">
-                    <label class="form-label small mb-1">KM</label>
+                    <label class="form-label small mb-1">${t('field', 'km')}</label>
                     <input type="text" class="form-control form-control-sm" value="${totalKm}" readonly>
                 </div>
                 <div class="col-auto">
