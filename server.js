@@ -34,7 +34,7 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
       console.log("Template not found:", templateId);
       return res.status(404).send("Template niet gevonden");
     }
-    
+
     console.log("Template found:", template.name);
 
     // Fetch template elements
@@ -60,7 +60,8 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
 
     const renderTextBlock = (el, x, y, width) => {
       const content = cleanContent(el.content);
-      const fontName = el.font_weight === "bold" ? "Helvetica-Bold" : "Helvetica";
+      const fontName =
+        el.font_weight === "bold" ? "Helvetica-Bold" : "Helvetica";
       doc
         .font(fontName)
         .fontSize(parseInt(el.font_size) || 12)
@@ -86,7 +87,10 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
 
     // Render header
     doc.fontSize(16).text("TEMPLATE PREVIEW", 50, 50);
-    doc.fontSize(10).fillColor("#666").text(`Template: ${template.name}`, 50, 70);
+    doc
+      .fontSize(10)
+      .fillColor("#666")
+      .text(`Template: ${template.name}`, 50, 70);
 
     // Group elements by layout type
     const topCols = [[], [], []];
@@ -104,7 +108,10 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
 
     // Render top columns preview
     let yPos = 120;
-    doc.fontSize(10).fillColor("#000").text("Bovenste Sectie (Top Section):", 50, yPos);
+    doc
+      .fontSize(10)
+      .fillColor("#000")
+      .text("Bovenste Sectie (Top Section):", 50, yPos);
     yPos += 20;
 
     const topY = [yPos, yPos, yPos];
@@ -114,7 +121,10 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
     yPos = Math.max(...topY) + 30;
 
     // Render address columns preview
-    doc.fontSize(10).fillColor("#000").text("Adres Sectie (Address Section):", 50, yPos);
+    doc
+      .fontSize(10)
+      .fillColor("#000")
+      .text("Adres Sectie (Address Section):", 50, yPos);
     yPos += 20;
 
     const addrY = [yPos, yPos, yPos];
@@ -124,7 +134,10 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
 
     // Send PDF
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `inline; filename="template-preview.pdf"`);
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="template-preview.pdf"`
+    );
     doc.pipe(res);
     doc.end();
   } catch (error) {

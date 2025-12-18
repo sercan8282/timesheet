@@ -1,62 +1,68 @@
 {
-    "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Install Dependencies",
-            "type": "shell",
-            "command": "npm install",
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Initialize Database",
-            "type": "shell",
-            "command": "npm run init-db",
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "shared"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Start Server",
-            "type": "shell",
-            "command": "npm start",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "dedicated"
-            },
-            "isBackground": true,
-            "problemMatcher": []
-        },
-        {
-            "label": "Start Server (Development)",
-            "type": "shell",
-            "command": "npm run dev",
-            "group": "build",
-            "presentation": {
-                "echo": true,
-                "reveal": "always",
-                "focus": false,
-                "panel": "dedicated"
-            },
-            "isBackground": true,
-            "problemMatcher": []
-        }
-    ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Install Dependencies",
+			"type": "shell",
+			"command": "npm install",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Initialize Database",
+			"type": "shell",
+			"command": "npm run init-db",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Server",
+			"type": "shell",
+			"command": "npm start",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Server (Development)",
+			"type": "shell",
+			"command": "npm run dev",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "dedicated"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Install pdf-parse",
+			"type": "shell",
+			"command": "npm install",
+			"group": "build"
+		}
+	]
 }

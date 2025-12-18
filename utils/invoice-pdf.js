@@ -68,7 +68,8 @@ async function generateInvoicePDF(invoiceId) {
 
     const renderTextBlock = (el, x, y, width) => {
       const content = cleanContent(el.content);
-      const fontName = el.font_weight === "bold" ? "Helvetica-Bold" : "Helvetica";
+      const fontName =
+        el.font_weight === "bold" ? "Helvetica-Bold" : "Helvetica";
 
       doc
         .font(fontName)
@@ -161,7 +162,10 @@ async function generateInvoicePDF(invoiceId) {
     const afterTopY = Math.max(...topY) + 20;
 
     // Address defaults
-    if (addrCols[0].length === 0 && (invoice.customer_name || invoice.customer_address)) {
+    if (
+      addrCols[0].length === 0 &&
+      (invoice.customer_name || invoice.customer_address)
+    ) {
       let addr = invoice.customer_name ? `${invoice.customer_name}\n` : "";
       if (invoice.customer_address) addr += invoice.customer_address;
       addrCols[0].push({
@@ -176,7 +180,9 @@ async function generateInvoicePDF(invoiceId) {
 
     if (addrCols[2].length === 0) {
       // Fallback to branding as sender
-      const senderContent = [branding?.company_name, branding?.tagline].filter(Boolean).join("\n");
+      const senderContent = [branding?.company_name, branding?.tagline]
+        .filter(Boolean)
+        .join("\n");
       if (senderContent) {
         addrCols[2].push({
           element_type: "text",
@@ -249,19 +255,46 @@ async function generateInvoicePDF(invoiceId) {
     const tableWidth = doc.page.width - 100;
 
     // Table header
-    doc.fontSize(10).fillColor("#000000").font("Helvetica-Bold");
+    doc.fontSize(9).fillColor("#000000").font("Helvetica-Bold");
 
-    doc.text("Omschrijving", tableLeft, tableTop, { width: tableWidth * 0.5 });
-    doc.text("Aantal", tableLeft + tableWidth * 0.5, tableTop, {
-      width: tableWidth * 0.15,
+    const col1 = 0; // Omschrijving
+    const col2 = 0.2; // Datum
+    const col3 = 0.32; // KM
+    const col4 = 0.42; // Uren
+    const col5 = 0.52; // Tarief
+    const col6 = 0.65; // Aantal
+    const col7 = 0.75; // Prijs
+    const col8 = 0.88; // Totaal
+
+    doc.text("Omschrijving", tableLeft + tableWidth * col1, tableTop, {
+      width: tableWidth * 0.18,
+    });
+    doc.text("Datum", tableLeft + tableWidth * col2, tableTop, {
+      width: tableWidth * 0.1,
+      align: "center",
+    });
+    doc.text("KM", tableLeft + tableWidth * col3, tableTop, {
+      width: tableWidth * 0.08,
       align: "right",
     });
-    doc.text("Prijs", tableLeft + tableWidth * 0.65, tableTop, {
-      width: tableWidth * 0.15,
+    doc.text("Uren", tableLeft + tableWidth * col4, tableTop, {
+      width: tableWidth * 0.08,
       align: "right",
     });
-    doc.text("Totaal", tableLeft + tableWidth * 0.8, tableTop, {
-      width: tableWidth * 0.2,
+    doc.text("Tarief", tableLeft + tableWidth * col5, tableTop, {
+      width: tableWidth * 0.11,
+      align: "right",
+    });
+    doc.text("Aantal", tableLeft + tableWidth * col6, tableTop, {
+      width: tableWidth * 0.08,
+      align: "right",
+    });
+    doc.text("Prijs", tableLeft + tableWidth * col7, tableTop, {
+      width: tableWidth * 0.11,
+      align: "right",
+    });
+    doc.text("Totaal", tableLeft + tableWidth * col8, tableTop, {
+      width: tableWidth * 0.12,
       align: "right",
     });
 
@@ -273,42 +306,76 @@ async function generateInvoicePDF(invoiceId) {
     yPosition += 10;
 
     // Table rows
-    doc.font("Helvetica");
+    doc.font("Helvetica").fontSize(9);
     lineItems.forEach((item) => {
       const itemHeight = Math.max(
-        doc.heightOfString(item.description, { width: tableWidth * 0.5 }),
+        doc.heightOfString(item.description, { width: tableWidth * 0.18 }),
         15
       );
 
-      doc.text(item.description, tableLeft, yPosition, {
-        width: tableWidth * 0.5,
+      // Use bold font for total rows
+      if (item.is_total_row) {
+        doc.font("Helvetica-Bold");
+      } else {
+        doc.font("Helvetica");
+      }
+
+      doc.text(item.description, tableLeft + tableWidth * col1, yPosition, {
+        width: tableWidth * 0.18,
       });
+
+      if (item.item_date) {
+        const dateStr = new Date(item.item_date).toLocaleDateString("nl-NL");
+        doc.text(dateStr, tableLeft + tableWidth * col2, yPosition, {
+          width: tableWidth * 0.1,
+          align: "center",
+        });
+      }
+
+      if (item.item_km !== null && item.item_km !== undefined) {
+        doc.text(
+          item.item_km.toString(),
+          tableLeft + tableWidth * col3,
+          yPosition,
+          { width: tableWidth * 0.08, align: "right" }
+        );
+      }
+
+      if (item.item_hours !== null && item.item_hours !== undefined) {
+        doc.text(
+          item.item_hours.toString(),
+          tableLeft + tableWidth * col4,
+          yPosition,
+          { width: tableWidth * 0.08, align: "right" }
+        );
+      }
+
+      if (item.item_rate !== null && item.item_rate !== undefined) {
+        doc.text(
+          `€ ${parseFloat(item.item_rate).toFixed(2)}`,
+          tableLeft + tableWidth * col5,
+          yPosition,
+          { width: tableWidth * 0.11, align: "right" }
+        );
+      }
+
       doc.text(
         item.quantity.toString(),
-        tableLeft + tableWidth * 0.5,
+        tableLeft + tableWidth * col6,
         yPosition,
-        {
-          width: tableWidth * 0.15,
-          align: "right",
-        }
+        { width: tableWidth * 0.08, align: "right" }
       );
       doc.text(
         `€ ${parseFloat(item.unit_price).toFixed(2)}`,
-        tableLeft + tableWidth * 0.65,
+        tableLeft + tableWidth * col7,
         yPosition,
-        {
-          width: tableWidth * 0.15,
-          align: "right",
-        }
+        { width: tableWidth * 0.11, align: "right" }
       );
       doc.text(
         `€ ${parseFloat(item.line_total).toFixed(2)}`,
-        tableLeft + tableWidth * 0.8,
+        tableLeft + tableWidth * col8,
         yPosition,
-        {
-          width: tableWidth * 0.2,
-          align: "right",
-        }
+        { width: tableWidth * 0.12, align: "right" }
       );
 
       yPosition += itemHeight + 5;

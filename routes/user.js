@@ -152,6 +152,30 @@ router.get("/timesheets", async (req, res) => {
   }
 });
 
+// Get single timesheet by ID
+router.get("/timesheets/:id", async (req, res) => {
+  try {
+    const timesheetId = parseInt(req.params.id);
+    if (isNaN(timesheetId)) {
+      return res.status(400).json({ error: "Invalid timesheet ID" });
+    }
+
+    const timesheet = await db.get(
+      "SELECT * FROM timesheets WHERE id = ? AND user_id = ?",
+      [timesheetId, req.user.id]
+    );
+
+    if (!timesheet) {
+      return res.status(404).json({ error: "Timesheet not found" });
+    }
+
+    res.json(timesheet);
+  } catch (error) {
+    console.error("Error fetching timesheet:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Get timesheet details by IDs
 router.post("/timesheets/details", async (req, res) => {
   try {
@@ -608,12 +632,10 @@ router.put(
 
       // Check if balance type changed
       if (balanceType !== existingRequest.balance_type) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Cannot change balance type. Delete and create a new request instead.",
-          });
+        return res.status(400).json({
+          error:
+            "Cannot change balance type. Delete and create a new request instead.",
+        });
       }
 
       const balance = await ensureLeaveBalance(req.user.id);

@@ -783,12 +783,10 @@ router.put(
 
       // Check if balance type changed
       if (balanceType !== existingRequest.balance_type) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Cannot change balance type. Delete and create a new request instead.",
-          });
+        return res.status(400).json({
+          error:
+            "Cannot change balance type. Delete and create a new request instead.",
+        });
       }
 
       const balance = await ensureLeaveBalance(existingRequest.user_id);

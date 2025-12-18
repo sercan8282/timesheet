@@ -455,10 +455,49 @@ class Database {
           name TEXT NOT NULL,
           description TEXT,
           is_default INTEGER DEFAULT 0,
+          hourly_rate REAL DEFAULT 0,
+          km_rate REAL DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
+
+      // Add hourly_rate and km_rate columns if they don't exist
+      this.db.all(
+        `PRAGMA table_info(invoice_templates)`,
+        [],
+        (err, columns) => {
+          if (!err && columns) {
+            const columnNames = columns.map((c) => c.name);
+            if (!columnNames.includes("hourly_rate")) {
+              this.db.run(
+                "ALTER TABLE invoice_templates ADD COLUMN hourly_rate REAL DEFAULT 0",
+                (err) => {
+                  if (err && !err.message.includes("duplicate column")) {
+                    console.error("Error adding hourly_rate:", err);
+                  } else {
+                    console.log(
+                      "✓ Added hourly_rate column to invoice_templates"
+                    );
+                  }
+                }
+              );
+            }
+            if (!columnNames.includes("km_rate")) {
+              this.db.run(
+                "ALTER TABLE invoice_templates ADD COLUMN km_rate REAL DEFAULT 0",
+                (err) => {
+                  if (err && !err.message.includes("duplicate column")) {
+                    console.error("Error adding km_rate:", err);
+                  } else {
+                    console.log("✓ Added km_rate column to invoice_templates");
+                  }
+                }
+              );
+            }
+          }
+        }
+      );
 
       // Invoice template elements (text fields, images, calculated fields)
       this.db.run(`
@@ -480,8 +519,23 @@ class Database {
         )
       `);
 
-      // Invoices (generated invoices from templates)
+      // Import templates (for PDF extraction parsers)
       this.db.run(`
+        CREATE TABLE IF NOT EXISTS import_templates (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT,
+          parser_type TEXT NOT NULL,
+          config TEXT,
+          is_active INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Invoices (generated invoices from templates)
+      this.db.run(
+        `
         CREATE TABLE IF NOT EXISTS invoices (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           template_id INTEGER NOT NULL,
@@ -495,13 +549,43 @@ class Database {
           total_amount REAL DEFAULT 0,
           status TEXT DEFAULT 'draft' CHECK(status IN ('draft','sent','paid','cancelled')),
           notes TEXT,
+          original_pdf_path TEXT,
           created_by INTEGER,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (template_id) REFERENCES invoice_templates(id) ON DELETE RESTRICT,
           FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
         )
-      `);
+      `,
+        (err) => {
+          if (!err) {
+            // Check if original_pdf_path column exists, add if not
+            this.db.all("PRAGMA table_info(invoices)", [], (err, columns) => {
+              if (!err && columns) {
+                const hasPdfPath = columns.some(
+                  (c) => c.name === "original_pdf_path"
+                );
+                if (!hasPdfPath) {
+                  this.db.run(
+                    "ALTER TABLE invoices ADD COLUMN original_pdf_path TEXT",
+                    (err) => {
+                      if (err)
+                        console.error(
+                          "Error adding original_pdf_path column:",
+                          err
+                        );
+                      else
+                        console.log(
+                          "✓ Added original_pdf_path column to invoices"
+                        );
+                    }
+                  );
+                }
+              }
+            });
+          }
+        }
+      );
 
       // Invoice line items (individual lines in an invoice)
       this.db.run(`
@@ -513,8 +597,71 @@ class Database {
           unit_price REAL DEFAULT 0,
           line_total REAL DEFAULT 0,
           position_order INTEGER DEFAULT 0,
+          item_date TEXT,
+          item_km REAL,
+          item_hours REAL,
+          item_rate REAL,
+          is_total_row INTEGER DEFAULT 0,
+          total_row_type TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+        )
+      `);
+
+      // Ensure new columns exist on existing invoice_line_items
+      this.db.all(
+        `PRAGMA table_info(invoice_line_items)`,
+        [],
+        (err, columns) => {
+          if (!err && columns) {
+            const columnNames = columns.map((c) => c.name);
+            if (!columnNames.includes("item_date")) {
+              this.db.run(
+                `ALTER TABLE invoice_line_items ADD COLUMN item_date TEXT`
+              );
+            }
+            if (!columnNames.includes("item_km")) {
+              this.db.run(
+                `ALTER TABLE invoice_line_items ADD COLUMN item_km REAL`
+              );
+            }
+            if (!columnNames.includes("item_hours")) {
+              this.db.run(
+                `ALTER TABLE invoice_line_items ADD COLUMN item_hours REAL`
+              );
+            }
+            if (!columnNames.includes("item_rate")) {
+              this.db.run(
+                `ALTER TABLE invoice_line_items ADD COLUMN item_rate REAL`
+              );
+            }
+            if (!columnNames.includes("is_total_row")) {
+              this.db.run(
+                `ALTER TABLE invoice_line_items ADD COLUMN is_total_row INTEGER DEFAULT 0`
+              );
+            }
+            if (!columnNames.includes("total_row_type")) {
+              this.db.run(
+                `ALTER TABLE invoice_line_items ADD COLUMN total_row_type TEXT`
+              );
+            }
+          }
+        }
+      );
+
+      // Invoice template line item field configuration
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS invoice_template_line_fields (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          template_id INTEGER NOT NULL,
+          field_name TEXT NOT NULL,
+          field_label TEXT,
+          is_visible INTEGER DEFAULT 1,
+          position_order INTEGER DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(template_id, field_name),
+          FOREIGN KEY (template_id) REFERENCES invoice_templates(id) ON DELETE CASCADE
         )
       `);
     });

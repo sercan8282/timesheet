@@ -38,6 +38,24 @@ const invoiceManager = {
             <button class="btn btn-outline-secondary" onclick="invoiceManager.showTemplates()">
               <i class="bi bi-layout-text-sidebar"></i> Templates
             </button>
+            <button class="btn btn-outline-primary" onclick="invoiceManager.showImportPdf()">
+              <i class="bi bi-file-earmark-arrow-up"></i> Importeer PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div id="bulk-actions-bar" class="alert alert-info d-none mb-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <span><strong><span id="selected-count">0</span></strong> facturen geselecteerd</span>
+            <div>
+              <button class="btn btn-sm btn-danger" onclick="invoiceManager.bulkDelete()">
+                <i class="bi bi-trash"></i> Verwijder geselecteerde
+              </button>
+              <button class="btn btn-sm btn-secondary" onclick="invoiceManager.clearSelection()">
+                <i class="bi bi-x"></i> Deselecteer alles
+              </button>
+            </div>
           </div>
         </div>
 
@@ -45,12 +63,12 @@ const invoiceManager = {
         <div class="card mb-4">
           <div class="card-body">
             <div class="row g-3">
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <input type="text" class="form-control" id="invoice-search" 
                        placeholder="Zoek op factuurnummer of klant..." 
                        onkeyup="invoiceManager.filterInvoices()">
               </div>
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <select class="form-select" id="invoice-status-filter" onchange="invoiceManager.filterInvoices()">
                   <option value="">Alle statussen</option>
                   <option value="draft">Concept</option>
@@ -58,6 +76,19 @@ const invoiceManager = {
                   <option value="paid">Betaald</option>
                   <option value="cancelled">Geannuleerd</option>
                 </select>
+              </div>
+              <div class="col-md-3">
+                <input type="date" class="form-control" id="invoice-date-before" placeholder="Voor datum" onchange="invoiceManager.filterInvoices()">
+              </div>
+              <div class="col-md-2">
+                <button class="btn btn-outline-danger w-100" onclick="invoiceManager.deleteOldInvoices()">
+                  <i class="bi bi-trash"></i> Verwijder oude facturen
+                </button>
+              </div>
+              <div class="col-md-2">
+                <button class="btn btn-outline-warning w-100" onclick="invoiceManager.clearAllInvoices()">
+                  <i class="bi bi-exclamation-triangle"></i> Alles wissen
+                </button>
               </div>
             </div>
           </div>
@@ -70,6 +101,9 @@ const invoiceManager = {
               <table class="table table-hover">
                 <thead>
                   <tr>
+                    <th style="width: 40px;">
+                      <input type="checkbox" id="select-all-invoices" onchange="invoiceManager.toggleSelectAll(this.checked)">
+                    </th>
                     <th>Factuurnummer</th>
                     <th>Klant</th>
                     <th>Datum</th>
@@ -89,9 +123,203 @@ const invoiceManager = {
     `;
   },
 
+  showImportPdf() {
+    const templateOptions = this.templates
+      .map((t) => `<option value="${t.id}">${t.name}</option>`)
+      .join("");
+
+    const modalHtml = `
+      <div class="modal fade" id="importPdfModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-file-earmark-arrow-up"></i> Factuur PDF Importeren</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="text-muted small">Upload één of meerdere PDF-facturen (maximaal 20 bestanden). We lezen het totaalbedrag, BTW, klantnaam en datum uit, en maken automatisch facturen aan.</p>
+              
+              <div class="mb-3">
+                <label for="importTemplateSelect" class="form-label">Template voor factuur layout</label>
+                <select id="importTemplateSelect" class="form-select">
+                  <option value="">-- Selecteer template --</option>
+                  ${templateOptions}
+                </select>
+                <div class="form-text">De template bepaalt het factuuradres en afzender informatie op de PDF</div>
+              </div>
+              
+              <div class="mb-3">
+                <label for="importPdfInput" class="form-label">PDF bestanden</label>
+                <input type="file" id="importPdfInput" class="form-control" accept="application/pdf" multiple />
+                <div class="form-text">Je kunt maximaal 20 bestanden tegelijk uploaden</div>
+              </div>
+              
+              <div id="importProgress" style="display: none;">
+                <div class="progress mb-2">
+                  <div id="importProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div id="importStatus" class="small text-muted"></div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
+              <button class="btn btn-primary" id="importPdfConfirm">Importeren</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    // Inject modal into DOM if not present
+    let container = document.getElementById("modal-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "modal-container";
+      document.body.appendChild(container);
+    }
+    container.innerHTML = modalHtml;
+
+    const modalEl = document.getElementById("importPdfModal");
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+
+    const confirmBtn = document.getElementById("importPdfConfirm");
+    confirmBtn.onclick = async () => {
+      const input = document.getElementById("importPdfInput");
+      const templateSelect = document.getElementById("importTemplateSelect");
+
+      if (!input.files || input.files.length === 0) {
+        showToast("Selecteer minimaal één PDF-bestand", "error");
+        return;
+      }
+
+      if (input.files.length > 20) {
+        showToast("Je kunt maximaal 20 bestanden tegelijk uploaden", "error");
+        return;
+      }
+
+      if (!templateSelect.value) {
+        showToast("Selecteer een template", "error");
+        return;
+      }
+
+      // Show progress
+      const progressDiv = document.getElementById("importProgress");
+      const progressBar = document.getElementById("importProgressBar");
+      const statusDiv = document.getElementById("importStatus");
+      progressDiv.style.display = "block";
+      confirmBtn.disabled = true;
+
+      const files = Array.from(input.files);
+      let successCount = 0;
+      let errorCount = 0;
+      let duplicateCount = 0;
+      const errors = [];
+      const duplicates = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const progress = Math.round(((i + 1) / files.length) * 100);
+
+        progressBar.style.width = progress + "%";
+        statusDiv.textContent = `Bezig met importeren: ${file.name} (${i + 1}/${
+          files.length
+        })`;
+
+        const formData = new FormData();
+        formData.append("pdf", file);
+        formData.append("template_id", templateSelect.value);
+
+        try {
+          await api.importInvoicePDF(formData);
+          successCount++;
+        } catch (err) {
+          console.error("Import error:", err);
+          // Check if it's a duplicate (409 status)
+          if (
+            err.duplicate ||
+            (err.message && err.message.includes("bestaat al"))
+          ) {
+            duplicateCount++;
+            duplicates.push(file.name);
+          } else {
+            errorCount++;
+            errors.push(`${file.name}: ${err.message || "Onbekende fout"}`);
+          }
+        }
+      }
+
+      // Hide progress
+      progressDiv.style.display = "none";
+      confirmBtn.disabled = false;
+
+      // Show results
+      let message = "";
+      if (successCount > 0) message += `${successCount} facturen geïmporteerd`;
+      if (duplicateCount > 0)
+        message +=
+          (message ? ", " : "") + `${duplicateCount} overgeslagen (bestaan al)`;
+      if (errorCount > 0)
+        message += (message ? ", " : "") + `${errorCount} mislukt`;
+
+      if (errorCount === 0 && duplicateCount === 0) {
+        showToast(
+          `Alle ${successCount} facturen succesvol geïmporteerd!`,
+          "success"
+        );
+      } else if (successCount === 0 && errorCount > 0) {
+        showToast(`Importeren mislukt voor alle bestanden`, "error");
+        console.error("Errors:", errors);
+      } else {
+        showToast(
+          message,
+          duplicateCount > 0 && errorCount === 0 ? "info" : "warning"
+        );
+        if (errors.length > 0) console.error("Errors:", errors);
+        if (duplicates.length > 0)
+          console.info("Duplicates overgeslagen:", duplicates);
+      }
+
+      bsModal.hide();
+      await this.loadData();
+      this.renderInvoiceList();
+    };
+  },
+
+  async loadImportTemplatesForModal() {
+    try {
+      const importTemplates = await api.getImportTemplates();
+      const parserSelect = document.getElementById("importPdfParserSelect");
+
+      if (!parserSelect) return;
+
+      if (importTemplates.length === 0) {
+        parserSelect.innerHTML =
+          '<option value="">Geen import templates beschikbaar</option>';
+        parserSelect.disabled = true;
+      } else {
+        parserSelect.innerHTML =
+          '<option value="">-- Selecteer import format --</option>' +
+          importTemplates
+            .map(
+              (t) =>
+                `<option value="${t.id}">${t.name} (${t.parser_type})</option>`
+            )
+            .join("");
+        parserSelect.disabled = false;
+      }
+    } catch (error) {
+      console.error("Error loading import templates:", error);
+      const parserSelect = document.getElementById("importPdfParserSelect");
+      if (parserSelect) {
+        parserSelect.innerHTML =
+          '<option value="">Fout bij laden templates</option>';
+      }
+    }
+  },
+
   renderInvoiceRows() {
     if (this.invoices.length === 0) {
-      return '<tr><td colspan="6" class="text-center text-muted">Geen facturen gevonden</td></tr>';
+      return '<tr><td colspan="7" class="text-center text-muted">Geen facturen gevonden</td></tr>';
     }
 
     return this.invoices
@@ -99,6 +327,11 @@ const invoiceManager = {
         const statusBadge = this.getStatusBadge(invoice.status);
         return `
         <tr>
+          <td>
+            <input type="checkbox" class="invoice-checkbox" value="${
+              invoice.id
+            }" onchange="invoiceManager.updateBulkActions()">
+          </td>
           <td><strong>${invoice.invoice_number}</strong></td>
           <td>${invoice.customer_name || "-"}</td>
           <td>${invoice.invoice_date}</td>
@@ -111,7 +344,9 @@ const invoiceManager = {
               })" title="Bekijken">
                 <i class="bi bi-eye"></i>
               </button>
-              <button class="btn btn-outline-secondary" onclick="invoiceManager.showEditInvoice(${invoice.id})" title="Bewerken">
+              <button class="btn btn-outline-secondary" onclick="invoiceManager.showEditInvoice(${
+                invoice.id
+              })" title="Bewerken">
                 <i class="bi bi-pencil"></i>
               </button>
               <button class="btn btn-outline-success" onclick="invoiceManager.downloadPDF(${
@@ -220,6 +455,11 @@ const invoiceManager = {
             })">
               <i class="bi bi-pencil"></i> Bewerken
             </button>
+            <button class="btn btn-sm btn-outline-info" onclick="invoiceManager.duplicateTemplate(${
+              template.id
+            })">
+              <i class="bi bi-files"></i> Dupliceren
+            </button>
             <button class="btn btn-sm btn-outline-danger" onclick="invoiceManager.deleteTemplate(${
               template.id
             })">
@@ -261,6 +501,16 @@ const invoiceManager = {
                   <label class="form-label">Beschrijving</label>
                   <textarea class="form-control" id="template-description" rows="3"></textarea>
                 </div>
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Uurtarief (€)</label>
+                    <input type="number" class="form-control" id="template-hourly-rate" value="0" min="0" step="0.01">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">KM Tarief (€)</label>
+                    <input type="number" class="form-control" id="template-km-rate" value="0" min="0" step="0.01">
+                  </div>
+                </div>
                 <div class="mb-3 form-check">
                   <input type="checkbox" class="form-check-input" id="template-default">
                   <label class="form-check-label" for="template-default">
@@ -297,6 +547,10 @@ const invoiceManager = {
       .getElementById("template-description")
       .value.trim();
     const is_default = document.getElementById("template-default").checked;
+    const hourly_rate =
+      parseFloat(document.getElementById("template-hourly-rate").value) || 0;
+    const km_rate =
+      parseFloat(document.getElementById("template-km-rate").value) || 0;
 
     if (!name) {
       showToast("Template naam is verplicht", "error");
@@ -308,6 +562,8 @@ const invoiceManager = {
         name,
         description,
         is_default: is_default ? 1 : 0,
+        hourly_rate,
+        km_rate,
       });
 
       showToast("Template succesvol aangemaakt", "success");
@@ -345,6 +601,62 @@ const invoiceManager = {
             <button class="btn btn-outline-secondary" onclick="invoiceManager.showTemplates()">
               <i class="bi bi-arrow-left"></i> Terug
             </button>
+          </div>
+        </div>
+
+        <!-- Template Settings Card -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <h5>Template Instellingen</h5>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Template Naam</label>
+                      <input type="text" class="form-control" id="edit-template-name" value="${
+                        template.name || ""
+                      }">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3 form-check">
+                      <input type="checkbox" class="form-check-input" id="edit-template-default" ${
+                        template.is_default ? "checked" : ""
+                      }>
+                      <label class="form-check-label" for="edit-template-default">
+                        Dit is het standaard template
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Beschrijving</label>
+                  <textarea class="form-control" id="edit-template-description" rows="2">${
+                    template.description || ""
+                  }</textarea>
+                </div>
+                <div class="row mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label">Uurtarief (€)</label>
+                    <input type="number" class="form-control" id="edit-template-hourly-rate" value="${
+                      template.hourly_rate || 0
+                    }" min="0" step="0.01">
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label">KM Tarief (€)</label>
+                    <input type="number" class="form-control" id="edit-template-km-rate" value="${
+                      template.km_rate || 0
+                    }" min="0" step="0.01">
+                  </div>
+                </div>
+                <button class="btn btn-primary" onclick="invoiceManager.updateTemplateSettings()">
+                  <i class="bi bi-save"></i> Instellingen Opslaan
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -464,29 +776,34 @@ const invoiceManager = {
   updateTemplatePreview() {
     const elements = this.currentTemplate.elements || [];
     const positions = {
-      'top_left': '#preview-top-left',
-      'top_center': '#preview-top-center',
-      'top_right': '#preview-top-right',
-      'address_left': '#preview-addr-left',
-      'address_center': '#preview-addr-center',
-      'address_right': '#preview-addr-right',
+      top_left: "#preview-top-left",
+      top_center: "#preview-top-center",
+      top_right: "#preview-top-right",
+      address_left: "#preview-addr-left",
+      address_center: "#preview-addr-center",
+      address_right: "#preview-addr-right",
     };
 
     // Clear all preview areas
-    Object.values(positions).forEach(id => {
+    Object.values(positions).forEach((id) => {
       const el = document.querySelector(id);
-      if (el) el.innerHTML = '';
+      if (el) el.innerHTML = "";
     });
 
     // Populate preview areas
-    elements.forEach(el => {
+    elements.forEach((el) => {
       const selector = positions[el.element_type];
       if (selector) {
         const previewEl = document.querySelector(selector);
         if (previewEl) {
           const label = el.label || el.element_type;
-          const content = el.content ? el.content.substring(0, 20) + (el.content.length > 20 ? '...' : '') : '';
-          previewEl.innerHTML += `<div style="margin: 5px 0; padding: 4px; background: #f0f0f0; border-radius: 2px; font-weight: 500;">${label}${content ? ': ' + content : ''}</div>`;
+          const content = el.content
+            ? el.content.substring(0, 20) +
+              (el.content.length > 20 ? "..." : "")
+            : "";
+          previewEl.innerHTML += `<div style="margin: 5px 0; padding: 4px; background: #f0f0f0; border-radius: 2px; font-weight: 500;">${label}${
+            content ? ": " + content : ""
+          }</div>`;
         }
       }
     });
@@ -510,7 +827,13 @@ const invoiceManager = {
       </div>
     `;
 
-    if (type === "text" || type === "sender" || type === "title" || type.startsWith('top_') || type.startsWith('address_')) {
+    if (
+      type === "text" ||
+      type === "sender" ||
+      type === "title" ||
+      type.startsWith("top_") ||
+      type.startsWith("address_")
+    ) {
       let labelText = "Tekst Inhoud *";
       let placeholder = "";
       let helpText = "";
@@ -518,12 +841,15 @@ const invoiceManager = {
 
       if (type === "sender") {
         labelText = "Afzender Tekst (meerdere regels mogelijk) *";
-        placeholder = "Bijv:\nBedrijfsnaam B.V.\nStraatnaam 123\n1234 AB Plaats";
-        helpText = '<small class="text-muted">Deze tekst komt rechts naast "Factuuradres:"</small>';
+        placeholder =
+          "Bijv:\nBedrijfsnaam B.V.\nStraatnaam 123\n1234 AB Plaats";
+        helpText =
+          '<small class="text-muted">Deze tekst komt rechts naast "Factuuradres:"</small>';
       } else if (type === "title") {
         labelText = "Titel Tekst (bovenaan PDF) *";
         placeholder = "Bijv: FACTUUR";
-        helpText = '<small class="text-muted">Deze tekst komt bovenaan de PDF (groot en prominent)</small>';
+        helpText =
+          '<small class="text-muted">Deze tekst komt bovenaan de PDF (groot en prominent)</small>';
         rows = 1;
       } else if (type === "top_left") {
         labelText = "Inhoud Boven Links *";
@@ -536,19 +862,23 @@ const invoiceManager = {
       } else if (type === "top_right") {
         labelText = "Inhoud Boven Rechts *";
         placeholder = "Bijv: Factuurnummer, datum";
-        helpText = '<small class="text-muted">Rechterkolom bovenaan PDF</small>';
+        helpText =
+          '<small class="text-muted">Rechterkolom bovenaan PDF</small>';
       } else if (type === "address_left") {
         labelText = "Inhoud Adres Links (Factuuradres) *";
         placeholder = "Bijv: Klantnaam en adres";
-        helpText = '<small class="text-muted">Linkerkolom in adressectie</small>';
+        helpText =
+          '<small class="text-muted">Linkerkolom in adressectie</small>';
       } else if (type === "address_center") {
         labelText = "Inhoud Adres Midden *";
         placeholder = "Bijv: Factuuradreslabel";
-        helpText = '<small class="text-muted">Middenkolom in adressectie</small>';
+        helpText =
+          '<small class="text-muted">Middenkolom in adressectie</small>';
       } else if (type === "address_right") {
         labelText = "Inhoud Adres Rechts (Afzender) *";
         placeholder = "Bijv: Bedrijfsnaam en adres";
-        helpText = '<small class="text-muted">Rechterkolom in adressectie (afzender)</small>';
+        helpText =
+          '<small class="text-muted">Rechterkolom in adressectie (afzender)</small>';
       }
 
       return (
@@ -602,6 +932,41 @@ const invoiceManager = {
     }
   },
 
+  async updateTemplateSettings() {
+    const name = document.getElementById("edit-template-name").value.trim();
+    const description = document
+      .getElementById("edit-template-description")
+      .value.trim();
+    const is_default = document.getElementById("edit-template-default").checked;
+    const hourly_rate =
+      parseFloat(document.getElementById("edit-template-hourly-rate").value) ||
+      0;
+    const km_rate =
+      parseFloat(document.getElementById("edit-template-km-rate").value) || 0;
+
+    if (!name) {
+      showToast("Template naam is verplicht", "error");
+      return;
+    }
+
+    try {
+      await api.updateInvoiceTemplate(this.currentTemplate.id, {
+        name,
+        description,
+        is_default: is_default ? 1 : 0,
+        hourly_rate,
+        km_rate,
+      });
+
+      showToast("Template instellingen bijgewerkt", "success");
+      await this.loadData();
+      await this.editTemplate(this.currentTemplate.id);
+    } catch (error) {
+      console.error("Error updating template:", error);
+      showToast("Fout bij bijwerken template: " + error.message, "error");
+    }
+  },
+
   async addElement() {
     const templateId = this.currentTemplate.id;
     const type = document.getElementById("element-type").value;
@@ -614,7 +979,11 @@ const invoiceManager = {
     formData.append("position_order", order);
 
     // Handle text-based types (including new layout types)
-    if (type === "text" || type.startsWith('top_') || type.startsWith('address_')) {
+    if (
+      type === "text" ||
+      type.startsWith("top_") ||
+      type.startsWith("address_")
+    ) {
       const content = document.getElementById("element-content").value;
       const fontSize = document.getElementById("element-font-size").value;
       const fontColor = document.getElementById("element-font-color").value;
@@ -679,8 +1048,8 @@ const invoiceManager = {
           el.element_type === "text" ||
           el.element_type === "sender" ||
           el.element_type === "title" ||
-          el.element_type.startsWith('top_') ||
-          el.element_type.startsWith('address_')
+          el.element_type.startsWith("top_") ||
+          el.element_type.startsWith("address_")
         ) {
           preview = `<p style="font-size: ${el.font_size}px; color: ${el.font_color}; font-weight: ${el.font_weight};">${el.content}</p>`;
         } else if (el.element_type === "image" && el.image_path) {
@@ -701,6 +1070,11 @@ const invoiceManager = {
                 <div>${preview}</div>
               </div>
               <div class="col-auto">
+                <button class="btn btn-sm btn-outline-primary" onclick="invoiceManager.editElement(${
+                  el.id
+                })">
+                  <i class="bi bi-pencil"></i>
+                </button>
                 <button class="btn btn-sm btn-outline-danger" onclick="invoiceManager.deleteElement(${
                   el.id
                 })">
@@ -715,6 +1089,192 @@ const invoiceManager = {
       .join("");
   },
 
+  async editElement(elementId) {
+    const element = (this.currentTemplate.elements || []).find(
+      (e) => e.id === elementId
+    );
+    if (!element) {
+      showToast("Element niet gevonden", "error");
+      return;
+    }
+
+    // Show modal for editing
+    const modalHtml = `
+      <div class="modal fade" id="editElementModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Element Bewerken</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Element Type</label>
+                <input type="text" class="form-control" value="${
+                  element.element_type
+                }" disabled>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Label / Omschrijving</label>
+                <input type="text" class="form-control" id="edit-element-label" value="${
+                  element.label || ""
+                }">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Volgorde</label>
+                <input type="number" class="form-control" id="edit-element-order" value="${
+                  element.position_order || 0
+                }">
+              </div>
+              
+              ${
+                element.element_type === "image"
+                  ? `
+                <div class="mb-3">
+                  <label class="form-label">Afbeelding</label>
+                  ${
+                    element.image_path
+                      ? `<img src="${element.image_path}" style="max-width: 200px; max-height: 100px; display: block; margin-bottom: 10px;">`
+                      : ""
+                  }
+                  <input type="file" class="form-control" id="edit-element-image" accept="image/*">
+                  <small class="form-text text-muted">Laat leeg om huidige afbeelding te behouden</small>
+                </div>
+              `
+                  : `
+                <div class="mb-3">
+                  <label class="form-label">Tekst Inhoud</label>
+                  <textarea class="form-control" id="edit-element-content" rows="3">${
+                    element.content || ""
+                  }</textarea>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Lettergrootte</label>
+                      <input type="number" class="form-control" id="edit-element-font-size" value="${
+                        element.font_size || 14
+                      }">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Kleur</label>
+                      <input type="color" class="form-control form-control-color" id="edit-element-font-color" value="${
+                        element.font_color || "#000000"
+                      }">
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="mb-3">
+                  <label class="form-label">Vetgedrukt</label>
+                  <select class="form-select" id="edit-element-font-weight">
+                    <option value="normal" ${
+                      element.font_weight === "normal" ? "selected" : ""
+                    }>Normaal</option>
+                    <option value="bold" ${
+                      element.font_weight === "bold" ? "selected" : ""
+                    }>Vet</option>
+                  </select>
+                </div>
+              `
+              }
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+              <button type="button" class="btn btn-primary" onclick="invoiceManager.saveElementChanges(${elementId})">
+                <i class="bi bi-save"></i> Opslaan
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add modal to DOM
+    let modalContainer = document.getElementById(
+      "edit-element-modal-container"
+    );
+    if (!modalContainer) {
+      modalContainer = document.createElement("div");
+      modalContainer.id = "edit-element-modal-container";
+      document.body.appendChild(modalContainer);
+    }
+    modalContainer.innerHTML = modalHtml;
+
+    // Show modal
+    const modal = new bootstrap.Modal(
+      document.getElementById("editElementModal")
+    );
+    modal.show();
+  },
+
+  async saveElementChanges(elementId) {
+    const element = (this.currentTemplate.elements || []).find(
+      (e) => e.id === elementId
+    );
+    if (!element) {
+      showToast("Element niet gevonden", "error");
+      return;
+    }
+
+    const label = document.getElementById("edit-element-label").value;
+    const order = document.getElementById("edit-element-order").value;
+
+    const formData = new FormData();
+    formData.append("label", label);
+    formData.append("position_order", order);
+
+    if (element.element_type === "image") {
+      const imageFile = document.getElementById("edit-element-image").files[0];
+      if (imageFile) {
+        formData.append("image", imageFile);
+      }
+    } else {
+      const content = document.getElementById("edit-element-content").value;
+      const fontSize = document.getElementById("edit-element-font-size").value;
+      const fontColor = document.getElementById(
+        "edit-element-font-color"
+      ).value;
+      const fontWeight = document.getElementById(
+        "edit-element-font-weight"
+      ).value;
+
+      if (!content) {
+        showToast("Tekst inhoud is verplicht", "error");
+        return;
+      }
+
+      formData.append("content", content);
+      formData.append("font_size", fontSize);
+      formData.append("font_color", fontColor);
+      formData.append("font_weight", fontWeight);
+    }
+
+    try {
+      await api.updateTemplateElement(
+        this.currentTemplate.id,
+        elementId,
+        formData
+      );
+      showToast("Element bijgewerkt", "success");
+
+      // Close modal
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("editElementModal")
+      );
+      if (modal) modal.hide();
+
+      // Reload template
+      await this.editTemplate(this.currentTemplate.id);
+    } catch (error) {
+      console.error("Error updating element:", error);
+      showToast("Fout bij bijwerken element: " + error.message, "error");
+    }
+  },
+
   async deleteElement(elementId) {
     if (!confirm("Weet je zeker dat je dit element wilt verwijderen?")) {
       return;
@@ -727,6 +1287,55 @@ const invoiceManager = {
     } catch (error) {
       console.error("Error deleting element:", error);
       showToast("Fout bij verwijderen element", "error");
+    }
+  },
+
+  async duplicateTemplate(templateId) {
+    try {
+      const sourceTemplate = this.templates.find((t) => t.id === templateId);
+      if (!sourceTemplate) {
+        showToast("Template niet gevonden", "error");
+        return;
+      }
+
+      // Get full template with elements
+      const fullTemplate = await api.getInvoiceTemplate(templateId);
+
+      // Create new template with "Copy" suffix
+      const newName = `${sourceTemplate.name} (kopie)`;
+      const newTemplate = await api.createInvoiceTemplate({
+        name: newName,
+        description: sourceTemplate.description,
+        is_default: 0, // Never set copy as default
+      });
+
+      // Duplicate all elements
+      if (fullTemplate.elements && fullTemplate.elements.length > 0) {
+        for (const element of fullTemplate.elements) {
+          const formData = new FormData();
+          formData.append("element_type", element.element_type);
+          formData.append("label", element.label || "");
+          formData.append("content", element.content || "");
+          formData.append("position_order", element.position_order || 0);
+          formData.append("font_size", element.font_size || 14);
+          formData.append("font_color", element.font_color || "#000000");
+          formData.append("font_weight", element.font_weight || "normal");
+          formData.append(
+            "calculation_formula",
+            element.calculation_formula || ""
+          );
+
+          // Note: images won't be duplicated (would need file download), but that's OK
+          await api.addTemplateElement(newTemplate.id, formData);
+        }
+      }
+
+      showToast(`Template "${newName}" aangemaakt`, "success");
+      await this.loadData();
+      this.showTemplates();
+    } catch (error) {
+      console.error("Error duplicating template:", error);
+      showToast("Fout bij dupliceren template: " + error.message, "error");
     }
   },
 
@@ -753,34 +1362,38 @@ const invoiceManager = {
         showToast("Template ID niet gevonden", "error");
         return;
       }
-      
+
       const pdfUrl = `/api/invoices/template/${templateId}/preview-pdf`;
       console.log("Fetching PDF preview:", pdfUrl);
-      
+
       showToast("PDF wordt gegenereerd...", "info");
-      
+
       // Fetch PDF as blob
       const response = await fetch(pdfUrl);
       console.log("Response status:", response.status, response.statusText);
-      console.log("Response headers:", response.headers.get('content-type'), response.headers.get('content-length'));
-      
+      console.log(
+        "Response headers:",
+        response.headers.get("content-type"),
+        response.headers.get("content-length")
+      );
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error("Server error:", errorText);
-        throw new Error('Failed to generate PDF: ' + response.status);
+        throw new Error("Failed to generate PDF: " + response.status);
       }
-      
+
       const blob = await response.blob();
       console.log("Blob received:", blob.size, "bytes, type:", blob.type);
-      
+
       if (blob.size === 0) {
-        throw new Error('PDF is leeg (0 bytes)');
+        throw new Error("PDF is leeg (0 bytes)");
       }
-      
+
       const blobUrl = URL.createObjectURL(blob);
-      
+
       // Open blob URL in new window
-      window.open(blobUrl, '_blank');
+      window.open(blobUrl, "_blank");
       showToast("PDF preview geopend", "success");
     } catch (error) {
       console.error("Error generating preview:", error);
@@ -889,9 +1502,14 @@ const invoiceManager = {
               <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                   <h5 class="mb-0">Factuurregels</h5>
-                  <button class="btn btn-sm btn-primary" onclick="invoiceManager.addLineItem()">
-                    <i class="bi bi-plus"></i> Regel Toevoegen
-                  </button>
+                  <div>
+                    <button class="btn btn-sm btn-outline-info me-2" onclick="invoiceManager.showSubmissionHistoryModal()">
+                      <i class="bi bi-clock-history"></i> Importeer uit History
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="invoiceManager.addLineItem()">
+                      <i class="bi bi-plus"></i> Regel Toevoegen
+                    </button>
+                  </div>
                 </div>
                 <div class="card-body">
                   <div id="line-items-container">
@@ -970,7 +1588,9 @@ const invoiceManager = {
           <div class="row mb-4">
             <div class="col">
               <h2><i class="bi bi-pencil"></i> Factuur Bewerken</h2>
-              <div class="text-muted">Factuurnummer: ${invoice.invoice_number}</div>
+              <div class="text-muted">Factuurnummer: ${
+                invoice.invoice_number
+              }</div>
             </div>
             <div class="col-auto">
               <button class="btn btn-outline-secondary" onclick="invoiceManager.renderInvoiceList()">
@@ -993,7 +1613,9 @@ const invoiceManager = {
                         ${this.templates
                           .map(
                             (t) => `
-                          <option value="${t.id}" ${t.id === invoice.template_id ? "selected" : ""}>${t.name}</option>
+                          <option value="${t.id}" ${
+                              t.id === invoice.template_id ? "selected" : ""
+                            }>${t.name}</option>
                         `
                           )
                           .join("")}
@@ -1001,7 +1623,9 @@ const invoiceManager = {
                     </div>
                     <div class="col-md-6">
                       <label class="form-label">Factuurnummer *</label>
-                      <input type="text" class="form-control" id="invoice-number" value="${invoice.invoice_number}" readonly>
+                      <input type="text" class="form-control" id="invoice-number" value="${
+                        invoice.invoice_number
+                      }" readonly>
                       <small class="text-muted">Factuurnummer blijft gelijk bij bewerken</small>
                     </div>
                   </div>
@@ -1009,18 +1633,24 @@ const invoiceManager = {
                   <div class="row mb-3">
                     <div class="col-md-6">
                       <label class="form-label">Factuurdatum *</label>
-                      <input type="date" class="form-control" id="invoice-date" value="${invoice.invoice_date || ""}">
+                      <input type="date" class="form-control" id="invoice-date" value="${
+                        invoice.invoice_date || ""
+                      }">
                     </div>
                     <div class="col-md-6">
                       <label class="form-label">Vervaldatum</label>
-                      <input type="date" class="form-control" id="invoice-due-date" value="${invoice.due_date || ""}">
+                      <input type="date" class="form-control" id="invoice-due-date" value="${
+                        invoice.due_date || ""
+                      }">
                     </div>
                   </div>
 
                   <div class="mb-3">
                     <label class="form-label">Klant Naam (optioneel)</label>
                     <div class="input-group">
-                      <input type="text" class="form-control" id="customer-name" value="${invoice.customer_name || ""}">
+                      <input type="text" class="form-control" id="customer-name" value="${
+                        invoice.customer_name || ""
+                      }">
                       <button class="btn btn-outline-secondary" type="button" onclick="invoiceManager.fillCustomerFromTemplate()" title="Vul in vanuit template">
                         <i class="bi bi-arrow-repeat"></i>
                       </button>
@@ -1029,12 +1659,16 @@ const invoiceManager = {
 
                   <div class="mb-3">
                     <label class="form-label">Klant Adres (optioneel)</label>
-                    <textarea class="form-control" id="customer-address" rows="3">${invoice.customer_address || ""}</textarea>
+                    <textarea class="form-control" id="customer-address" rows="3">${
+                      invoice.customer_address || ""
+                    }</textarea>
                   </div>
 
                   <div class="mb-3">
                     <label class="form-label">Opmerkingen</label>
-                    <textarea class="form-control" id="invoice-notes" rows="2">${invoice.notes || ""}</textarea>
+                    <textarea class="form-control" id="invoice-notes" rows="2">${
+                      invoice.notes || ""
+                    }</textarea>
                   </div>
                 </div>
               </div>
@@ -1043,9 +1677,14 @@ const invoiceManager = {
               <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                   <h5 class="mb-0">Factuurregels</h5>
-                  <button class="btn btn-sm btn-primary" onclick="invoiceManager.addLineItem()">
-                    <i class="bi bi-plus"></i> Regel Toevoegen
-                  </button>
+                  <div>
+                    <button class="btn btn-sm btn-outline-info me-2" onclick="invoiceManager.showSubmissionHistoryModal()">
+                      <i class="bi bi-clock-history"></i> Importeer uit History
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="invoiceManager.addLineItem()">
+                      <i class="bi bi-plus"></i> Regel Toevoegen
+                    </button>
+                  </div>
                 </div>
                 <div class="card-body">
                   <div id="line-items-container"></div>
@@ -1110,6 +1749,326 @@ const invoiceManager = {
     }
   },
 
+  async showSubmissionHistoryModal() {
+    try {
+      const submissions = await api.getSubmissions();
+
+      if (!submissions || submissions.length === 0) {
+        showToast("Geen submission history gevonden", "info");
+        return;
+      }
+
+      // Parse timesheet_ids to get individual timesheets
+      const allTimesheets = [];
+      for (const submission of submissions) {
+        if (submission.timesheet_ids) {
+          const ids = submission.timesheet_ids
+            .split(",")
+            .map((id) => parseInt(id.trim()));
+          for (const id of ids) {
+            // Fetch timesheet details
+            const response = await fetch(`/api/user/timesheets/${id}`, {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            });
+            if (response.ok) {
+              const timesheet = await response.json();
+              allTimesheets.push({
+                ...timesheet,
+                submission_date: submission.submission_date,
+                submission_status: submission.status,
+              });
+            }
+          }
+        }
+      }
+
+      if (allTimesheets.length === 0) {
+        showToast("Geen timesheet data gevonden", "info");
+        return;
+      }
+
+      // Create modal
+      const modalHtml = `
+        <div class="modal fade" id="submissionHistoryModal" tabindex="-1">
+          <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Selecteer uit Submission History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th><input type="checkbox" id="select-all-timesheets" onchange="invoiceManager.toggleAllTimesheets(this)"></th>
+                        <th>Ritnummer</th>
+                        <th>Datum</th>
+                        <th>KM</th>
+                        <th>Uren</th>
+                        <th>Week</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${allTimesheets
+                        .map(
+                          (ts, idx) => `
+                        <tr>
+                          <td>
+                            <input type="checkbox" class="timesheet-checkbox" data-index="${idx}" 
+                                   data-ritnumber="${ts.ritnumber || ""}" 
+                                   data-date="${ts.date || ""}" 
+                                   data-km="${ts.total_km || 0}" 
+                                   data-hours="${ts.total_hours || 0}">
+                          </td>
+                          <td>${ts.ritnumber || "-"}</td>
+                          <td>${ts.date || "-"}</td>
+                          <td>${(ts.total_km || 0).toFixed(2)}</td>
+                          <td>${(ts.total_hours || 0).toFixed(2)}</td>
+                          <td>${ts.week_number || "-"}</td>
+                        </tr>
+                      `
+                        )
+                        .join("")}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" onclick="invoiceManager.importSelectedTimesheets()">
+                  <i class="bi bi-download"></i> Importeer Geselecteerde
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Remove existing modal if any
+      const existingModal = document.getElementById("submissionHistoryModal");
+      if (existingModal) {
+        existingModal.remove();
+      }
+
+      // Add modal to body
+      document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+      // Show modal
+      const modal = new bootstrap.Modal(
+        document.getElementById("submissionHistoryModal")
+      );
+      modal.show();
+    } catch (error) {
+      console.error("Error loading submission history:", error);
+      showToast("Fout bij laden submission history", "error");
+    }
+  },
+
+  toggleAllTimesheets(checkbox) {
+    const checkboxes = document.querySelectorAll(".timesheet-checkbox");
+    checkboxes.forEach((cb) => (cb.checked = checkbox.checked));
+  },
+
+  importSelectedTimesheets() {
+    const checkboxes = document.querySelectorAll(".timesheet-checkbox:checked");
+
+    if (checkboxes.length === 0) {
+      showToast("Selecteer minimaal één timesheet", "warning");
+      return;
+    }
+
+    // Import each selected timesheet as a line item
+    checkboxes.forEach((checkbox) => {
+      const ritnumber = checkbox.dataset.ritnumber;
+      const date = checkbox.dataset.date;
+      const km = parseFloat(checkbox.dataset.km) || 0;
+      const hours = parseFloat(checkbox.dataset.hours) || 0;
+
+      // Add line item with submission data
+      this.addLineItem({
+        description: ritnumber || "Geen ritnummer",
+        item_date: date,
+        item_km: km,
+        item_hours: hours,
+        quantity: 1,
+        unit_price: 0,
+      });
+    });
+
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(
+      document.getElementById("submissionHistoryModal")
+    );
+    if (modal) {
+      modal.hide();
+    }
+
+    showToast(`${checkboxes.length} regel(s) toegevoegd`, "success");
+  },
+
+  async showSubmissionHistoryModal() {
+    try {
+      const submissions = await api.getSubmissions();
+
+      if (!submissions || submissions.length === 0) {
+        showToast("Geen submission history gevonden", "info");
+        return;
+      }
+
+      // Parse timesheet_ids to get individual timesheets
+      const allTimesheets = [];
+      for (const submission of submissions) {
+        if (submission.timesheet_ids) {
+          const ids = submission.timesheet_ids
+            .split(",")
+            .map((id) => parseInt(id.trim()));
+          for (const id of ids) {
+            // Fetch timesheet details
+            const response = await fetch(`/api/user/timesheets/${id}`, {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            });
+            if (response.ok) {
+              const timesheet = await response.json();
+              allTimesheets.push({
+                ...timesheet,
+                submission_date: submission.submission_date,
+                submission_status: submission.status,
+              });
+            }
+          }
+        }
+      }
+
+      if (allTimesheets.length === 0) {
+        showToast("Geen timesheet data gevonden", "info");
+        return;
+      }
+
+      // Create modal
+      const modalHtml = `
+        <div class="modal fade" id="submissionHistoryModal" tabindex="-1">
+          <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Selecteer uit Submission History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th><input type="checkbox" id="select-all-timesheets" onchange="invoiceManager.toggleAllTimesheets(this)"></th>
+                        <th>Ritnummer</th>
+                        <th>Datum</th>
+                        <th>KM</th>
+                        <th>Uren</th>
+                        <th>Week</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${allTimesheets
+                        .map(
+                          (ts, idx) => `
+                        <tr>
+                          <td>
+                            <input type="checkbox" class="timesheet-checkbox" data-index="${idx}" 
+                                   data-ritnumber="${ts.ritnumber || ""}" 
+                                   data-date="${ts.date || ""}" 
+                                   data-km="${ts.total_km || 0}" 
+                                   data-hours="${ts.total_hours || 0}">
+                          </td>
+                          <td>${ts.ritnumber || "-"}</td>
+                          <td>${ts.date || "-"}</td>
+                          <td>${(ts.total_km || 0).toFixed(2)}</td>
+                          <td>${(ts.total_hours || 0).toFixed(2)}</td>
+                          <td>${ts.week_number || "-"}</td>
+                        </tr>
+                      `
+                        )
+                        .join("")}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" onclick="invoiceManager.importSelectedTimesheets()">
+                  <i class="bi bi-download"></i> Importeer Geselecteerde
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Remove existing modal if any
+      const existingModal = document.getElementById("submissionHistoryModal");
+      if (existingModal) {
+        existingModal.remove();
+      }
+
+      // Add modal to body
+      document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+      // Show modal
+      const modal = new bootstrap.Modal(
+        document.getElementById("submissionHistoryModal")
+      );
+      modal.show();
+    } catch (error) {
+      console.error("Error loading submission history:", error);
+      showToast("Fout bij laden submission history", "error");
+    }
+  },
+
+  toggleAllTimesheets(checkbox) {
+    const checkboxes = document.querySelectorAll(".timesheet-checkbox");
+    checkboxes.forEach((cb) => (cb.checked = checkbox.checked));
+  },
+
+  importSelectedTimesheets() {
+    const checkboxes = document.querySelectorAll(".timesheet-checkbox:checked");
+
+    if (checkboxes.length === 0) {
+      showToast("Selecteer minimaal één timesheet", "warning");
+      return;
+    }
+
+    // Import each selected timesheet as a line item
+    checkboxes.forEach((checkbox) => {
+      const ritnumber = checkbox.dataset.ritnumber;
+      const date = checkbox.dataset.date;
+      const km = parseFloat(checkbox.dataset.km) || 0;
+      const hours = parseFloat(checkbox.dataset.hours) || 0;
+
+      // Add line item with submission data
+      this.addLineItem({
+        description: ritnumber || "Geen ritnummer",
+        item_date: date,
+        item_km: km,
+        item_hours: hours,
+        quantity: 1,
+        unit_price: 0,
+      });
+    });
+
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(
+      document.getElementById("submissionHistoryModal")
+    );
+    if (modal) {
+      modal.hide();
+    }
+
+    showToast(`${checkboxes.length} regel(s) toegevoegd`, "success");
+  },
+
   addLineItem(defaults = {}) {
     const container = document.getElementById("line-items-container");
     const index = container.children.length;
@@ -1118,26 +2077,56 @@ const invoiceManager = {
     const quantityVal = defaults.quantity ?? 1;
     const priceVal = defaults.unit_price ?? 0;
 
+    const dateVal = defaults.item_date ?? "";
+    const kmVal = defaults.item_km ?? "";
+    const hoursVal = defaults.item_hours ?? "";
+
+    // Get template rates
+    const templateId = document.getElementById("invoice-template")?.value;
+    const template = this.templates.find((t) => t.id == templateId);
+    const defaultRate = template?.hourly_rate || 0;
+
+    const rateVal = defaults.item_rate ?? defaultRate;
+
     const lineItem = document.createElement("div");
     lineItem.className = "card mb-2";
     lineItem.innerHTML = `
       <div class="card-body">
         <div class="row g-2 align-items-end">
-          <div class="col-md-5">
+          <div class="col-md-3">
             <label class="form-label small">Omschrijving</label>
             <input type="text" class="form-control form-control-sm line-description" data-index="${index}" value="${descriptionVal}">
           </div>
           <div class="col-md-2">
+            <label class="form-label small">Datum</label>
+            <input type="date" class="form-control form-control-sm line-date" data-index="${index}" value="${dateVal}">
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small">KM</label>
+            <input type="number" class="form-control form-control-sm line-km" data-index="${index}" 
+                   value="${kmVal}" min="0" step="1">
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small">Uren</label>
+            <input type="number" class="form-control form-control-sm line-hours" data-index="${index}" 
+                   value="${hoursVal}" min="0" step="0.01" onchange="invoiceManager.calculateLineTotal(${index})">
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small">Tarief</label>
+            <input type="number" class="form-control form-control-sm line-rate" data-index="${index}" 
+                   value="${rateVal}" min="0" step="0.01" onchange="invoiceManager.calculateLineTotal(${index})">
+          </div>
+          <div class="col-md-1">
             <label class="form-label small">Aantal</label>
             <input type="number" class="form-control form-control-sm line-quantity" data-index="${index}" 
                    value="${quantityVal}" min="0" step="0.01" onchange="invoiceManager.calculateTotals()">
           </div>
-          <div class="col-md-3">
-            <label class="form-label small">Prijs</label>
+          <div class="col-md-2">
+            <label class="form-label small">Exclusief BTW</label>
             <input type="number" class="form-control form-control-sm line-price" data-index="${index}" 
-                   value="${priceVal}" min="0" step="0.01" onchange="invoiceManager.calculateTotals()">
+                   value="${priceVal}" min="0" step="0.01" readonly style="background-color: #f0f0f0;">
           </div>
-          <div class="col-md-2 text-end">
+          <div class="col-md-1 text-end">
             <button class="btn btn-sm btn-outline-danger" onclick="this.closest('.card').remove(); invoiceManager.calculateTotals()">
               <i class="bi bi-trash"></i>
             </button>
@@ -1147,7 +2136,9 @@ const invoiceManager = {
     `;
 
     container.appendChild(lineItem);
-    this.calculateTotals();
+
+    // Calculate initial line total
+    this.calculateLineTotal(index);
   },
 
   setLineItems(items) {
@@ -1158,6 +2149,23 @@ const invoiceManager = {
       items.forEach((item) => this.addLineItem(item));
     } else {
       this.addLineItem();
+    }
+
+    this.calculateTotals();
+  },
+
+  calculateLineTotal(index) {
+    // Calculate: Hours * Rate = Price (Exclusief BTW)
+    const hoursInputs = document.querySelectorAll(".line-hours");
+    const rateInputs = document.querySelectorAll(".line-rate");
+    const priceInputs = document.querySelectorAll(".line-price");
+
+    if (hoursInputs[index] && rateInputs[index] && priceInputs[index]) {
+      const hours = parseFloat(hoursInputs[index].value) || 0;
+      const rate = parseFloat(rateInputs[index].value) || 0;
+      const lineTotal = hours * rate;
+
+      priceInputs[index].value = lineTotal.toFixed(2);
     }
 
     this.calculateTotals();
@@ -1189,17 +2197,37 @@ const invoiceManager = {
   getLineItems() {
     const lineItems = [];
     const descriptions = document.querySelectorAll(".line-description");
+    const dates = document.querySelectorAll(".line-date");
+    const kms = document.querySelectorAll(".line-km");
+    const hours = document.querySelectorAll(".line-hours");
+    const rates = document.querySelectorAll(".line-rate");
     const quantities = document.querySelectorAll(".line-quantity");
     const prices = document.querySelectorAll(".line-price");
 
     descriptions.forEach((desc, index) => {
       const description = desc.value.trim();
       if (description) {
-        lineItems.push({
+        const item = {
           description,
           quantity: parseFloat(quantities[index].value) || 1,
           unit_price: parseFloat(prices[index].value) || 0,
-        });
+        };
+
+        // Add optional fields if they have values
+        if (dates[index] && dates[index].value) {
+          item.item_date = dates[index].value;
+        }
+        if (kms[index] && kms[index].value) {
+          item.item_km = parseFloat(kms[index].value);
+        }
+        if (hours[index] && hours[index].value) {
+          item.item_hours = parseFloat(hours[index].value);
+        }
+        if (rates[index] && rates[index].value) {
+          item.item_rate = parseFloat(rates[index].value);
+        }
+
+        lineItems.push(item);
       }
     });
 
@@ -1282,7 +2310,7 @@ const invoiceManager = {
   async fillCustomerFromTemplate() {
     try {
       const templateId = document.getElementById("invoice-template").value;
-      const template = this.templates.find(t => t.id == templateId);
+      const template = this.templates.find((t) => t.id == templateId);
 
       if (!template) return;
 
@@ -1291,10 +2319,13 @@ const invoiceManager = {
       const elements = templateData.elements || [];
 
       // Find address_left element which contains the customer address
-      const addressElement = elements.find(el => el.element_type === "address_left");
+      const addressElement = elements.find(
+        (el) => el.element_type === "address_left"
+      );
 
       if (addressElement && addressElement.content) {
-        document.getElementById("customer-address").value = addressElement.content;
+        document.getElementById("customer-address").value =
+          addressElement.content;
         showToast("Klantgegevens ingevuld vanuit template", "success");
       } else {
         showToast("Geen klantgegevens gevonden in template", "info");
@@ -1472,7 +2503,9 @@ const invoiceManager = {
                   <h5>Acties</h5>
                 </div>
                 <div class="card-body">
-                  <button class="btn btn-secondary w-100 mb-2" onclick="invoiceManager.showEditInvoice(${invoice.id})">
+                  <button class="btn btn-secondary w-100 mb-2" onclick="invoiceManager.showEditInvoice(${
+                    invoice.id
+                  })">
                     <i class="bi bi-pencil"></i> Bewerken
                   </button>
                   <button class="btn btn-success w-100 mb-2" onclick="invoiceManager.downloadPDF(${
@@ -1480,6 +2513,15 @@ const invoiceManager = {
                   })">
                     <i class="bi bi-file-pdf"></i> Download PDF
                   </button>
+                  ${
+                    invoice.original_pdf_path
+                      ? `
+                  <button class="btn btn-warning w-100 mb-2" onclick="invoiceManager.downloadOriginalPDF(${invoice.id})">
+                    <i class="bi bi-file-earmark-pdf"></i> Download Originele PDF
+                  </button>
+                  `
+                      : ""
+                  }
                   <button class="btn btn-info w-100 mb-2" onclick="invoiceManager.showEmailModal(${
                     invoice.id
                   })">
@@ -1521,6 +2563,41 @@ const invoiceManager = {
     } catch (error) {
       console.error("Error downloading PDF:", error);
       showToast("Fout bij downloaden PDF", "error");
+    }
+  },
+
+  async downloadOriginalPDF(invoiceId) {
+    try {
+      showToast("Originele PDF wordt gedownload...", "info");
+
+      const response = await fetch(
+        `/api/invoices/invoices/${invoiceId}/original-pdf`,
+        {
+          headers: {
+            Authorization: `Bearer ${api.token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Download mislukt");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice-${invoiceId}-origineel.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showToast("Originele PDF gedownload", "success");
+    } catch (error) {
+      console.error("Error downloading original PDF:", error);
+      showToast("Fout bij downloaden originele PDF: " + error.message, "error");
     }
   },
 
@@ -1626,6 +2703,405 @@ Met vriendelijke groet</textarea>
     } catch (error) {
       console.error("Error deleting invoice:", error);
       showToast("Fout bij verwijderen factuur: " + error.message, "error");
+    }
+  },
+
+  toggleSelectAll(checked) {
+    const checkboxes = document.querySelectorAll(".invoice-checkbox");
+    checkboxes.forEach((cb) => (cb.checked = checked));
+    this.updateBulkActions();
+  },
+
+  updateBulkActions() {
+    const checkboxes = document.querySelectorAll(".invoice-checkbox:checked");
+    const count = checkboxes.length;
+    const bulkBar = document.getElementById("bulk-actions-bar");
+    const countSpan = document.getElementById("selected-count");
+
+    if (count > 0) {
+      bulkBar.classList.remove("d-none");
+      countSpan.textContent = count;
+    } else {
+      bulkBar.classList.add("d-none");
+    }
+
+    // Update select-all checkbox state
+    const allCheckboxes = document.querySelectorAll(".invoice-checkbox");
+    const selectAllCheckbox = document.getElementById("select-all-invoices");
+    if (selectAllCheckbox) {
+      selectAllCheckbox.checked = count === allCheckboxes.length && count > 0;
+    }
+  },
+
+  clearSelection() {
+    const checkboxes = document.querySelectorAll(".invoice-checkbox");
+    checkboxes.forEach((cb) => (cb.checked = false));
+    document.getElementById("select-all-invoices").checked = false;
+    this.updateBulkActions();
+  },
+
+  async bulkDelete() {
+    const checkboxes = document.querySelectorAll(".invoice-checkbox:checked");
+    const ids = Array.from(checkboxes).map((cb) => cb.value);
+
+    if (ids.length === 0) {
+      showToast("Geen facturen geselecteerd", "error");
+      return;
+    }
+
+    if (
+      !confirm(
+        `Weet je zeker dat je ${ids.length} geselecteerde facturen wilt verwijderen?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const id of ids) {
+        try {
+          await api.deleteInvoice(id);
+          successCount++;
+        } catch (err) {
+          console.error(`Error deleting invoice ${id}:`, err);
+          errorCount++;
+        }
+      }
+
+      if (errorCount === 0) {
+        showToast(`${successCount} facturen verwijderd`, "success");
+      } else {
+        showToast(
+          `${successCount} facturen verwijderd, ${errorCount} mislukt`,
+          "warning"
+        );
+      }
+
+      this.clearSelection();
+      await this.loadData();
+      this.renderInvoiceList();
+    } catch (error) {
+      console.error("Error bulk deleting:", error);
+      showToast("Fout bij verwijderen: " + error.message, "error");
+    }
+  },
+
+  async deleteOldInvoices() {
+    const dateInput = document.getElementById("invoice-date-before");
+    const beforeDate = dateInput.value;
+
+    if (!beforeDate) {
+      showToast("Selecteer eerst een datum", "error");
+      return;
+    }
+
+    const oldInvoices = this.invoices.filter(
+      (inv) => inv.invoice_date < beforeDate
+    );
+
+    if (oldInvoices.length === 0) {
+      showToast(`Geen facturen gevonden voor ${beforeDate}`, "info");
+      return;
+    }
+
+    if (
+      !confirm(
+        `Weet je zeker dat je alle ${oldInvoices.length} facturen voor ${beforeDate} wilt verwijderen?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const invoice of oldInvoices) {
+        try {
+          await api.deleteInvoice(invoice.id);
+          successCount++;
+        } catch (err) {
+          console.error(`Error deleting invoice ${invoice.id}:`, err);
+          errorCount++;
+        }
+      }
+
+      if (errorCount === 0) {
+        showToast(`${successCount} oude facturen verwijderd`, "success");
+      } else {
+        showToast(
+          `${successCount} facturen verwijderd, ${errorCount} mislukt`,
+          "warning"
+        );
+      }
+
+      await this.loadData();
+      this.renderInvoiceList();
+    } catch (error) {
+      console.error("Error deleting old invoices:", error);
+      showToast("Fout bij verwijderen: " + error.message, "error");
+    }
+  },
+
+  async clearAllInvoices() {
+    if (
+      !confirm(
+        `WAARSCHUWING: Dit verwijdert ALLE ${this.invoices.length} facturen!\n\nWeet je dit ABSOLUUT zeker?`
+      )
+    ) {
+      return;
+    }
+
+    if (
+      !confirm(
+        "Dit kan NIET ongedaan gemaakt worden! Laatste kans om te annuleren."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const invoice of this.invoices) {
+        try {
+          await api.deleteInvoice(invoice.id);
+          successCount++;
+        } catch (err) {
+          console.error(`Error deleting invoice ${invoice.id}:`, err);
+          errorCount++;
+        }
+      }
+
+      if (errorCount === 0) {
+        showToast(`Alle ${successCount} facturen verwijderd`, "success");
+      } else {
+        showToast(
+          `${successCount} facturen verwijderd, ${errorCount} mislukt`,
+          "warning"
+        );
+      }
+
+      await this.loadData();
+      this.renderInvoiceList();
+    } catch (error) {
+      console.error("Error clearing all invoices:", error);
+      showToast("Fout bij verwijderen: " + error.message, "error");
+    }
+  },
+
+  // IMPORT SETTINGS
+  // ============================================
+
+  async showImportSettings() {
+    const content = document.getElementById("content");
+
+    try {
+      const importTemplates = await api.getImportTemplates();
+
+      content.innerHTML = `
+        <div class="container-fluid mt-4">
+          <div class="row mb-4">
+            <div class="col">
+              <h2><i class="bi bi-gear"></i> Import Instellingen</h2>
+              <p class="text-muted">Beheer verschillende PDF import templates voor verschillende factuur formaten</p>
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-primary" onclick="invoiceManager.showCreateImportTemplate()">
+                <i class="bi bi-plus-circle"></i> Nieuw Import Template
+              </button>
+              <button class="btn btn-outline-secondary" onclick="invoiceManager.renderInvoiceList()">
+                <i class="bi bi-arrow-left"></i> Terug
+              </button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">
+                  <h5>Beschikbare Import Templates</h5>
+                </div>
+                <div class="card-body">
+                  ${
+                    importTemplates.length === 0
+                      ? `
+                    <p class="text-muted text-center py-4">Geen import templates gevonden. Maak er een aan om PDF's te kunnen importeren.</p>
+                  `
+                      : `
+                    <div class="list-group">
+                      ${importTemplates
+                        .map(
+                          (t) => `
+                        <div class="list-group-item">
+                          <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                              <h6 class="mb-1">${t.name}</h6>
+                              <p class="mb-1 text-muted small">${
+                                t.description || "Geen beschrijving"
+                              }</p>
+                              <small class="text-secondary">Parser: <code>${
+                                t.parser_type
+                              }</code></small>
+                            </div>
+                            <div>
+                              <button class="btn btn-sm btn-outline-danger" onclick="invoiceManager.deleteImportTemplate(${
+                                t.id
+                              })">
+                                <i class="bi bi-trash"></i> Verwijderen
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      `
+                        )
+                        .join("")}
+                    </div>
+                  `
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-4">
+            <div class="col-12">
+              <div class="card bg-light">
+                <div class="card-header">
+                  <h5>Beschikbare Parser Types</h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6">
+                      <h6>mainfreight</h6>
+                      <p class="small text-muted">Mainfreight factuurformaat met KM en uren kolommen</p>
+                    </div>
+                    <div class="col-md-6">
+                      <h6>generic</h6>
+                      <p class="small text-muted">Generiek formaat met regex patterns voor extractie</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error("Error loading import settings:", error);
+      showToast("Fout bij laden import instellingen", "error");
+    }
+  },
+
+  showCreateImportTemplate() {
+    const content = document.getElementById("content");
+    content.innerHTML = `
+      <div class="container-fluid mt-4">
+        <div class="row mb-4">
+          <div class="col">
+            <h2><i class="bi bi-plus-circle"></i> Nieuw Import Template</h2>
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-outline-secondary" onclick="invoiceManager.showImportSettings()">
+              <i class="bi bi-arrow-left"></i> Terug
+            </button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <h5>Template Details</h5>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">Template Naam *</label>
+                  <input type="text" class="form-control" id="import-template-name" placeholder="bijv. Mainfreight Facturen">
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Beschrijving</label>
+                  <textarea class="form-control" id="import-template-desc" rows="2" placeholder="Optionele beschrijving van dit import template"></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Parser Type *</label>
+                  <select class="form-select" id="import-template-parser">
+                    <option value="">-- Selecteer parser type --</option>
+                    <option value="mainfreight">Mainfreight</option>
+                    <option value="generic">Generic (Regex)</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" onclick="invoiceManager.saveImportTemplate()">
+                  <i class="bi bi-save"></i> Opslaan
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card bg-light">
+              <div class="card-header">
+                <h5>Informatie</h5>
+              </div>
+              <div class="card-body">
+                <p><strong>Parser Types:</strong></p>
+                <ul class="small">
+                  <li><strong>Mainfreight:</strong> Specifiek formaat voor Mainfreight facturen met KM/uren</li>
+                  <li><strong>Generic:</strong> Flexibel formaat met regex patterns</li>
+                </ul>
+                <p class="mt-3 small text-muted">Na het opslaan kan je het template configureren met specifieke extractie regels.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  async saveImportTemplate() {
+    const name = document.getElementById("import-template-name").value.trim();
+    const description = document
+      .getElementById("import-template-desc")
+      .value.trim();
+    const parser_type = document.getElementById("import-template-parser").value;
+
+    if (!name || !parser_type) {
+      showToast("Naam en parser type zijn verplicht", "error");
+      return;
+    }
+
+    try {
+      await api.createImportTemplate({
+        name,
+        description,
+        parser_type,
+        config: {},
+      });
+
+      showToast("Import template aangemaakt", "success");
+      await this.showImportSettings();
+    } catch (error) {
+      console.error("Error saving import template:", error);
+      showToast("Fout bij opslaan template: " + error.message, "error");
+    }
+  },
+
+  async deleteImportTemplate(templateId) {
+    if (
+      !confirm("Weet je zeker dat je dit import template wilt verwijderen?")
+    ) {
+      return;
+    }
+
+    try {
+      // TODO: implement delete endpoint
+      showToast("Functionaliteit nog niet beschikbaar", "info");
+    } catch (error) {
+      console.error("Error deleting import template:", error);
+      showToast("Fout bij verwijderen template: " + error.message, "error");
     }
   },
 };

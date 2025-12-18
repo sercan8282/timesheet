@@ -8,7 +8,12 @@
     "dev": "nodemon server.js",
     "init-db": "node scripts/init-db.js"
   },
-  "keywords": ["timesheet", "admin", "jwt", "express"],
+  "keywords": [
+    "timesheet",
+    "admin",
+    "jwt",
+    "express"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -22,6 +27,7 @@
     "nodemailer": "^6.9.7",
     "exceljs": "^4.4.0",
     "pdfkit": "^0.13.0",
+    "pdf-parse": "^1.1.1",
     "helmet": "^7.1.0",
     "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",

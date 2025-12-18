@@ -158,10 +158,10 @@ class API {
   }
 
   // Submission endpoints
-  async submitTimesheets(timesheetIds) {
+  async submitTimesheets(timesheetIds, sendEmail = true) {
     return this.request("/submission/submit", {
       method: "POST",
-      body: JSON.stringify({ timesheetIds }),
+      body: JSON.stringify({ timesheetIds, sendEmail }),
     });
   }
 
@@ -885,6 +885,51 @@ class API {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  // Invoice Template Line Fields
+  async getTemplateLineFields(templateId) {
+    return this.request(`/admin/invoices/templates/${templateId}/line-fields`);
+  }
+
+  async updateTemplateLineField(templateId, fieldName, data) {
+    return this.request(
+      `/admin/invoices/templates/${templateId}/line-fields/${fieldName}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  // Import Templates
+  async getImportTemplates() {
+    return this.request("/admin/invoices/import-templates");
+  }
+
+  async createImportTemplate(data) {
+    return this.request("/admin/invoices/import-templates", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // Invoice PDF Import
+  async importInvoicePDF(formData) {
+    const response = await fetch(`${API_BASE_URL}/admin/invoices/import-pdf`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+      },
+      body: formData,
+    });
+
+    // Expect JSON response
+    const data = await response.json().catch(() => ({ error: "Server error" }));
+    if (!response.ok) {
+      throw new Error(data.error || "Importeren van PDF mislukt");
+    }
+    return data;
   }
 }
 

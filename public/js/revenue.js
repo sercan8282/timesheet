@@ -62,16 +62,39 @@ function initRevenue() {
       cachedInvoices = await api.getInvoices();
       populateCustomers(customerSelect, cachedInvoices || []);
       populateYears(yearSelect, cachedInvoices || []);
-      buildRevenue(periodSelect.value, customerSelect.value, yearSelect.value, cachedInvoices || []);
+      buildRevenue(
+        periodSelect.value,
+        customerSelect.value,
+        yearSelect.value,
+        cachedInvoices || []
+      );
     } catch (err) {
       console.error("Error loading invoices for revenue:", err);
       showToast("Fout bij laden omzetgegevens", "error");
     }
   };
 
-  periodSelect.onchange = () => buildRevenue(periodSelect.value, customerSelect.value, yearSelect.value, cachedInvoices || []);
-  customerSelect.onchange = () => buildRevenue(periodSelect.value, customerSelect.value, yearSelect.value, cachedInvoices || []);
-  yearSelect.onchange = () => buildRevenue(periodSelect.value, customerSelect.value, yearSelect.value, cachedInvoices || []);
+  periodSelect.onchange = () =>
+    buildRevenue(
+      periodSelect.value,
+      customerSelect.value,
+      yearSelect.value,
+      cachedInvoices || []
+    );
+  customerSelect.onchange = () =>
+    buildRevenue(
+      periodSelect.value,
+      customerSelect.value,
+      yearSelect.value,
+      cachedInvoices || []
+    );
+  yearSelect.onchange = () =>
+    buildRevenue(
+      periodSelect.value,
+      customerSelect.value,
+      yearSelect.value,
+      cachedInvoices || []
+    );
   refreshBtn.onclick = load;
   load();
 }
@@ -83,13 +106,18 @@ function buildRevenue(period, customerFilter, yearFilter, invoices) {
     revenueChart.destroy();
   }
 
-  const filtered = filterByYear(yearFilter, filterByCustomer(customerFilter, invoices));
+  const filtered = filterByYear(
+    yearFilter,
+    filterByCustomer(customerFilter, invoices)
+  );
   const { totalsByYear, labelSet } = aggregateRevenue(period, filtered);
   const years = Object.keys(totalsByYear).sort();
   const labels = Array.from(labelSet).sort();
 
   // If a specific year is selected, limit to that
-  const yearsForChart = yearFilter ? years.filter((y) => y === yearFilter) : years;
+  const yearsForChart = yearFilter
+    ? years.filter((y) => y === yearFilter)
+    : years;
 
   const datasets = yearsForChart.map((year, idx) => {
     const colorHue = 210 + idx * 25;
@@ -97,7 +125,9 @@ function buildRevenue(period, customerFilter, yearFilter, invoices) {
     const border = `hsla(${colorHue}, 70%, 45%, 0.9)`;
     return {
       label: `Omzet ${year}`,
-      data: labels.map((lbl) => Number((totalsByYear[year]?.[lbl] || 0).toFixed(2))),
+      data: labels.map((lbl) =>
+        Number((totalsByYear[year]?.[lbl] || 0).toFixed(2))
+      ),
       backgroundColor: bg,
       borderColor: border,
       borderWidth: 1.5,
@@ -146,7 +176,7 @@ function aggregateRevenue(period, invoices) {
 
     let key;
     if (period === "week") {
-      const { year, week } = isoWeek(d);
+      const { week } = isoWeek(d);
       key = `W${String(week).padStart(2, "0")}`;
     } else if (period === "quarter") {
       const quarter = Math.floor(d.getMonth() / 3) + 1;
@@ -168,7 +198,9 @@ function aggregateRevenue(period, invoices) {
 function filterByCustomer(customerFilter, invoices) {
   if (!customerFilter) return invoices;
   const target = customerFilter.trim().toLowerCase();
-  return invoices.filter((inv) => (inv.customer_name || "").trim().toLowerCase() === target);
+  return invoices.filter(
+    (inv) => (inv.customer_name || "").trim().toLowerCase() === target
+  );
 }
 
 function filterByYear(yearFilter, invoices) {
@@ -190,14 +222,17 @@ function populateCustomers(selectEl, invoices) {
   });
 
   const current = selectEl.value;
-  selectEl.innerHTML = '<option value="">Alle klanten</option>' +
+  selectEl.innerHTML =
+    '<option value="">Alle klanten</option>' +
     Array.from(names)
       .sort((a, b) => a.localeCompare(b))
       .map((n) => `<option value="${n}">${n}</option>`)
       .join("");
 
   // Restore selection if still present
-  const hasCurrent = Array.from(selectEl.options).some((opt) => opt.value === current);
+  const hasCurrent = Array.from(selectEl.options).some(
+    (opt) => opt.value === current
+  );
   selectEl.value = hasCurrent ? current : "";
 }
 
@@ -212,13 +247,16 @@ function populateYears(selectEl, invoices) {
   });
 
   const current = selectEl.value;
-  selectEl.innerHTML = '<option value="">Alle jaren</option>' +
+  selectEl.innerHTML =
+    '<option value="">Alle jaren</option>' +
     Array.from(years)
       .sort()
       .map((y) => `<option value="${y}">${y}</option>`)
       .join("");
 
-  const hasCurrent = Array.from(selectEl.options).some((opt) => opt.value === current);
+  const hasCurrent = Array.from(selectEl.options).some(
+    (opt) => opt.value === current
+  );
   selectEl.value = hasCurrent ? current : "";
 }
 
@@ -237,9 +275,13 @@ function renderTable(labels, years, totalsByYear) {
   tbody.innerHTML = labels
     .map((label) => {
       const cells = years
-        .map((y) => `
-          <td class="text-end">€ ${((totalsByYear[y]?.[label] || 0)).toFixed(2)}</td>
-        `)
+        .map(
+          (y) => `
+          <td class="text-end">€ ${(totalsByYear[y]?.[label] || 0).toFixed(
+            2
+          )}</td>
+        `
+        )
         .join("");
       return `<tr><td>${label}</td>${cells}</tr>`;
     })
@@ -247,7 +289,9 @@ function renderTable(labels, years, totalsByYear) {
 }
 
 function isoWeek(date) {
-  const tmp = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const tmp = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+  );
   const dayNum = tmp.getUTCDay() || 7;
   tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));

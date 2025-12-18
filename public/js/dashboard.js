@@ -387,37 +387,87 @@ async function submitTimesheets() {
     return;
   }
 
-  showConfirmModal(
-    "Submit Timesheets",
-    `Submit ${timesheetIds.length} timesheet(s) via email?`,
-    async () => {
-      try {
-        const response = await api.submitTimesheets(timesheetIds);
+  // Show modal with two options
+  const modalHtml = `
+    <div class="modal fade" id="submitOptionsModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Submit Timesheets</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>How would you like to submit ${timesheetIds.length} timesheet(s)?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="submitTimesheetsOnly()" data-bs-dismiss="modal">
+              <i class="bi bi-check-circle"></i> Submit Only
+            </button>
+            <button type="button" class="btn btn-success" onclick="submitTimesheetsWithEmail()" data-bs-dismiss="modal">
+              <i class="bi bi-envelope"></i> Submit & Email
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 
-        // Clear all timesheets from the display and start fresh
-        timesheets = [];
-        timesheetCounter = 0;
-        addTimesheetRow(); // Add one empty row for new entries - also calls renderTimesheetRows()
+  // Remove existing modal if any
+  const existingModal = document.getElementById("submitOptionsModal");
+  if (existingModal) {
+    existingModal.remove();
+  }
 
-        // Show success message with overtime info
-        let message = "Timesheets submitted and sent successfully!";
-        if (response.overtimeAdded && parseFloat(response.overtimeAdded) > 0) {
-          message += ` (+${response.overtimeAdded} overuren toegevoegd aan saldo)`;
-        }
-        showAlert(message, "success");
+  // Add modal to body
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
 
-        // Clear alert after 5 seconds
-        setTimeout(() => {
-          const alertDiv = document.getElementById("timesheetAlert");
-          if (alertDiv) {
-            alertDiv.innerHTML = "";
-          }
-        }, 5000);
-      } catch (error) {
-        showAlert(error.message, "danger");
-      }
-    }
+  // Show modal
+  const modal = new bootstrap.Modal(
+    document.getElementById("submitOptionsModal")
   );
+  modal.show();
+}
+
+async function submitTimesheetsOnly() {
+  await performSubmit(false);
+}
+
+async function submitTimesheetsWithEmail() {
+  await performSubmit(true);
+}
+
+async function performSubmit(sendEmail = false) {
+  const timesheetIds = timesheets.filter((ts) => ts.id).map((ts) => ts.id);
+
+  try {
+    const response = await api.submitTimesheets(timesheetIds, sendEmail);
+
+    // Clear all timesheets from the display and start fresh
+    timesheets = [];
+    timesheetCounter = 0;
+    addTimesheetRow(); // Add one empty row for new entries - also calls renderTimesheetRows()
+
+    // Show success message with overtime info
+    let message = sendEmail
+      ? "Timesheets submitted and sent successfully!"
+      : "Timesheets submitted successfully!";
+
+    if (response.overtimeAdded && parseFloat(response.overtimeAdded) > 0) {
+      message += ` (+${response.overtimeAdded} overuren toegevoegd aan saldo)`;
+    }
+    showAlert(message, "success");
+
+    // Clear alert after 5 seconds
+    setTimeout(() => {
+      const alertDiv = document.getElementById("timesheetAlert");
+      if (alertDiv) {
+        alertDiv.innerHTML = "";
+      }
+    }, 5000);
+  } catch (error) {
+    showAlert(error.message, "danger");
+  }
 }
 
 async function previewPDF() {
