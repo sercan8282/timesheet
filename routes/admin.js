@@ -63,7 +63,8 @@ router.post(
     body("email").optional({ checkFalsy: true }).trim().isEmail(),
     body("ritnumber").optional().trim(),
     body("adr").optional().isBoolean(),
-    body("megaKast").optional().isIn(["only_mega", "mega_and_kast", "nvt"]),
+    // Allow arbitrary truck type strings that come from fleet management
+    body("megaKast").optional().trim().isLength({ max: 100 }),
   ],
   async (req, res) => {
     try {
@@ -153,7 +154,8 @@ router.put(
     body("email").optional().trim(),
     body("ritnumber").optional().trim(),
     body("adr").optional().isBoolean(),
-    body("megaKast").optional().isIn(["only_mega", "mega_and_kast", "nvt"]),
+    // Allow arbitrary truck type strings that come from fleet management
+    body("megaKast").optional().trim().isLength({ max: 100 }),
     body("canFillIn").optional(),
     body("fillInCompanyId").optional(),
   ],
@@ -1322,6 +1324,19 @@ router.post(
 );
 
 // ===== Fleet Management =====
+// Get distinct truck types (used to populate user truck-type dropdown)
+router.get("/fleet/types", async (_req, res) => {
+  try {
+    const rows = await db.all(
+      `SELECT DISTINCT truck_type FROM fleet_vehicles WHERE truck_type IS NOT NULL AND TRIM(truck_type) != '' ORDER BY truck_type ASC`
+    );
+    const types = rows.map((r) => r.truck_type);
+    res.json(types);
+  } catch (error) {
+    console.error("Error fetching fleet truck types:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 // Get all vehicles
 router.get("/fleet/vehicles", async (_req, res) => {
   try {
@@ -1378,6 +1393,7 @@ router.post(
     body("km").optional().isNumeric(),
     body("apk_due_date").optional().isString(),
     body("rit_number").optional().isString(),
+    body("truck_type").optional().trim().isLength({ max: 100 }),
     body("company_id").optional().isInt(),
   ],
   async (req, res) => {
@@ -1387,17 +1403,18 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { license_plate, km, apk_due_date, rit_number, company_id } =
+      const { license_plate, km, apk_due_date, rit_number, company_id, truck_type } =
         req.body;
 
       const result = await db.run(
-        `INSERT INTO fleet_vehicles (license_plate, km, apk_due_date, rit_number, company_id) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO fleet_vehicles (license_plate, km, apk_due_date, rit_number, company_id, truck_type) VALUES (?, ?, ?, ?, ?, ?)`,
         [
           license_plate,
           km || 0,
           apk_due_date || null,
           rit_number || null,
           company_id || null,
+          truck_type || null,
         ]
       );
 
@@ -1421,6 +1438,7 @@ router.put(
     body("km").optional().isNumeric(),
     body("apk_due_date").optional().isString(),
     body("rit_number").optional().isString(),
+    body("truck_type").optional().trim().isLength({ max: 100 }),
     body("company_id").optional().isInt(),
   ],
   async (req, res) => {
@@ -1432,7 +1450,7 @@ router.put(
       );
       if (!vehicle) return res.status(404).json({ error: "Vehicle not found" });
 
-      const { license_plate, km, apk_due_date, rit_number, company_id } =
+      const { license_plate, km, apk_due_date, rit_number, company_id, truck_type } =
         req.body;
       await db.run(
         `UPDATE fleet_vehicles 
@@ -1441,6 +1459,7 @@ router.put(
              apk_due_date = COALESCE(?, apk_due_date),
              rit_number = COALESCE(?, rit_number),
              company_id = COALESCE(?, company_id),
+             truck_type = COALESCE(?, truck_type),
              updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
         [
@@ -1449,6 +1468,7 @@ router.put(
           apk_due_date || null,
           rit_number || null,
           company_id ?? null,
+          truck_type || null,
           id,
         ]
       );

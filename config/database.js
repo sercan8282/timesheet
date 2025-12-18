@@ -301,6 +301,7 @@ class Database {
         CREATE TABLE IF NOT EXISTS fleet_vehicles (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           license_plate TEXT NOT NULL,
+          truck_type TEXT,
           km REAL DEFAULT 0,
           apk_due_date TEXT,
           rit_number TEXT,
@@ -310,6 +311,22 @@ class Database {
           FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL
         )
       `);
+
+      // Ensure truck_type column exists on older DBs
+      this.db.all(`PRAGMA table_info(fleet_vehicles)`, [], (err, columns) => {
+        if (!err && columns) {
+          const hasTruckType = columns.some((c) => c.name === "truck_type");
+          if (!hasTruckType) {
+            this.db.run(
+              `ALTER TABLE fleet_vehicles ADD COLUMN truck_type TEXT`,
+              (err) => {
+                if (err) console.error("Error adding truck_type to fleet_vehicles:", err.message);
+                else console.log("✓ Added truck_type column to fleet_vehicles");
+              }
+            );
+          }
+        }
+      });
 
       // Fleet maintenance
       this.db.run(`

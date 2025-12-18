@@ -394,6 +394,10 @@ class API {
     return this.request(`/admin/fleet/vehicles/${id}`);
   }
 
+  async getFleetTypes() {
+    return this.request(`/admin/fleet/types`);
+  }
+
   async createFleetVehicle(data) {
     return this.request("/admin/fleet/vehicles", {
       method: "POST",

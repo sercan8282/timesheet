@@ -74,6 +74,8 @@
     document.getElementById("addUserForm").reset();
     document.getElementById("addUserAlert").innerHTML = "";
     loadCompaniesForModal("addUserCompany", "addFillInCompany");
+    // Populate truck types for user dropdown from fleet (if available)
+    populateUserTruckTypeOptions("addMegaKast");
     new bootstrap.Modal(document.getElementById("addUserModal")).show();
   }
 
@@ -135,12 +137,13 @@
       ? "1"
       : "0";
 
-    loadCompaniesForModal(
-      "editCompany",
-      "editFillInCompany",
-      user.company_id,
-      user.fill_in_company_id
-    );
+      // Populate truck types and set current value
+      populateUserTruckTypeOptions("editMegaKast", user.mega_kast || "only_mega");
+
+      loadCompaniesForModal(
+        "editCompany",
+        "editFillInCompany"
+      );
 
     document.getElementById("editFillInCompanyContainer").style.display =
       user.can_fill_in ? "block" : "none";
@@ -321,6 +324,42 @@
       console.error("[ADMIN] Error loading companies for modal:", error);
     }
   }
+    async function populateUserTruckTypeOptions(selectId, selectedValue) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      select.innerHTML = "";
+      try {
+        const types = await api.getFleetTypes();
+        if (types && types.length > 0) {
+          const emptyOpt = document.createElement("option");
+          emptyOpt.value = "";
+          emptyOpt.textContent = "(No selection)";
+          select.appendChild(emptyOpt);
+          types.forEach((t) => {
+            const opt = document.createElement("option");
+            opt.value = t;
+            opt.textContent = t;
+            if (t === selectedValue) opt.selected = true;
+            select.appendChild(opt);
+          });
+        } else {
+          const fallback = [
+            { v: "only_mega", t: "Mega Only" },
+            { v: "mega_and_kast", t: "Mega + Kast" },
+            { v: "nvt", t: "N.v.t." },
+          ];
+          fallback.forEach((f) => {
+            const opt = document.createElement("option");
+            opt.value = f.v;
+            opt.textContent = f.t;
+            if (f.v === selectedValue) opt.selected = true;
+            select.appendChild(opt);
+          });
+        }
+      } catch (error) {
+        console.error("Error loading truck types:", error);
+      }
+    }
 
   // ========== RENDER ADMIN PORTAL ==========
 
@@ -2077,6 +2116,12 @@
         </div>
         <div class="row mb-4">
           <div class="col-md-6">
+            <label class="form-label text-muted small">Truck Type</label>
+            <p class="form-control-plaintext">${vehicle.truck_type || "-"}</p>
+          </div>
+        </div>
+        <div class="row mb-4">
+          <div class="col-md-6">
             <label class="form-label text-muted small">KM</label>
             <p class="form-control-plaintext">${vehicle.km ?? 0}</p>
           </div>
@@ -2150,6 +2195,10 @@
               <label class="form-label">Rit nummer</label>
               <input type="text" class="form-control" id="vehicleRit">
             </div>
+            <div class="mb-3">
+              <label class="form-label">Truck Type</label>
+              <input type="text" class="form-control" id="vehicleTruckType" placeholder="E.g. Mega, Mega+Kast, N.v.t.">
+            </div>
             <div id="vehicleAlert"></div>
           </div>
           <div class="modal-footer">
@@ -2197,6 +2246,7 @@
         km: parseFloat(document.getElementById("vehicleKm").value || "0"),
         apk_due_date: document.getElementById("vehicleApk").value || null,
         rit_number: document.getElementById("vehicleRit").value || null,
+        truck_type: document.getElementById("vehicleTruckType").value || null,
       });
       const modal = document.getElementById("addVehicleModal");
       const bsModal = bootstrap.Modal.getInstance(modal);
@@ -2253,6 +2303,10 @@
                 v.rit_number || ""
               }">
             </div>
+            <div class="mb-3">
+              <label class="form-label">Truck Type</label>
+              <input type="text" class="form-control" id="editVehicleTruckType" value="${v.truck_type || ""}" placeholder="E.g. Mega, Mega+Kast, N.v.t.">
+            </div>
             <div id="editVehicleAlert"></div>
           </div>
           <div class="modal-footer">
@@ -2295,6 +2349,7 @@
         km: parseFloat(document.getElementById("editVehicleKm").value || "0"),
         apk_due_date: document.getElementById("editVehicleApk").value || null,
         rit_number: document.getElementById("editVehicleRit").value || null,
+        truck_type: document.getElementById("editVehicleTruckType").value || null,
       });
       const modal = document.getElementById("editVehicleModal");
       const bsModal = bootstrap.Modal.getInstance(modal);
