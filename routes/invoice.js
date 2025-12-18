@@ -583,6 +583,8 @@ router.post("/invoices", auth, async (req, res) => {
       notes,
     } = req.body;
 
+    console.log("[POST /invoices] Received line_items:", JSON.stringify(line_items, null, 2));
+
     // Calculate totals
     let subtotal = 0;
     if (line_items && Array.isArray(line_items)) {
@@ -627,10 +629,18 @@ router.post("/invoices", auth, async (req, res) => {
         const line_total =
           parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0);
 
+        console.log(`[Invoice ${invoiceId}] Saving line item ${i+1}:`, {
+          description: item.description,
+          item_date: item.item_date,
+          item_km: item.item_km,
+          item_hours: item.item_hours,
+          item_rate: item.item_rate,
+        });
+
         await db.run(
           `INSERT INTO invoice_line_items 
-           (invoice_id, description, quantity, unit_price, line_total, position_order)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+           (invoice_id, description, quantity, unit_price, line_total, position_order, item_date, item_km, item_hours, item_rate)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             invoiceId,
             item.description,
@@ -638,6 +648,10 @@ router.post("/invoices", auth, async (req, res) => {
             item.unit_price || 0,
             line_total.toFixed(2),
             i,
+            item.item_date || null,
+            item.item_km || null,
+            item.item_hours || null,
+            item.item_rate || null,
           ]
         );
       }
@@ -729,8 +743,8 @@ router.put("/invoices/:id", auth, async (req, res) => {
 
         await db.run(
           `INSERT INTO invoice_line_items 
-           (invoice_id, description, quantity, unit_price, line_total, position_order)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+           (invoice_id, description, quantity, unit_price, line_total, position_order, item_date, item_km, item_hours, item_rate)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             req.params.id,
             item.description,
@@ -738,6 +752,10 @@ router.put("/invoices/:id", auth, async (req, res) => {
             item.unit_price || 0,
             line_total.toFixed(2),
             i,
+            item.item_date || null,
+            item.item_km || null,
+            item.item_hours || null,
+            item.item_rate || null,
           ]
         );
       }

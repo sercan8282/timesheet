@@ -102,6 +102,7 @@ class Database {
       this.db.all(`PRAGMA table_info(timesheets)`, [], (err, columns) => {
         if (!err && columns) {
           const hasRitnumber = columns.some((c) => c.name === "ritnumber");
+          const hasCompanyId = columns.some((c) => c.name === "company_id");
           if (!hasRitnumber) {
             this.db.run(
               `ALTER TABLE timesheets ADD COLUMN ritnumber TEXT`,
@@ -113,6 +114,21 @@ class Database {
                   );
                 } else {
                   console.log("✓ Added ritnumber column to timesheets");
+                }
+              }
+            );
+          }
+          if (!hasCompanyId) {
+            this.db.run(
+              `ALTER TABLE timesheets ADD COLUMN company_id INTEGER REFERENCES companies(id) ON DELETE SET NULL`,
+              (err) => {
+                if (err) {
+                  console.error(
+                    "Error adding company_id column to timesheets:",
+                    err
+                  );
+                } else {
+                  console.log("✓ Added company_id column to timesheets");
                 }
               }
             );

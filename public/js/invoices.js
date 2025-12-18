@@ -1758,28 +1758,33 @@ const invoiceManager = {
         return;
       }
 
-      // Parse timesheet_ids to get individual timesheets
+      // Fetch timesheet details for each submission and group by week
+      const weekGroups = {};
       const allTimesheets = [];
+      
       for (const submission of submissions) {
         if (submission.timesheet_ids) {
           const ids = submission.timesheet_ids
             .split(",")
             .map((id) => parseInt(id.trim()));
-          for (const id of ids) {
-            // Fetch timesheet details
-            const response = await fetch(`/api/user/timesheets/${id}`, {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-            });
-            if (response.ok) {
-              const timesheet = await response.json();
-              allTimesheets.push({
-                ...timesheet,
-                submission_date: submission.submission_date,
-                submission_status: submission.status,
-              });
+          
+          // Fetch all timesheet details at once
+          const timesheetDetails = await api.getTimesheetDetails(ids);
+          
+          for (const ts of timesheetDetails) {
+            const fullTimesheet = {
+              ...ts,
+              submission_date: submission.submission_date,
+              submission_status: submission.status,
+            };
+            
+            allTimesheets.push(fullTimesheet);
+            
+            // Group by week
+            if (!weekGroups[ts.week_number]) {
+              weekGroups[ts.week_number] = [];
             }
+            weekGroups[ts.week_number].push(fullTimesheet);
           }
         }
       }
@@ -1789,7 +1794,93 @@ const invoiceManager = {
         return;
       }
 
-      // Create modal
+      // Build individual timesheets table
+      const individualTableHtml = `
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="select-all-timesheets" onchange="invoiceManager.toggleAllTimesheets(this)"></th>
+                <th>Week</th>
+                <th>Bedrijf</th>
+                <th>Ritnummer</th>
+                <th>Datum</th>
+                <th>KM</th>
+                <th>Uren</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${allTimesheets
+                .sort((a, b) => parseInt(b.week_number) - parseInt(a.week_number))
+                .map(
+                  (ts, idx) => `
+                <tr>
+                  <td>
+                    <input type="checkbox" class="timesheet-checkbox" data-index="${idx}" 
+                           data-ritnumber="${ts.ritnumber || ""}" 
+                           data-date="${ts.date || ""}" 
+                           data-km="${ts.total_km || ts.end_km - ts.start_km || 0}" 
+                           data-hours="${ts.total_hours || 0}">
+                  </td>
+                  <td>${ts.week_number || "-"}</td>
+                  <td>${ts.company_name || "Unknown"}</td>
+                  <td>${ts.ritnumber || "-"}</td>
+                  <td>${ts.date || "-"}</td>
+                  <td>${((ts.total_km || ts.end_km - ts.start_km || 0)).toFixed(2)}</td>
+                  <td>${(ts.total_hours || 0).toFixed(2)}</td>
+                </tr>
+              `
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      // Build weekly summary table
+      const sortedWeeks = Object.keys(weekGroups).sort((a, b) => parseInt(b) - parseInt(a));
+      const weeklyTableHtml = `
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="select-all-weeks" onchange="invoiceManager.toggleAllWeeks(this)"></th>
+                <th>Week</th>
+                <th>Bedrijf</th>
+                <th>Aantal Regels</th>
+                <th>Totaal KM</th>
+                <th>Totaal Uren</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedWeeks
+                .map((weekNum) => {
+                  const weeksInThisWeek = weekGroups[weekNum];
+                  const totalKm = weeksInThisWeek.reduce((sum, ts) => sum + (ts.total_km || ts.end_km - ts.start_km || 0), 0);
+                  const totalHours = weeksInThisWeek.reduce((sum, ts) => sum + (ts.total_hours || 0), 0);
+                  const companies = [...new Set(weeksInThisWeek.map(ts => ts.company_name || "Unknown"))].join(", ");
+                  
+                  return `
+                <tr>
+                  <td>
+                    <input type="checkbox" class="week-checkbox" data-week="${weekNum}" 
+                           data-company="${companies}">
+                  </td>
+                  <td>Week ${weekNum}</td>
+                  <td>${companies}</td>
+                  <td>${weeksInThisWeek.length}</td>
+                  <td>${totalKm.toFixed(2)}</td>
+                  <td>${totalHours.toFixed(2)}</td>
+                </tr>
+              `;
+                })
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      // Create modal with tabs
       const modalHtml = `
         <div class="modal fade" id="submissionHistoryModal" tabindex="-1">
           <div class="modal-dialog modal-xl">
@@ -1799,47 +1890,43 @@ const invoiceManager = {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
               </div>
               <div class="modal-body">
-                <div class="table-responsive">
-                  <table class="table table-hover">
-                    <thead>
-                      <tr>
-                        <th><input type="checkbox" id="select-all-timesheets" onchange="invoiceManager.toggleAllTimesheets(this)"></th>
-                        <th>Ritnummer</th>
-                        <th>Datum</th>
-                        <th>KM</th>
-                        <th>Uren</th>
-                        <th>Week</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${allTimesheets
-                        .map(
-                          (ts, idx) => `
-                        <tr>
-                          <td>
-                            <input type="checkbox" class="timesheet-checkbox" data-index="${idx}" 
-                                   data-ritnumber="${ts.ritnumber || ""}" 
-                                   data-date="${ts.date || ""}" 
-                                   data-km="${ts.total_km || 0}" 
-                                   data-hours="${ts.total_hours || 0}">
-                          </td>
-                          <td>${ts.ritnumber || "-"}</td>
-                          <td>${ts.date || "-"}</td>
-                          <td>${(ts.total_km || 0).toFixed(2)}</td>
-                          <td>${(ts.total_hours || 0).toFixed(2)}</td>
-                          <td>${ts.week_number || "-"}</td>
-                        </tr>
-                      `
-                        )
-                        .join("")}
-                    </tbody>
-                  </table>
+                <ul class="nav nav-tabs mb-3" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="individual-tab" data-bs-toggle="tab" 
+                            data-bs-target="#individual-pane" type="button" role="tab">
+                      <i class="bi bi-list"></i> Losse Regels
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="weekly-tab" data-bs-toggle="tab" 
+                            data-bs-target="#weekly-pane" type="button" role="tab">
+                      <i class="bi bi-calendar-week"></i> Per Week
+                    </button>
+                  </li>
+                </ul>
+
+                <div class="tab-content">
+                  <div class="tab-pane fade show active" id="individual-pane" role="tabpanel">
+                    ${individualTableHtml}
+                  </div>
+                  <div class="tab-pane fade" id="weekly-pane" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <div class="input-group input-group-sm" style="max-width: 420px;">
+                        <span class="input-group-text"><i class="bi bi-gear"></i></span>
+                        <select class="form-select" id="weekly-import-mode">
+                          <option value="per-timesheet" selected>Per regel (timesheet)</option>
+                          <option value="aggregate-company">Samengevoegd per week/bedrijf</option>
+                        </select>
+                      </div>
+                    </div>
+                    ${weeklyTableHtml}
+                  </div>
                 </div>
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
-                <button type="button" class="btn btn-primary" onclick="invoiceManager.importSelectedTimesheets()">
-                  <i class="bi bi-download"></i> Importeer Geselecteerde
+                <button type="button" class="btn btn-primary" id="import-history-btn" onclick="invoiceManager.importFromHistory()">
+                  <i class="bi bi-download"></i> Importeer
                 </button>
               </div>
             </div>
@@ -1855,6 +1942,9 @@ const invoiceManager = {
 
       // Add modal to body
       document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+      // Store week groups for later use
+      window.invoiceWeekGroups = weekGroups;
 
       // Show modal
       const modal = new bootstrap.Modal(
@@ -1872,31 +1962,89 @@ const invoiceManager = {
     checkboxes.forEach((cb) => (cb.checked = checkbox.checked));
   },
 
-  importSelectedTimesheets() {
-    const checkboxes = document.querySelectorAll(".timesheet-checkbox:checked");
+  toggleAllWeeks(checkbox) {
+    const checkboxes = document.querySelectorAll(".week-checkbox");
+    checkboxes.forEach((cb) => (cb.checked = checkbox.checked));
+  },
+
+  importFromHistory() {
+    // Check which tab is active
+    const activeTab = document.querySelector(".tab-pane.active");
+    
+    if (activeTab && activeTab.id === "weekly-pane") {
+      this.importWeeks();
+    } else {
+      this.importSelectedTimesheets();
+    }
+  },
+
+  importWeeks() {
+    const checkboxes = document.querySelectorAll(".week-checkbox:checked");
 
     if (checkboxes.length === 0) {
-      showToast("Selecteer minimaal één timesheet", "warning");
+      showToast("Selecteer minimaal één week", "warning");
       return;
     }
 
-    // Import each selected timesheet as a line item
-    checkboxes.forEach((checkbox) => {
-      const ritnumber = checkbox.dataset.ritnumber;
-      const date = checkbox.dataset.date;
-      const km = parseFloat(checkbox.dataset.km) || 0;
-      const hours = parseFloat(checkbox.dataset.hours) || 0;
+    const selectedWeeks = Array.from(checkboxes).map(cb => parseInt(cb.dataset.week));
 
-      // Add line item with submission data
-      this.addLineItem({
-        description: ritnumber || "Geen ritnummer",
-        item_date: date,
-        item_km: km,
-        item_hours: hours,
-        quantity: 1,
-        unit_price: 0,
-      });
-    });
+    // Get all timesheets for selected weeks
+    const weeksData = window.invoiceWeekGroups || {};
+    let importedCount = 0;
+
+    const mode = document.getElementById("weekly-import-mode")?.value || "per-timesheet";
+
+    for (const weekNum of selectedWeeks) {
+      const weekTs = weeksData[weekNum];
+      if (!weekTs || !weekTs.length) continue;
+
+      if (mode === "aggregate-company") {
+        // Group by company and import one line per company per week
+        const byCompany = {};
+        weekTs.forEach(ts => {
+          const key = ts.company_name || "Unknown";
+          if (!byCompany[key]) byCompany[key] = [];
+          byCompany[key].push(ts);
+        });
+
+        for (const [company, rows] of Object.entries(byCompany)) {
+          const totalKm = rows.reduce((sum, ts) => sum + (ts.total_km ?? (ts.end_km - ts.start_km) ?? 0), 0);
+          const totalHours = rows.reduce((sum, ts) => sum + ((ts.total_hours != null)
+            ? parseFloat(ts.total_hours)
+            : this.computeHours(ts.start_time, ts.end_time, ts.pause_time)), 0);
+
+          this.addLineItem({
+            description: `Week ${weekNum} - ${company}`,
+            item_date: rows[0].date,
+            item_km: totalKm,
+            item_hours: parseFloat(totalHours.toFixed(2)),
+            quantity: 1,
+            unit_price: 0,
+          });
+          importedCount++;
+        }
+      } else {
+        // Per timesheet: one line per row, description only ritnummer
+        weekTs.forEach(ts => {
+          const km = ts.total_km ?? (ts.end_km - ts.start_km) ?? 0;
+          const hours = (ts.total_hours != null)
+            ? parseFloat(ts.total_hours)
+            : this.computeHours(ts.start_time, ts.end_time, ts.pause_time);
+          const rit = ts.ritnumber || "Geen ritnummer";
+
+          this.addLineItem({
+            description: rit,
+            item_date: ts.date,
+            item_km: km,
+            item_hours: hours,
+            item_rate: 65, // Default rate for transport
+            quantity: 1,
+            unit_price: 0,
+          });
+          importedCount++;
+        });
+      }
+    }
 
     // Close modal
     const modal = bootstrap.Modal.getInstance(
@@ -1906,130 +2054,20 @@ const invoiceManager = {
       modal.hide();
     }
 
-    showToast(`${checkboxes.length} regel(s) toegevoegd`, "success");
+    showToast(`${importedCount} regel(s) toegevoegd`, "success");
   },
 
-  async showSubmissionHistoryModal() {
-    try {
-      const submissions = await api.getSubmissions();
-
-      if (!submissions || submissions.length === 0) {
-        showToast("Geen submission history gevonden", "info");
-        return;
-      }
-
-      // Parse timesheet_ids to get individual timesheets
-      const allTimesheets = [];
-      for (const submission of submissions) {
-        if (submission.timesheet_ids) {
-          const ids = submission.timesheet_ids
-            .split(",")
-            .map((id) => parseInt(id.trim()));
-          for (const id of ids) {
-            // Fetch timesheet details
-            const response = await fetch(`/api/user/timesheets/${id}`, {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-            });
-            if (response.ok) {
-              const timesheet = await response.json();
-              allTimesheets.push({
-                ...timesheet,
-                submission_date: submission.submission_date,
-                submission_status: submission.status,
-              });
-            }
-          }
-        }
-      }
-
-      if (allTimesheets.length === 0) {
-        showToast("Geen timesheet data gevonden", "info");
-        return;
-      }
-
-      // Create modal
-      const modalHtml = `
-        <div class="modal fade" id="submissionHistoryModal" tabindex="-1">
-          <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Selecteer uit Submission History</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-              </div>
-              <div class="modal-body">
-                <div class="table-responsive">
-                  <table class="table table-hover">
-                    <thead>
-                      <tr>
-                        <th><input type="checkbox" id="select-all-timesheets" onchange="invoiceManager.toggleAllTimesheets(this)"></th>
-                        <th>Ritnummer</th>
-                        <th>Datum</th>
-                        <th>KM</th>
-                        <th>Uren</th>
-                        <th>Week</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${allTimesheets
-                        .map(
-                          (ts, idx) => `
-                        <tr>
-                          <td>
-                            <input type="checkbox" class="timesheet-checkbox" data-index="${idx}" 
-                                   data-ritnumber="${ts.ritnumber || ""}" 
-                                   data-date="${ts.date || ""}" 
-                                   data-km="${ts.total_km || 0}" 
-                                   data-hours="${ts.total_hours || 0}">
-                          </td>
-                          <td>${ts.ritnumber || "-"}</td>
-                          <td>${ts.date || "-"}</td>
-                          <td>${(ts.total_km || 0).toFixed(2)}</td>
-                          <td>${(ts.total_hours || 0).toFixed(2)}</td>
-                          <td>${ts.week_number || "-"}</td>
-                        </tr>
-                      `
-                        )
-                        .join("")}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
-                <button type="button" class="btn btn-primary" onclick="invoiceManager.importSelectedTimesheets()">
-                  <i class="bi bi-download"></i> Importeer Geselecteerde
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      // Remove existing modal if any
-      const existingModal = document.getElementById("submissionHistoryModal");
-      if (existingModal) {
-        existingModal.remove();
-      }
-
-      // Add modal to body
-      document.body.insertAdjacentHTML("beforeend", modalHtml);
-
-      // Show modal
-      const modal = new bootstrap.Modal(
-        document.getElementById("submissionHistoryModal")
-      );
-      modal.show();
-    } catch (error) {
-      console.error("Error loading submission history:", error);
-      showToast("Fout bij laden submission history", "error");
-    }
-  },
-
-  toggleAllTimesheets(checkbox) {
-    const checkboxes = document.querySelectorAll(".timesheet-checkbox");
-    checkboxes.forEach((cb) => (cb.checked = checkbox.checked));
+  computeHours(startTime, endTime, pauseTime) {
+    if (!startTime || !endTime || !pauseTime) return 0;
+    const [sh, sm] = String(startTime).split(":").map(Number);
+    const [eh, em] = String(endTime).split(":").map(Number);
+    const [ph, pm] = String(pauseTime).split(":").map(Number);
+    if ([sh, sm, eh, em, ph, pm].some((v) => Number.isNaN(v))) return 0;
+    const startMin = sh * 60 + sm;
+    const endMin = eh * 60 + em;
+    const pauseMin = ph * 60 + pm;
+    const totalMin = endMin - startMin - pauseMin;
+    return Math.max(0, parseFloat((totalMin / 60).toFixed(2)));
   },
 
   importSelectedTimesheets() {
@@ -2213,18 +2251,21 @@ const invoiceManager = {
           unit_price: parseFloat(prices[index].value) || 0,
         };
 
-        // Add optional fields if they have values
-        if (dates[index] && dates[index].value) {
-          item.item_date = dates[index].value;
+        // Always include optional fields (even if empty/0)
+        if (dates[index]) {
+          item.item_date = dates[index].value || null;
         }
-        if (kms[index] && kms[index].value) {
-          item.item_km = parseFloat(kms[index].value);
+        if (kms[index]) {
+          const kmVal = kms[index].value;
+          item.item_km = kmVal ? parseFloat(kmVal) : null;
         }
-        if (hours[index] && hours[index].value) {
-          item.item_hours = parseFloat(hours[index].value);
+        if (hours[index]) {
+          const hoursVal = hours[index].value;
+          item.item_hours = hoursVal ? parseFloat(hoursVal) : null;
         }
-        if (rates[index] && rates[index].value) {
-          item.item_rate = parseFloat(rates[index].value);
+        if (rates[index]) {
+          const rateVal = rates[index].value;
+          item.item_rate = rateVal ? parseFloat(rateVal) : null;
         }
 
         lineItems.push(item);

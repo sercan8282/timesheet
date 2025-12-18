@@ -186,7 +186,11 @@ router.post("/timesheets/details", async (req, res) => {
 
     const placeholders = ids.map(() => "?").join(",");
     const timesheets = await db.all(
-      `SELECT id, week_number, date, start_time, end_time, start_km, end_km, pause_time, ritnumber, user_id FROM timesheets WHERE id IN (${placeholders}) AND user_id = ? ORDER BY week_number, date`,
+      `SELECT t.id, t.week_number, t.date, t.start_time, t.end_time, t.start_km, t.end_km, t.pause_time, t.ritnumber, t.user_id, t.company_id,
+              COALESCE(c.name, 'Unknown') AS company_name
+       FROM timesheets t
+       LEFT JOIN companies c ON t.company_id = c.id
+       WHERE t.id IN (${placeholders}) AND t.user_id = ? ORDER BY t.week_number, t.date`,
       [...ids, req.user.id]
     );
 
@@ -232,7 +236,7 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      let { date, startTime, endTime, startKm, endKm, pauseTime, ritnumber } =
+      let { date, startTime, endTime, startKm, endKm, pauseTime, ritnumber, companyId } =
         req.body;
 
       // Default pause based on company if not provided
@@ -253,8 +257,8 @@ router.post(
         const totalKm = endKm - startKm;
 
         const result = await db.run(
-          `INSERT INTO timesheets (user_id, week_number, date, start_time, end_time, start_km, end_km, pause_time, total_hours, total_km, ritnumber)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO timesheets (user_id, week_number, date, start_time, end_time, start_km, end_km, pause_time, total_hours, total_km, ritnumber, company_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             req.user.id,
             weekNumber,
@@ -267,6 +271,7 @@ router.post(
             totalHours,
             totalKm,
             ritnumber || "",
+            companyId || null,
           ]
         );
 
@@ -283,6 +288,7 @@ router.post(
           totalHours,
           totalKm,
           ritnumber: ritnumber || "",
+          companyId: companyId || null,
         });
       } catch (calcError) {
         console.error("Error during calculation or insert:", calcError);

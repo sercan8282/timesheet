@@ -8,6 +8,12 @@ function renderHistory() {
                             <h5 class="mb-0"><i class="bi bi-clock-history"></i> Submission History</h5>
                         </div>
                         <div class="card-body">
+                            <div class="mb-3">
+                                <label for="companyFilter" class="form-label">Filter by Company:</label>
+                                <select class="form-select" id="companyFilter" onchange="filterHistoryByCompany()">
+                                    <option value="">All Companies</option>
+                                </select>
+                            </div>
                             <div id="historyContent">
                                 <div class="text-center">
                                     <div class="spinner-border text-primary" role="status">
@@ -23,9 +29,65 @@ function renderHistory() {
     `;
 }
 
+// Global state for history filtering
+let historyData = {
+  allSubmissions: [],
+  filteredSubmissions: [],
+  selectedCompanyFilter: "",
+  currentImportTimesheets: [],
+};
+
+function filterHistoryByCompany() {
+  const filterSelect = document.getElementById("companyFilter");
+  historyData.selectedCompanyFilter = filterSelect.value;
+  
+  if (historyData.selectedCompanyFilter === "") {
+    historyData.filteredSubmissions = historyData.allSubmissions;
+  } else {
+    historyData.filteredSubmissions = historyData.allSubmissions.filter(sub => {
+      // Check if any timesheet in this submission has the selected company
+      return sub.timesheetDetails && sub.timesheetDetails.some(ts => 
+        (ts.company_id || null) === (historyData.selectedCompanyFilter ? parseInt(historyData.selectedCompanyFilter) : null)
+      );
+    });
+  }
+  
+  renderSubmissions(historyData.filteredSubmissions);
+}
+
 async function initHistory() {
   try {
     const submissions = await api.getSubmissions();
+    
+    // Store all submissions for filtering
+    historyData.allSubmissions = submissions;
+    historyData.filteredSubmissions = submissions;
+    
+    // Populate company filter
+    const companies = new Set();
+    for (const sub of submissions) {
+      if (sub.timesheetDetails) {
+        sub.timesheetDetails.forEach(ts => {
+          if (ts.company_id && ts.company_name) {
+            companies.add(`${ts.company_id}|${ts.company_name}`);
+          }
+        });
+      }
+    }
+    
+    const filterSelect = document.getElementById("companyFilter");
+    if (filterSelect) {
+      Array.from(companies)
+        .sort()
+        .forEach(company => {
+          const [id, name] = company.split("|");
+          const option = document.createElement("option");
+          option.value = id;
+          option.textContent = name;
+          filterSelect.appendChild(option);
+        });
+    }
+    
     await renderSubmissions(submissions);
   } catch (error) {
     document.getElementById("historyContent").innerHTML = `
@@ -94,6 +156,9 @@ async function renderSubmissions(submissions) {
 
     try {
       timesheetDetails = await api.getTimesheetDetails(timesheetIds);
+      // Store for later filtering
+      sub.timesheetDetails = timesheetDetails;
+      
       if (timesheetDetails && timesheetDetails.length > 0) {
         const weekNumbers = [
           ...new Set(timesheetDetails.map((ts) => ts.week_number)),
@@ -202,6 +267,11 @@ async function renderSubmissions(submissions) {
                             })">
                                 <i class="bi bi-envelope"></i> Send Email
                             </button>
+                            <button class="btn btn-sm btn-info" onclick="showImportModal(${
+                              sub.id
+                            })">
+                                <i class="bi bi-download"></i> Import
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -238,6 +308,12 @@ function renderSubmissionTimesheets(timesheets, submissionId) {
                             <label class="form-label small mb-1">Week</label>
                             <input type="text" class="form-control form-control-sm" value="${
                               ts.week_number
+                            }" readonly>
+                        </div>
+                        <div class="col-auto" style="width: 120px;">
+                            <label class="form-label small mb-1">Company</label>
+                            <input type="text" class="form-control form-control-sm" value="${
+                              ts.company_name || "Unknown"
                             }" readonly>
                         </div>
                         <div class="col-auto" style="width: 90px;">
@@ -508,4 +584,159 @@ function showAlert(message, type) {
       alertDiv.remove();
     }
   }, 5000);
+}
+
+// Import functionality
+function showImportModal(submissionId) {
+  try {
+    // Find the submission to get its timesheets
+    const submission = historyData.allSubmissions.find(s => s.id === submissionId);
+    if (!submission || !submission.timesheetDetails) {
+      alert("Timesheet details not found");
+      return;
+    }
+    
+    const timesheets = submission.timesheetDetails;
+    historyData.currentImportTimesheets = timesheets;
+    
+    // Group timesheets by week number
+    const weekGroups = {};
+    timesheets.forEach(ts => {
+      if (!weekGroups[ts.week_number]) {
+        weekGroups[ts.week_number] = [];
+      }
+      weekGroups[ts.week_number].push(ts);
+    });
+    
+    // Create modal HTML
+    const weeks = Object.keys(weekGroups).sort((a, b) => parseInt(b) - parseInt(a));
+    
+    let weekCheckboxesHtml = weeks.map(weekNum => {
+      const count = weekGroups[weekNum].length;
+      return `
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" id="week-${weekNum}" value="${weekNum}" checked>
+          <label class="form-check-label" for="week-${weekNum}">
+            Week ${weekNum} (${count} entries)
+          </label>
+        </div>
+      `;
+    }).join("");
+    
+    const modalHtml = `
+      <div class="modal fade" id="importModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Import Timesheets by Week</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <p>Select which weeks you want to import:</p>
+              <div id="weekCheckboxes">
+                ${weekCheckboxesHtml}
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-primary" onclick="performImport()">
+                <i class="bi bi-download"></i> Import Selected
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById("importModal");
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById("importModal"));
+    modal.show();
+  } catch (error) {
+    alert("Error showing import dialog: " + error.message);
+    console.error("Import modal error:", error);
+  }
+}
+
+async function performImport() {
+  try {
+    const timesheets = historyData.currentImportTimesheets;
+    
+    if (!timesheets || timesheets.length === 0) {
+      alert("No timesheets to import");
+      return;
+    }
+    
+    // Get selected weeks
+    const selectedWeeks = [];
+    document.querySelectorAll('#weekCheckboxes input[type="checkbox"]:checked').forEach(checkbox => {
+      selectedWeeks.push(parseInt(checkbox.value));
+    });
+    
+    if (selectedWeeks.length === 0) {
+      alert("Please select at least one week");
+      return;
+    }
+    
+    // Filter timesheets by selected weeks
+    const timesheetsToImport = timesheets.filter(ts => selectedWeeks.includes(ts.week_number));
+    
+    if (timesheetsToImport.length === 0) {
+      alert("No timesheets found for selected weeks");
+      return;
+    }
+    
+    // Store import data in sessionStorage so dashboard can pick it up
+    sessionStorage.setItem("importedTimesheets", JSON.stringify(timesheetsToImport));
+    
+    // Close modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById("importModal"));
+    if (modal) modal.hide();
+    
+    // Show success message and navigate to dashboard
+    showAlert(`${timesheetsToImport.length} timesheet(s) ready to import! Going to Dashboard...`, "success");
+    
+    // Auto-navigate to dashboard after short delay
+    setTimeout(() => {
+      app.loadPage("dashboard");
+      
+      // Give dashboard time to render, then add the timesheets
+      setTimeout(() => {
+        const importedData = JSON.parse(sessionStorage.getItem("importedTimesheets"));
+        if (importedData && window.timesheets) {
+          importedData.forEach(importedTs => {
+            const newTimesheet = {
+              id: null,
+              tempId: ++timesheetCounter,
+              ritnumber: importedTs.ritnumber || "",
+              date: importedTs.date,
+              startTime: importedTs.start_time,
+              endTime: importedTs.end_time,
+              startKm: importedTs.start_km,
+              endKm: importedTs.end_km,
+              pauseTime: importedTs.pause_time,
+              saved: false,
+              companyId: importedTs.company_id,
+            };
+            window.timesheets.push(newTimesheet);
+          });
+          
+          renderTimesheetRows();
+          showAlert(`${importedData.length} timesheet(s) imported!`, "success");
+          sessionStorage.removeItem("importedTimesheets");
+        }
+      }, 500);
+    }, 1500);
+  } catch (error) {
+    alert("Error importing timesheets: " + error.message);
+    console.error("Import error:", error);
+  }
 }

@@ -28,6 +28,9 @@ function renderDashboard() {
                                 <button type="button" class="btn btn-primary" onclick="saveTimesheets()">
                                     <i class="bi bi-save"></i> Save All
                                 </button>
+                                <button type="button" class="btn btn-info" onclick="submitTimesheetsOnly()">
+                                    <i class="bi bi-check-circle"></i> Submit
+                                </button>
                                 <button type="button" class="btn btn-danger" onclick="previewPDF()">
                                     <i class="bi bi-file-pdf"></i> Preview PDF
                                 </button>
@@ -358,6 +361,7 @@ async function saveTimesheets() {
           endKm: parseFloat(ts.endKm),
           pauseTime: ts.pauseTime,
           ritnumber: ts.ritnumber || "",
+          companyId: selectedCompanyId || null,
         };
 
         if (ts.id) {
@@ -430,10 +434,14 @@ async function submitTimesheets() {
 }
 
 async function submitTimesheetsOnly() {
+  // Save first
+  await saveTimesheets();
   await performSubmit(false);
 }
 
 async function submitTimesheetsWithEmail() {
+  // Save first
+  await saveTimesheets();
   await performSubmit(true);
 }
 
