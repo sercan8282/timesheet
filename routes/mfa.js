@@ -159,48 +159,7 @@ router.post('/disable', async (req, res) => {
   });
 });
 
-// Skip MFA setup (max 3 times)
-router.post('/skip', async (req, res) => {
-  const userId = req.user.id;
-
-  const user = await db.get(
-    'SELECT mfa_skip_count, mfa_enabled FROM users WHERE id = ?',
-    [userId]
-  );
-
-  if (!user) {
-    return res.status(404).json({ error: 'User not found' });
-  }
-
-  // If MFA already enabled, can't skip
-  if (user.mfa_enabled) {
-    return res.status(400).json({ error: 'MFA already enabled' });
-  }
-
-  const currentSkips = user.mfa_skip_count || 0;
-
-  // Check if already at max skips
-  if (currentSkips >= 3) {
-    return res.status(400).json({ 
-      error: 'Maximum skips reached. MFA setup is required.',
-      skipLimitReached: true 
-    });
-  }
-
-  // Increment skip count
-  await db.run(
-    'UPDATE users SET mfa_skip_count = ?, mfa_prompted_at = CURRENT_TIMESTAMP WHERE id = ?',
-    [currentSkips + 1, userId]
-  );
-
-  const remainingSkips = 3 - (currentSkips + 1);
-  res.json({
-    success: true,
-    message: 'MFA setup skipped',
-    skipsRemaining: remainingSkips,
-    skipLimitReached: remainingSkips === 0
-  });
-});
+// NOTE: Removed /skip endpoint - skipping MFA setup is no longer supported.
 
 // Get MFA status
 router.get('/status', async (req, res) => {

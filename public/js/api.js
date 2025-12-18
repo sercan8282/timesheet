@@ -311,6 +311,14 @@ class API {
     });
   }
 
+  // Admin: reset user password (requires admin MFA token)
+  async resetUserPassword(id, payload) {
+    return this.request(`/admin/users/${id}/reset-password`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   async toggleBlockUser(id, isBlocked) {
     return this.request(`/admin/users/${id}/block`, {
       method: "PUT",

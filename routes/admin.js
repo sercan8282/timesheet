@@ -4,6 +4,7 @@ const { body, validationResult } = require("express-validator");
 const db = require("../config/database");
 const { authMiddleware, adminMiddleware } = require("../middleware/auth");
 const speakeasy = require("speakeasy");
+const crypto = require("crypto");
 const { testSMTPConnection, sendEmail } = require("../utils/email");
 const { generatePDF } = require("../utils/pdf");
 const { generateXLSX } = require("../utils/excel");
@@ -1792,6 +1793,104 @@ router.post("/users/:id/reset-mfa", async (req, res) => {
   } catch (error) {
     console.error("Error resetting MFA:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Reset user password (admin only) - requires admin's own MFA token
+router.post("/users/:id/reset-password", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { newPassword, showPassword, mfaToken } = req.body;
+
+    if (!mfaToken) {
+      return res.status(400).json({ error: "Admin MFA token is required" });
+    }
+
+    // Verify admin's own MFA
+    const admin = await db.get(
+      "SELECT mfa_enabled, mfa_secret FROM users WHERE id = ?",
+      [req.user.id]
+    );
+
+    if (!admin || !admin.mfa_enabled || !admin.mfa_secret) {
+      return res
+        .status(403)
+        .json({ error: "Admin MFA must be enabled to reset user passwords" });
+    }
+
+    const verified = speakeasy.totp.verify({
+      secret: admin.mfa_secret,
+      encoding: "base32",
+      token: mfaToken,
+      window: 2,
+    });
+
+    if (!verified) {
+      return res.status(401).json({ error: "Invalid admin MFA token" });
+    }
+
+    // Check if target user exists. Some older DBs may not have an `email` column,
+    // so check table info first and only select `email` when present.
+    const tableInfo = await db.all("PRAGMA table_info('users')");
+    const hasEmailCol = tableInfo.some((c) => c.name === "email");
+
+    // Fetch user row with or without email depending on schema
+    const user = hasEmailCol
+      ? await db.get("SELECT id, username, email FROM users WHERE id = ?", [id])
+      : await db.get("SELECT id, username FROM users WHERE id = ?", [id]);
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Determine password: use provided or generate a temporary one
+    let passwordToSet = newPassword;
+    if (!passwordToSet || passwordToSet.trim().length === 0) {
+      // generate a reasonably strong temporary password
+      passwordToSet = crypto
+        .randomBytes(9)
+        .toString("base64")
+        .replace(/[+=\\/]/g, "")
+        .slice(0, 12);
+    }
+
+    if (typeof passwordToSet !== "string" || passwordToSet.length < 6) {
+      return res
+        .status(400)
+        .json({ error: "Password must be at least 6 characters" });
+    }
+
+    // Hash and update
+    const hashed = await bcrypt.hash(passwordToSet, 10);
+    await db.run(
+      "UPDATE users SET password = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [hashed, id]
+    );
+
+    // Try to email the user their new password if email exists
+    let emailed = false;
+    try {
+      if (hasEmailCol && user.email) {
+        await sendEmail({
+          to: user.email,
+          subject: "Your account password has been reset",
+          text: `Hello ${user.username},\n\nYour account password was reset by an administrator. Use the following temporary password to sign in:\n\n${passwordToSet}\n\nAfter signing in, please change your password in your account settings.\n\nIf you did not request this change, contact your administrator.`,
+        });
+        emailed = true;
+      }
+    } catch (emailErr) {
+      console.error("Failed to email new password:", emailErr);
+      // continue - we still return success but note email failed
+    }
+
+    const response = { success: true, message: "Password reset successfully", emailed };
+    if (showPassword) response.tempPassword = passwordToSet;
+
+    res.json(response);
+  } catch (error) {
+    console.error("Error resetting user password:", error);
+    // Return detailed error in development to aid debugging
+    res.status(500).json({ error: error.message || "Internal server error" });
   }
 });
 

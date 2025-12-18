@@ -764,13 +764,27 @@
 
     try {
       allUsers = await api.getUsers();
-      renderAdminUsers(allUsers);
+      // Fetch current admin MFA status to decide which actions to show
+      let adminMfaEnabled = false;
+      try {
+        const resp = await fetch(`${API_BASE_URL}/mfa/status`, {
+          headers: { Authorization: `Bearer ${api.getToken()}` },
+        });
+        if (resp.ok) {
+          const json = await resp.json();
+          adminMfaEnabled = !!json.mfaEnabled;
+        }
+      } catch (e) {
+        console.warn("Could not fetch admin MFA status:", e);
+      }
+
+      renderAdminUsers(allUsers, adminMfaEnabled);
     } catch (error) {
       container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
     }
   }
 
-  function renderAdminUsers(users) {
+  function renderAdminUsers(users, adminMfaEnabled = false) {
     const container = document.getElementById("adminContent");
     container.innerHTML = `
     <div class="mb-3">
@@ -821,6 +835,11 @@
                 <button class="btn btn-sm btn-outline-danger mt-1" onclick="openResetMfaModal(${user.id}, '${user.username}')">
                   <i class="bi bi-shield-lock"></i> Reset MFA
                 </button>
+                ${adminMfaEnabled ? `
+                <button class="btn btn-sm btn-outline-primary mt-1" onclick="openResetPasswordModal(${user.id}, '${user.username}')">
+                  <i class="bi bi-key"></i> Reset wachtwoord
+                </button>
+                ` : ''}
               </td>
             </tr>
           `
@@ -865,6 +884,103 @@
       </div>`;
 
     document.body.insertAdjacentHTML("beforeend", modalHTML);
+  }
+
+  // ========== RESET USER PASSWORD (ADMIN) ==========
+  let resetPasswordUserId = null;
+
+  function ensureResetPasswordModal() {
+    if (document.getElementById("resetPasswordModal")) return;
+
+    const modalHTML = `
+      <div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-key"></i> Reset Wachtwoord</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div id="resetPasswordAlert"></div>
+              <p class="text-muted">Voer jouw eigen MFA-code ter bevestiging en kies een nieuw wachtwoord of genereer een tijdelijk wachtwoord.</p>
+              <div class="mb-3">
+                <label class="form-label">Admin MFA code</label>
+                <input type="text" class="form-control text-center" id="resetPasswordMfaToken" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Nieuw wachtwoord (optioneel)</label>
+                <input type="text" class="form-control" id="resetPasswordNew" placeholder="Laat leeg om tijdelijk wachtwoord te genereren">
+                <div class="form-text">Laat leeg om automatisch een tijdelijk wachtwoord te genereren en (optioneel) naar de gebruiker te e-mailen.</div>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="resetPasswordShow" checked>
+                <label class="form-check-label" for="resetPasswordShow">Toon tijdelijk wachtwoord na reset</label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+              <button type="button" class="btn btn-primary" onclick="submitResetPassword()">
+                <i class="bi bi-key"></i> Reset wachtwoord
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", modalHTML);
+  }
+
+  function openResetPasswordModal(userId, username) {
+    resetPasswordUserId = userId;
+    ensureResetPasswordModal();
+    document.getElementById("resetPasswordAlert").innerHTML = "";
+    document.getElementById("resetPasswordMfaToken").value = "";
+    document.getElementById("resetPasswordNew").value = "";
+    document.getElementById("resetPasswordShow").checked = true;
+
+    const modalEl = document.getElementById("resetPasswordModal");
+    modalEl.querySelector(".modal-title").innerHTML = `<i class="bi bi-key"></i> Reset wachtwoord voor <strong>${username}</strong>`;
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+
+  async function submitResetPassword() {
+    const alertDiv = document.getElementById("resetPasswordAlert");
+    const mfaToken = document.getElementById("resetPasswordMfaToken").value.trim();
+    const newPassword = document.getElementById("resetPasswordNew").value;
+    const showPassword = !!document.getElementById("resetPasswordShow").checked;
+
+    if (!mfaToken || mfaToken.length !== 6) {
+      alertDiv.innerHTML = '<div class="alert alert-warning">Voer een geldige 6-cijferige admin MFA-code in.</div>';
+      return;
+    }
+
+    alertDiv.innerHTML = '<div class="alert alert-info">Bezig met resetten...</div>';
+
+    try {
+      const resp = await api.resetUserPassword(resetPasswordUserId, {
+        newPassword: newPassword || undefined,
+        showPassword,
+        mfaToken,
+      });
+
+      if (resp && resp.tempPassword) {
+        alertDiv.innerHTML = `<div class="alert alert-success">Wachtwoord gereset. Tijdelijk wachtwoord: <code>${resp.tempPassword}</code></div>`;
+      } else if (resp && resp.emailed) {
+        alertDiv.innerHTML = `<div class="alert alert-success">Wachtwoord gereset en naar de gebruiker gemaild.</div>`;
+      } else {
+        alertDiv.innerHTML = `<div class="alert alert-success">Wachtwoord gereset.</div>`;
+      }
+
+      setTimeout(() => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById("resetPasswordModal"));
+        if (modal) modal.hide();
+        loadAdminUsers();
+      }, 2200);
+    } catch (error) {
+      alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    }
   }
 
   function openResetMfaModal(userId, username) {
@@ -3637,6 +3753,8 @@
   window.resetBrandingForm = resetBrandingForm;
   window.openResetMfaModal = openResetMfaModal;
   window.submitResetMfa = submitResetMfa;
+  window.openResetPasswordModal = openResetPasswordModal;
+  window.submitResetPassword = submitResetPassword;
   window.showGeneratePlanningByVehiclesModal =
     showGeneratePlanningByVehiclesModal;
   /**

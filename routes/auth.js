@@ -120,10 +120,9 @@ router.post(
         primaryCompany = userCompanies[0];
       }
 
-      // Check if MFA prompt needed (not enabled, skip count < 3)
-      const skipCount = user.mfa_skip_count || 0;
-      const mfaPromptRequired = !user.mfa_enabled && skipCount < 3;
-      const mfaSetupRequired = !user.mfa_enabled && skipCount >= 3;
+      // MFA setup is required when not enabled; skipping is no longer supported
+      const mfaPromptRequired = false;
+      const mfaSetupRequired = !user.mfa_enabled;
 
       // Generate JWT token
       const token = jwt.sign(
@@ -152,7 +151,6 @@ router.post(
         token,
         mfaPromptRequired,
         mfaSetupRequired,
-        skipsRemaining: Math.max(0, 3 - skipCount),
         user: {
           id: user.id,
           username: user.username,

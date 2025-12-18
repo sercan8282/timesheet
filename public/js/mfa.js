@@ -46,14 +46,22 @@ function showMFAModal(config = {}) {
             <div id="mfaSetupStep1" style="display: block;">
                 <p>Enhance your account security with Two-Factor Authentication.</p>
                 <p class="text-muted small">You'll need an authenticator app like Google Authenticator, Microsoft Authenticator, or Authy.</p>
+                <div class="mb-2">
+                    <div class="small fw-semibold">Download an authenticator app</div>
+                    <div class="d-flex gap-2 mt-1">
+                        <a class="btn btn-outline-primary btn-sm" href="https://apps.apple.com/app/google-authenticator/id388497605" target="_blank" rel="noopener">App Store — Google Authenticator</a>
+                        <a class="btn btn-outline-primary btn-sm" href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" rel="noopener">Google Play — Google Authenticator</a>
+                    </div>
+                    <div class="d-flex gap-2 mt-1">
+                        <a class="btn btn-outline-secondary btn-sm" href="https://apps.apple.com/app/microsoft-authenticator/id983156458" target="_blank" rel="noopener">App Store — Microsoft Authenticator</a>
+                        <a class="btn btn-outline-secondary btn-sm" href="https://play.google.com/store/apps/details?id=com.azure.authenticator" target="_blank" rel="noopener">Google Play — Microsoft Authenticator</a>
+                    </div>
+                    <div class="text-muted small mt-2">Tip: after installing, open the app and choose "Add account" → "Scan QR code" or "Enter code manually".</div>
+                </div>
                 <button class="btn btn-primary w-100" onclick="mfaStartSetup()">
                     <i class="bi bi-qr-code"></i> Start Setup
                 </button>
-                ${!config.required ? `
-                    <button class="btn btn-outline-secondary w-100 mt-2" onclick="mfaSkipSetup()" id="mfaSkipBtn">
-                        Skip for now <span id="skipCountText"></span>
-                    </button>
-                ` : ''}
+                <!-- Skipping MFA setup has been removed -->
                 ${config.required ? `
                     <div class="alert alert-warning mt-3">
                         <i class="bi bi-exclamation-triangle"></i> MFA setup is now required. You've reached the maximum number of skips.
@@ -68,6 +76,11 @@ function showMFAModal(config = {}) {
                     <label class="form-label">Or enter this code manually:</label>
                     <input type="text" class="form-control text-center" id="mfaSecretCode" readonly>
                     <small class="text-muted">Save this code in a safe place</small>
+                    <div class="mt-2 small text-muted">Need the app? Get one from:</div>
+                    <div class="d-flex gap-2 mt-1">
+                        <a class="btn btn-outline-sm btn-link" href="https://apps.apple.com/app/google-authenticator/id388497605" target="_blank" rel="noopener">App Store</a>
+                        <a class="btn btn-outline-sm btn-link" href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" rel="noopener">Google Play</a>
+                    </div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Enter verification code from your app:</label>
@@ -132,15 +145,7 @@ function showMFAModal(config = {}) {
         `;
     }
 
-    // Update skip count text if applicable
-    if (config.skipsRemaining !== undefined) {
-        setTimeout(() => {
-            const skipText = document.getElementById('skipCountText');
-            if (skipText) {
-                skipText.textContent = `(${config.skipsRemaining} ${config.skipsRemaining === 1 ? 'skip' : 'skips'} remaining)`;
-            }
-        }, 100);
-    }
+    // Skipping is not supported anymore; no skip UI to update.
 
     mfaModal.show();
 }
@@ -229,28 +234,12 @@ async function mfaVerifySetup() {
 }
 
 async function mfaSkipSetup() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/mfa/skip`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${api.getToken()}`
-            }
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Failed to skip');
-        }
-
-        mfaModal.hide();
-
-    } catch (error) {
-        const alertDiv = document.getElementById('mfaSetupAlert');
+    // Skipping MFA setup is no longer supported.
+    const alertDiv = document.getElementById('mfaSetupAlert');
+    if (alertDiv) {
         alertDiv.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle"></i> ${error.message}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> Skipping MFA setup is no longer supported. Please complete the setup to continue.
             </div>
         `;
     }

@@ -106,13 +106,7 @@ async function initMFASettings() {
             if (status.setupRequired) {
                 actionsContainer.innerHTML = `
                     <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i> MFA setup is now required. You've reached the maximum number of skips. Please set up MFA to continue using your account.
-                    </div>
-                `;
-            } else if (status.skipCount > 0) {
-                actionsContainer.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i> You have ${status.skipsRemaining} ${status.skipsRemaining === 1 ? 'skip' : 'skips'} remaining before MFA becomes mandatory.
+                        <i class="bi bi-exclamation-triangle"></i> MFA setup is required. Please set up MFA to continue using your account.
                     </div>
                 `;
             }

@@ -66,12 +66,11 @@ function initLogin() {
             localStorage.setItem('user', JSON.stringify(response.user));
             
             // Check if MFA setup prompt needed
-            if (response.mfaPromptRequired) {
-                showMFAModal({ 
-                    setupMode: true, 
-                    required: false,
-                    skipsRemaining: response.skipsRemaining 
-                });
+                if (response.mfaPromptRequired) {
+                    showMFAModal({ 
+                        setupMode: true, 
+                        required: false
+                    });
             } else if (response.mfaSetupRequired) {
                 showMFAModal({ 
                     setupMode: true, 
