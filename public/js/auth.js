@@ -50,9 +50,36 @@ function initLogin() {
 
         try {
             const response = await api.login(username, password);
+            
+            // Check if MFA token is required
+            if (response.mfaRequired) {
+                showMFAModal({ 
+                    loginMode: true, 
+                    username: username, 
+                    password: password 
+                });
+                return;
+            }
+            
+            // Successful login
             api.setToken(response.token);
             localStorage.setItem('user', JSON.stringify(response.user));
-            window.location.reload();
+            
+            // Check if MFA setup prompt needed
+            if (response.mfaPromptRequired) {
+                showMFAModal({ 
+                    setupMode: true, 
+                    required: false,
+                    skipsRemaining: response.skipsRemaining 
+                });
+            } else if (response.mfaSetupRequired) {
+                showMFAModal({ 
+                    setupMode: true, 
+                    required: true 
+                });
+            } else {
+                window.location.reload();
+            }
         } catch (error) {
             alertDiv.innerHTML = `
                 <div class="alert alert-danger alert-dismissible fade show">

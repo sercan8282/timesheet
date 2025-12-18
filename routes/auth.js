@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const speakeasy = require("speakeasy");
 const { body, validationResult } = require("express-validator");
 const db = require("../config/database");
 
@@ -31,6 +32,10 @@ router.post(
         [username]
       );
 
+      // Store mfaToken from request if provided
+      const mfaToken = req.body.mfaToken;
+      const useBackupCode = req.body.useBackupCode;
+
       if (!user) {
         return res.status(401).json({ error: "Invalid credentials" });
       }
@@ -49,6 +54,56 @@ router.post(
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
+      // MFA verification if enabled
+      if (user.mfa_enabled) {
+        // If no MFA token provided, request it
+        if (!mfaToken) {
+          return res.status(200).json({
+            mfaRequired: true,
+            message: "MFA token required"
+          });
+        }
+
+        // Verify backup code if specified
+        if (useBackupCode) {
+          if (!user.mfa_backup_codes) {
+            return res.status(400).json({ error: "No backup codes available" });
+          }
+
+          try {
+            const backupCodes = JSON.parse(user.mfa_backup_codes);
+            const codeIndex = backupCodes.indexOf(mfaToken.toUpperCase());
+
+            if (codeIndex === -1) {
+              return res.status(401).json({ error: "Invalid backup code" });
+            }
+
+            // Remove used backup code
+            backupCodes.splice(codeIndex, 1);
+            await db.run(
+              'UPDATE users SET mfa_backup_codes = ? WHERE id = ?',
+              [JSON.stringify(backupCodes), user.id]
+            );
+
+            // Backup code verified, continue with login
+          } catch (error) {
+            return res.status(500).json({ error: "Failed to verify backup code" });
+          }
+        } else {
+          // Verify TOTP token
+          const verified = speakeasy.totp.verify({
+            secret: user.mfa_secret,
+            encoding: 'base32',
+            token: mfaToken,
+            window: 2
+          });
+
+          if (!verified) {
+            return res.status(401).json({ error: "Invalid MFA token" });
+          }
+        }
+      }
+
       // Get all companies for this user
       const userCompanies = await db.all(
         `SELECT c.id, c.name, c.pause_time, uc.is_primary
@@ -64,6 +119,11 @@ router.post(
       if (!primaryCompany && userCompanies.length > 0) {
         primaryCompany = userCompanies[0];
       }
+
+      // Check if MFA prompt needed (not enabled, skip count < 3)
+      const skipCount = user.mfa_skip_count || 0;
+      const mfaPromptRequired = !user.mfa_enabled && skipCount < 3;
+      const mfaSetupRequired = !user.mfa_enabled && skipCount >= 3;
 
       // Generate JWT token
       const token = jwt.sign(
@@ -90,6 +150,9 @@ router.post(
 
       res.json({
         token,
+        mfaPromptRequired,
+        mfaSetupRequired,
+        skipsRemaining: Math.max(0, 3 - skipCount),
         user: {
           id: user.id,
           username: user.username,

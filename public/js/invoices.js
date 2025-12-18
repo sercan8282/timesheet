@@ -502,14 +502,22 @@ const invoiceManager = {
                   <textarea class="form-control" id="template-description" rows="3"></textarea>
                 </div>
                 <div class="row mb-3">
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                     <label class="form-label">Uurtarief (€)</label>
                     <input type="number" class="form-control" id="template-hourly-rate" value="0" min="0" step="0.01">
                   </div>
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                     <label class="form-label">KM Tarief (€)</label>
                     <input type="number" class="form-control" id="template-km-rate" value="0" min="0" step="0.01">
                   </div>
+                  <div class="col-md-4">
+                    <label class="form-label">DOT Tarief (€)</label>
+                    <input type="number" class="form-control" id="template-dot-rate" value="0" min="0" step="0.01">
+                  </div>
+                </div>
+                <div class="mb-3 form-check">
+                  <input type="checkbox" class="form-check-input" id="template-dot-rate-percent">
+                  <label class="form-check-label" for="template-dot-rate-percent">DOT tarief is percentage van subtotal (excl. BTW)</label>
                 </div>
                 <div class="mb-3 form-check">
                   <input type="checkbox" class="form-check-input" id="template-default">
@@ -551,6 +559,11 @@ const invoiceManager = {
       parseFloat(document.getElementById("template-hourly-rate").value) || 0;
     const km_rate =
       parseFloat(document.getElementById("template-km-rate").value) || 0;
+    const dot_rate =
+      parseFloat(document.getElementById("template-dot-rate").value) || 0;
+    const dot_rate_is_percent = document.getElementById(
+      "template-dot-rate-percent"
+    ).checked;
 
     if (!name) {
       showToast("Template naam is verplicht", "error");
@@ -564,6 +577,8 @@ const invoiceManager = {
         is_default: is_default ? 1 : 0,
         hourly_rate,
         km_rate,
+        dot_rate,
+        dot_rate_is_percent: dot_rate_is_percent ? 1 : 0,
       });
 
       showToast("Template succesvol aangemaakt", "success");
@@ -639,18 +654,30 @@ const invoiceManager = {
                   }</textarea>
                 </div>
                 <div class="row mb-3">
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                     <label class="form-label">Uurtarief (€)</label>
                     <input type="number" class="form-control" id="edit-template-hourly-rate" value="${
                       template.hourly_rate || 0
                     }" min="0" step="0.01">
                   </div>
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                     <label class="form-label">KM Tarief (€)</label>
                     <input type="number" class="form-control" id="edit-template-km-rate" value="${
                       template.km_rate || 0
                     }" min="0" step="0.01">
                   </div>
+                  <div class="col-md-4">
+                    <label class="form-label">DOT Tarief (€)</label>
+                    <input type="number" class="form-control" id="edit-template-dot-rate" value="${
+                      (template.dot_rate || 0).toFixed(2)
+                    }" min="0" step="0.01">
+                  </div>
+                </div>
+                <div class="mb-3 form-check">
+                  <input type="checkbox" class="form-check-input" id="edit-template-dot-rate-percent" ${
+                    template.dot_rate_is_percent ? "checked" : ""
+                  }>
+                  <label class="form-check-label" for="edit-template-dot-rate-percent">DOT tarief is percentage van subtotal (excl. BTW)</label>
                 </div>
                 <button class="btn btn-primary" onclick="invoiceManager.updateTemplateSettings()">
                   <i class="bi bi-save"></i> Instellingen Opslaan
@@ -943,6 +970,11 @@ const invoiceManager = {
       0;
     const km_rate =
       parseFloat(document.getElementById("edit-template-km-rate").value) || 0;
+    const dot_rate =
+      parseFloat(document.getElementById("edit-template-dot-rate").value) || 0;
+    const dot_rate_is_percent = document.getElementById(
+      "edit-template-dot-rate-percent"
+    ).checked;
 
     if (!name) {
       showToast("Template naam is verplicht", "error");
@@ -956,6 +988,8 @@ const invoiceManager = {
         is_default: is_default ? 1 : 0,
         hourly_rate,
         km_rate,
+        dot_rate,
+        dot_rate_is_percent: dot_rate_is_percent ? 1 : 0,
       });
 
       showToast("Template instellingen bijgewerkt", "success");
@@ -2612,7 +2646,7 @@ const invoiceManager = {
       showToast("Originele PDF wordt gedownload...", "info");
 
       const response = await fetch(
-        `/api/invoices/invoices/${invoiceId}/original-pdf`,
+        `${API_BASE_URL}/admin/invoices/invoices/${invoiceId}/original-pdf`,
         {
           headers: {
             Authorization: `Bearer ${api.token}`,

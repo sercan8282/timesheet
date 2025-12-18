@@ -837,4 +837,32 @@ function calculateTotalHours(startTime, endTime, pauseTime) {
   return (totalMinutes / 60).toFixed(2);
 }
 
+// Get backup codes (for MFA-enabled users)
+router.get("/backup-codes", async (req, res) => {
+  try {
+    const user = await db.get(
+      "SELECT mfa_enabled, mfa_backup_codes FROM users WHERE id = ?",
+      [req.user.id]
+    );
+
+    if (!user || !user.mfa_enabled) {
+      return res.status(400).json({ error: "MFA not enabled" });
+    }
+
+    if (!user.mfa_backup_codes) {
+      return res.status(400).json({ error: "No backup codes found" });
+    }
+
+    try {
+      const codes = JSON.parse(user.mfa_backup_codes);
+      res.json({ codes: codes });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to parse backup codes" });
+    }
+  } catch (error) {
+    console.error("Error fetching backup codes:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 module.exports = router;

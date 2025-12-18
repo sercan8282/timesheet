@@ -13,6 +13,7 @@ const submissionRoutes = require("./routes/submission");
 const companyRoutes = require("./routes/company");
 const vehicleRoutes = require("./routes/vehicles");
 const planningRoutes = require("./routes/planning");
+const mfaRoutes = require("./routes/mfa");
 const db = require("./config/database");
 
 const app = express();
@@ -198,6 +199,7 @@ app.use((req, res, next) => {
 // API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
+app.use("/api/mfa", mfaRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/submission", submissionRoutes);
 app.use("/api/admin/companies", companyRoutes);

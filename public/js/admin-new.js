@@ -818,6 +818,9 @@
                 })">
                   <i class="bi bi-pencil"></i> Edit
                 </button>
+                <button class="btn btn-sm btn-outline-danger mt-1" onclick="openResetMfaModal(${user.id}, '${user.username}')">
+                  <i class="bi bi-shield-lock"></i> Reset MFA
+                </button>
               </td>
             </tr>
           `
@@ -827,6 +830,75 @@
       </table>
     </div>
   `;
+  }
+
+  // ========== MFA RESET (ADMIN) ==========
+  let resetMfaUserId = null;
+
+  function ensureResetMfaModal() {
+    if (document.getElementById("resetMfaModal")) return;
+
+    const modalHTML = `
+      <div class="modal fade" id="resetMfaModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-shield-lock"></i> Reset MFA</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div id="resetMfaAlert"></div>
+              <p class="text-muted">Bevestig met je eigen MFA code om de MFA van deze gebruiker te resetten.</p>
+              <div class="mb-3">
+                <label class="form-label">Admin MFA code</label>
+                <input type="text" class="form-control text-center" id="resetMfaToken" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+              <button type="button" class="btn btn-danger" onclick="submitResetMfa()">
+                <i class="bi bi-shield-lock"></i> Reset MFA
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    document.body.insertAdjacentHTML("beforeend", modalHTML);
+  }
+
+  function openResetMfaModal(userId, username) {
+    resetMfaUserId = userId;
+    ensureResetMfaModal();
+    document.getElementById("resetMfaAlert").innerHTML = "";
+    document.getElementById("resetMfaToken").value = "";
+
+    const modalEl = document.getElementById("resetMfaModal");
+    modalEl.querySelector(".modal-title").innerHTML = `<i class="bi bi-shield-lock"></i> Reset MFA voor <strong>${username}</strong>`;
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+
+  async function submitResetMfa() {
+    const alertDiv = document.getElementById("resetMfaAlert");
+    const token = document.getElementById("resetMfaToken").value.trim();
+
+    if (!token || token.length !== 6) {
+      alertDiv.innerHTML = '<div class="alert alert-warning">Voer een geldige 6-cijferige code in.</div>';
+      return;
+    }
+
+    try {
+      await api.resetUserMfa(resetMfaUserId, token);
+      alertDiv.innerHTML = '<div class="alert alert-success">MFA is gereset. Gebruiker moet opnieuw MFA instellen bij volgende login.</div>';
+      setTimeout(() => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById("resetMfaModal"));
+        modal.hide();
+        loadAdminUsers();
+      }, 1200);
+    } catch (error) {
+      alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    }
   }
 
   // ========== COMPANIES MANAGEMENT ==========
@@ -3186,6 +3258,7 @@
   }
 
   async function loadBrandingSettings() {
+    const defaultCustomCss = `:root {\n  --branding-primary-color-fallback: #0066CC;\n}\n\n.btn-primary, .bg-brand, .badge-primary, .nav-pills .nav-link.active {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.text-brand, .icon-brand, .nav-link.active i, .sidebar .nav-link i {\n  color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.login-card .btn-primary {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n`;
     const container = document.getElementById("adminContent");
     container.innerHTML = `
     <div class="card">
@@ -3196,57 +3269,107 @@
         <div class="alert alert-info">
           <strong>Bedrijfsbranding:</strong> Configureer hier het uiterlijk van het systeem met bedrijfskleur, naam en logo.
         </div>
-        
-        <form id="brandingForm">
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Bedrijfsnaam</label>
-              <input type="text" class="form-control" id="brandingCompanyName" placeholder="Uw Bedrijf B.V.">
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Primaire kleur</label>
-              <div class="input-group">
-                <input type="color" class="form-control form-control-color" id="brandingPrimaryColor" value="#0066CC" title="Kies een kleur">
-                <input type="text" class="form-control" id="brandingPrimaryColorText" placeholder="#0066CC" readonly>
+
+        <ul class="nav nav-pills mb-3" id="brandingTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="branding-main-tab" data-bs-toggle="tab" data-bs-target="#tab-branding-main" type="button" role="tab">Basis</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="branding-css-tab" data-bs-toggle="tab" data-bs-target="#tab-branding-css" type="button" role="tab">CSS editor</button>
+          </li>
+        </ul>
+
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="tab-branding-main" role="tabpanel">
+            <form id="brandingForm">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Bedrijfsnaam</label>
+                  <input type="text" class="form-control" id="brandingCompanyName" placeholder="Uw Bedrijf B.V.">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Primaire kleur</label>
+                  <div class="input-group">
+                    <input type="color" class="form-control form-control-color" id="brandingPrimaryColor" value="#0066CC" title="Kies een kleur">
+                    <input type="text" class="form-control" id="brandingPrimaryColorText" placeholder="#0066CC" readonly>
+                  </div>
+                  <small class="form-text text-muted">Gebruikt voor navigatie, knoppen en accenten.</small>
+                </div>
               </div>
-              <small class="form-text text-muted">Gebruikt voor navigatie, knoppen en accenten.</small>
+
+              <div class="mb-3">
+                <label class="form-label">Tagline / Motto</label>
+                <input type="text" class="form-control" id="brandingTagline" placeholder="Bv. 'Efficiënt timesheet management'">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Logo</label>
+                <div class="card bg-light p-3 mb-3">
+                  <div id="logoPreview" class="text-center">
+                    <p class="text-muted">Geen logo geupload</p>
+                  </div>
+                </div>
+                <input type="file" class="form-control" id="logoFile" accept="image/*">
+                <small class="form-text text-muted">Ondersteunde formaten: PNG, JPG, GIF. Max 5MB. Aanbevolen: 200x50px.</small>
+              </div>
+
+              <div id="brandingAlert"></div>
+
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary" onclick="saveBrandingSettings()">
+                  <i class="bi bi-save"></i> Instellingen opslaan
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="resetBrandingForm()">
+                  <i class="bi bi-arrow-counterclockwise"></i> Herstellen
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div class="tab-pane fade" id="tab-branding-css" role="tabpanel">
+            <div class="alert alert-secondary">
+              <div class="fw-bold mb-1">CSS voor gekleurde en icoon-elementen</div>
+              <div class="mb-2">Dit blok stuurt o.a. knoppen, badges, actieve tabs, iconen in navigatie en dashboards, en login accenten.</div>
+              <div class="mb-1">Tip: gebruik <code>var(--branding-primary-color, #0066CC)</code> als accentkleur.</div>
             </div>
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Tagline / Motto</label>
-            <input type="text" class="form-control" id="brandingTagline" placeholder="Bv. 'Efficiënt timesheet management'">
-          </div>
-
-          <div class="mb-3">
-            <label class="form-label">Logo</label>
-            <div class="card bg-light p-3 mb-3">
-              <div id="logoPreview" class="text-center">
-                <p class="text-muted">Geen logo geupload</p>
+            <div class="mb-3">
+              <div class="fw-semibold">Voorbeelden uit live situaties</div>
+              <div class="d-flex flex-column gap-2 mt-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm text-start" id="cssExamplePrimary">
+                  <i class="bi bi-palette"></i> Donkerblauw menu + lichte iconen
+                </button>
+                <button type="button" class="btn btn-outline-success btn-sm text-start" id="cssExampleSuccess">
+                  <i class="bi bi-check-circle"></i> Groene badges voor goedkeuring
+                </button>
+                <button type="button" class="btn btn-outline-warning btn-sm text-start" id="cssExampleAlerts">
+                  <i class="bi bi-exclamation-triangle"></i> Oranje waarschuwingen, rood fouten
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm text-start" id="cssResetDefault">
+                  <i class="bi bi-arrow-counterclockwise"></i> Herstel naar standaard CSS
+                </button>
               </div>
             </div>
-            <input type="file" class="form-control" id="logoFile" accept="image/*">
-            <small class="form-text text-muted">Ondersteunde formaten: PNG, JPG, GIF. Max 5MB. Aanbevolen: 200x50px.</small>
-          </div>
-
-          <div id="brandingAlert"></div>
-
-          <div class="d-flex gap-2">
-            <button type="button" class="btn btn-primary" onclick="saveBrandingSettings()">
-              <i class="bi bi-save"></i> Instellingen opslaan
-            </button>
-            <button type="button" class="btn btn-outline-secondary" onclick="resetBrandingForm()">
-              <i class="bi bi-arrow-counterclockwise"></i> Herstellen
+            <div class="mb-3">
+              <label class="form-label">Custom CSS</label>
+              <textarea class="form-control font-monospace" id="brandingCustomCss" rows="12" spellcheck="false"></textarea>
+              <small class="form-text text-muted">Bewaar om nieuwe styling direct op de app toe te passen.</small>
+            </div>
+            <div id="brandingCssAlert"></div>
+            <button type="button" class="btn btn-primary" onclick="saveBrandingCustomCss()">
+              <i class="bi bi-code-slash"></i> Custom CSS opslaan
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   `;
 
     // Load current settings
     try {
-      const settings = await api.getBrandingSettings();
+      const [settings, cssSettings] = await Promise.all([
+        api.getBrandingSettings(),
+        api.getBrandingCustomCss(),
+      ]);
       if (settings) {
         document.getElementById("brandingCompanyName").value =
           settings.company_name || "";
@@ -3263,8 +3386,47 @@
           ).innerHTML = `<img src="${settings.logo_path}" style="max-height: 100px; max-width: 100%;">`;
         }
       }
+
+      const cssToUse =
+        cssSettings && cssSettings.custom_css
+          ? cssSettings.custom_css
+          : defaultCustomCss;
+      document.getElementById("brandingCustomCss").value = cssToUse;
     } catch (error) {
       console.error("Failed to load branding settings:", error);
+    }
+
+    const cssExamples = [
+      {
+        id: "cssExamplePrimary",
+        css: `:root {\n  --branding-primary-color: #0b3d91;\n}\n\n.navbar, .nav-pills .nav-link.active {\n  background-color: var(--branding-primary-color);\n}\n.navbar .nav-link, .nav-link i {\n  color: #eaf2ff;\n}\n.navbar .nav-link.active {\n  color: #ffffff;\n}\n.btn-primary {\n  background-color: var(--branding-primary-color);\n  border-color: var(--branding-primary-color);\n}\n`,
+      },
+      {
+        id: "cssExampleSuccess",
+        css: `.badge-success, .status-approved, .status-accepted {\n  background-color: #1f9d55;\n  color: #ffffff;\n}\n.icon-brand, .text-brand {\n  color: #1f9d55;\n}\n.nav-pills .nav-link.active {\n  background-color: #1f9d55;\n  border-color: #1f9d55;\n}\n`,
+      },
+      {
+        id: "cssExampleAlerts",
+        css: `.badge-warning, .status-warning {\n  background-color: #f4a742;\n  color: #1f1f1f;\n}\n.badge-danger, .status-rejected, .status-error {\n  background-color: #d9534f;\n  color: #ffffff;\n}\n.nav-pills .nav-link.active {\n  background-color: #d9534f;\n  border-color: #d9534f;\n}\n`,
+      },
+    ];
+
+    cssExamples.forEach((example) => {
+      const btn = document.getElementById(example.id);
+      if (btn) {
+        btn.onclick = () => {
+          document.getElementById("brandingCustomCss").value = example.css.trim();
+          showToast("Voorbeeld ingevuld in editor", "info");
+        };
+      }
+    });
+
+    const resetDefaultBtn = document.getElementById("cssResetDefault");
+    if (resetDefaultBtn) {
+      resetDefaultBtn.onclick = () => {
+        document.getElementById("brandingCustomCss").value = defaultCustomCss.trim();
+        showToast("Standaard CSS hersteld", "info");
+      };
     }
 
     // Wire color picker change
@@ -3345,6 +3507,31 @@
       console.error("[BRANDING SAVE] Error:", error);
       alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
       showToast("Opslaan mislukt", "danger");
+    }
+  }
+
+  async function saveBrandingCustomCss() {
+    const alertDiv = document.getElementById("brandingCssAlert");
+    const customCss = document.getElementById("brandingCustomCss").value;
+
+    alertDiv.innerHTML =
+      '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> CSS opslaan...</div>';
+
+    try {
+      await api.updateBrandingCustomCss({ custom_css: customCss });
+      alertDiv.innerHTML =
+        '<div class="alert alert-success"><i class="bi bi-check-circle"></i> Custom CSS opgeslagen!</div>';
+      showToast("Custom CSS opgeslagen", "success");
+
+      try {
+        app.branding = await api.getPublicBranding();
+        app.applyBranding();
+      } catch (error) {
+        console.error("Failed to reload branding after CSS save:", error);
+      }
+    } catch (error) {
+      alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
+      showToast("Custom CSS opslaan mislukt", "danger");
     }
   }
 
@@ -3446,7 +3633,10 @@
   window.toggleOAuthFields = toggleOAuthFields;
   window.loadBrandingSettings = loadBrandingSettings;
   window.saveBrandingSettings = saveBrandingSettings;
+  window.saveBrandingCustomCss = saveBrandingCustomCss;
   window.resetBrandingForm = resetBrandingForm;
+  window.openResetMfaModal = openResetMfaModal;
+  window.submitResetMfa = submitResetMfa;
   window.showGeneratePlanningByVehiclesModal =
     showGeneratePlanningByVehiclesModal;
   /**

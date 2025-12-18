@@ -163,7 +163,7 @@ router.get("/templates/:id", auth, async (req, res) => {
 // Create new template
 router.post("/templates", auth, async (req, res) => {
   try {
-    const { name, description, is_default, hourly_rate, km_rate } = req.body;
+    const { name, description, is_default, hourly_rate, km_rate, dot_rate, dot_rate_is_percent } = req.body;
 
     // If setting as default, unset other defaults
     if (is_default) {
@@ -171,13 +171,15 @@ router.post("/templates", auth, async (req, res) => {
     }
 
     const result = await db.run(
-      "INSERT INTO invoice_templates (name, description, is_default, hourly_rate, km_rate) VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO invoice_templates (name, description, is_default, hourly_rate, km_rate, dot_rate, dot_rate_is_percent) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         name,
         description || null,
         is_default ? 1 : 0,
         hourly_rate || 0,
         km_rate || 0,
+        dot_rate || 0,
+        dot_rate_is_percent ? 1 : 0,
       ]
     );
 
@@ -196,7 +198,7 @@ router.post("/templates", auth, async (req, res) => {
 // Update template
 router.put("/templates/:id", auth, async (req, res) => {
   try {
-    const { name, description, is_default, hourly_rate, km_rate } = req.body;
+    const { name, description, is_default, hourly_rate, km_rate, dot_rate, dot_rate_is_percent } = req.body;
 
     // If setting as default, unset other defaults
     if (is_default) {
@@ -207,13 +209,15 @@ router.put("/templates/:id", auth, async (req, res) => {
     }
 
     await db.run(
-      "UPDATE invoice_templates SET name = ?, description = ?, is_default = ?, hourly_rate = ?, km_rate = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      "UPDATE invoice_templates SET name = ?, description = ?, is_default = ?, hourly_rate = ?, km_rate = ?, dot_rate = ?, dot_rate_is_percent = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
       [
         name,
         description || null,
         is_default ? 1 : 0,
         hourly_rate || 0,
         km_rate || 0,
+        dot_rate || 0,
+        dot_rate_is_percent ? 1 : 0,
         req.params.id,
       ]
     );
@@ -623,6 +627,7 @@ router.post("/invoices", auth, async (req, res) => {
     const invoiceId = result.id;
 
     // Add line items
+    let totalKm = 0;
     if (line_items && Array.isArray(line_items)) {
       for (let i = 0; i < line_items.length; i++) {
         const item = line_items[i];
@@ -636,6 +641,11 @@ router.post("/invoices", auth, async (req, res) => {
           item_hours: item.item_hours,
           item_rate: item.item_rate,
         });
+
+        // Sum up kilometers for total
+        if (item.item_km) {
+          totalKm += parseFloat(item.item_km);
+        }
 
         await db.run(
           `INSERT INTO invoice_line_items 
@@ -652,6 +662,101 @@ router.post("/invoices", auth, async (req, res) => {
             item.item_km || null,
             item.item_hours || null,
             item.item_rate || null,
+          ]
+        );
+      }
+
+      // Get template to fetch km_rate and dot_rate (including percent flag)
+      const template = await db.get(
+        "SELECT km_rate, dot_rate, dot_rate_is_percent FROM invoice_templates WHERE id = ?",
+        [template_id]
+      );
+
+      let totalLinesAmount = 0;
+      let nextPosition = line_items.length;
+
+      // Add total kilometers line if there are any kilometers and km_rate is set
+      if (totalKm > 0 && template && template.km_rate) {
+        const kmRate = parseFloat(template.km_rate);
+        const kmLineTotal = totalKm * kmRate;
+
+          await db.run(
+            `INSERT INTO invoice_line_items 
+             (invoice_id, description, quantity, unit_price, line_total, position_order, item_km, item_rate, is_total_row, total_row_type)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              invoiceId,
+              "Totaal Kilometers",
+              1,
+              kmLineTotal.toFixed(2),
+              kmLineTotal.toFixed(2),
+              nextPosition,
+              totalKm,
+              kmRate, // Add km_rate to item_rate column
+              1, // Mark as total row
+              "km_total",
+            ]
+          );        console.log(`[Invoice ${invoiceId}] Added KM total line: ${totalKm} km × €${kmRate} = €${kmLineTotal.toFixed(2)}`);
+
+        totalLinesAmount += kmLineTotal;
+        nextPosition++;
+      }
+
+      // Add total DOT line. If percentage flag is set, use subtotal; otherwise use kilometers.
+      if (template && template.dot_rate) {
+        const dotRate = parseFloat(template.dot_rate);
+        const isPercent = Number(template.dot_rate_is_percent) === 1;
+
+        let dotLineTotal = 0;
+        let dotDescription = "Totaal DOT";
+        let dotItemKm = totalKm;
+
+        if (isPercent) {
+          dotLineTotal = subtotal * (dotRate / 100);
+          dotDescription = "Tarief DOT";
+          dotItemKm = null; // percentage is based on subtotal, not km
+        } else if (totalKm > 0) {
+          dotLineTotal = totalKm * dotRate;
+        }
+
+        if (dotLineTotal > 0) {
+            await db.run(
+              `INSERT INTO invoice_line_items 
+               (invoice_id, description, quantity, unit_price, line_total, position_order, item_km, item_rate, is_total_row, total_row_type)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                invoiceId,
+                dotDescription,
+                1,
+                dotLineTotal.toFixed(2),
+                dotLineTotal.toFixed(2),
+                nextPosition,
+                dotItemKm,
+                dotRate,
+                1,
+                "dot_total",
+              ]
+            );        console.log(`[Invoice ${invoiceId}] Added DOT total line (${isPercent ? "percentage" : "per km"}): value €${dotLineTotal.toFixed(2)}`);
+
+          totalLinesAmount += dotLineTotal;
+        }
+      }
+
+      // Recalculate totals including all total lines
+      if (totalLinesAmount > 0) {
+        const newSubtotal = subtotal + totalLinesAmount;
+        const newVatAmount = newSubtotal * 0.21;
+        const newTotalAmount = newSubtotal + newVatAmount;
+
+        await db.run(
+          `UPDATE invoices 
+           SET subtotal = ?, vat_amount = ?, total_amount = ?
+           WHERE id = ?`,
+          [
+            newSubtotal.toFixed(2),
+            newVatAmount.toFixed(2),
+            newTotalAmount.toFixed(2),
+            invoiceId,
           ]
         );
       }
@@ -735,11 +840,17 @@ router.put("/invoices/:id", auth, async (req, res) => {
         req.params.id,
       ]);
 
-      // Add new line items
+      // Add new line items and calculate total km
+      let totalKm = 0;
       for (let i = 0; i < line_items.length; i++) {
         const item = line_items[i];
         const line_total =
           parseFloat(item.quantity || 0) * parseFloat(item.unit_price || 0);
+
+        // Sum up kilometers
+        if (item.item_km) {
+          totalKm += parseFloat(item.item_km);
+        }
 
         await db.run(
           `INSERT INTO invoice_line_items 
@@ -758,6 +869,115 @@ router.put("/invoices/:id", auth, async (req, res) => {
             item.item_rate || null,
           ]
         );
+      }
+
+      // Get invoice to find template_id
+      const invoice = await db.get(
+        "SELECT template_id FROM invoices WHERE id = ?",
+        [req.params.id]
+      );
+
+      if (invoice && invoice.template_id) {
+        // Get template to fetch km_rate and dot_rate (including percent flag)
+        const template = await db.get(
+          "SELECT km_rate, dot_rate, dot_rate_is_percent FROM invoice_templates WHERE id = ?",
+          [invoice.template_id]
+        );
+
+        let totalLinesAmount = 0;
+        let nextPosition = line_items.length;
+
+        // Add total kilometers line if there are any kilometers and km_rate is set
+        if (totalKm > 0 && template && template.km_rate) {
+          const kmRate = parseFloat(template.km_rate);
+          const kmLineTotal = totalKm * kmRate;
+
+          await db.run(
+            `INSERT INTO invoice_line_items 
+             (invoice_id, description, quantity, unit_price, line_total, position_order, item_km, item_rate, is_total_row, total_row_type)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              req.params.id,
+              "Totaal Kilometers",
+              1,
+              kmLineTotal.toFixed(2),
+              kmLineTotal.toFixed(2),
+              nextPosition,
+              totalKm,
+              kmRate, // Add km_rate to item_rate column
+              1,
+              "km_total",
+            ]
+          );
+
+          console.log(`[Invoice ${req.params.id}] Added KM total line: ${totalKm} km × €${kmRate} = €${kmLineTotal.toFixed(2)}`);
+
+          totalLinesAmount += kmLineTotal;
+          nextPosition++;
+        }
+
+        // Add total DOT line. If percentage flag is set, use subtotal; otherwise use kilometers.
+        if (template && template.dot_rate) {
+          const dotRate = parseFloat(template.dot_rate);
+          const isPercent = Number(template.dot_rate_is_percent) === 1;
+
+          let dotLineTotal = 0;
+          let dotDescription = "Totaal DOT";
+          let dotItemKm = totalKm;
+
+          if (isPercent) {
+            dotLineTotal = subtotal * (dotRate / 100);
+            dotDescription = "Tarief DOT";
+            dotItemKm = null;
+          } else if (totalKm > 0) {
+            dotLineTotal = totalKm * dotRate;
+          }
+
+          if (dotLineTotal > 0) {
+            await db.run(
+              `INSERT INTO invoice_line_items 
+               (invoice_id, description, quantity, unit_price, line_total, position_order, item_km, item_rate, is_total_row, total_row_type)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              [
+                req.params.id,
+                dotDescription,
+                1,
+                dotLineTotal.toFixed(2),
+                dotLineTotal.toFixed(2),
+                nextPosition,
+                dotItemKm,
+                dotRate,
+                1,
+                "dot_total",
+              ]
+            );
+
+            console.log(
+              `[Invoice ${req.params.id}] Added DOT total line (${isPercent ? "percentage" : "per km"}): value €${dotLineTotal.toFixed(2)}`
+            );
+
+            totalLinesAmount += dotLineTotal;
+          }
+        }
+
+        // Recalculate totals including all total lines
+        if (totalLinesAmount > 0) {
+          const newSubtotal = subtotal + totalLinesAmount;
+          const newVatAmount = newSubtotal * 0.21;
+          const newTotalAmount = newSubtotal + newVatAmount;
+
+          await db.run(
+            `UPDATE invoices 
+             SET subtotal = ?, vat_amount = ?, total_amount = ?
+             WHERE id = ?`,
+            [
+              newSubtotal.toFixed(2),
+              newVatAmount.toFixed(2),
+              newTotalAmount.toFixed(2),
+              req.params.id,
+            ]
+          );
+        }
       }
     }
 
@@ -801,12 +1021,9 @@ router.get("/invoices/:id/original-pdf", auth, async (req, res) => {
         .json({ error: "Geen originele PDF beschikbaar voor deze factuur" });
     }
 
-    const pdfPath = path.join(
-      __dirname,
-      "..",
-      "public",
-      invoice.original_pdf_path
-    );
+    // Normalize path and strip any leading slash so path.join doesn't drop earlier segments
+    const normalizedOriginalPath = invoice.original_pdf_path.replace(/^[/\\]+/, "");
+    const pdfPath = path.join(__dirname, "..", "public", normalizedOriginalPath);
 
     if (!fs.existsSync(pdfPath)) {
       return res

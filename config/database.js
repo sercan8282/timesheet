@@ -72,6 +72,27 @@ class Database {
                   "is_blocked",
                   "ALTER TABLE users ADD COLUMN is_blocked INTEGER DEFAULT 0"
                 );
+                // MFA columns
+                ensure(
+                  "mfa_enabled",
+                  "ALTER TABLE users ADD COLUMN mfa_enabled INTEGER DEFAULT 0"
+                );
+                ensure(
+                  "mfa_secret",
+                  "ALTER TABLE users ADD COLUMN mfa_secret TEXT"
+                );
+                ensure(
+                  "mfa_backup_codes",
+                  "ALTER TABLE users ADD COLUMN mfa_backup_codes TEXT"
+                );
+                ensure(
+                  "mfa_skip_count",
+                  "ALTER TABLE users ADD COLUMN mfa_skip_count INTEGER DEFAULT 0"
+                );
+                ensure(
+                  "mfa_prompted_at",
+                  "ALTER TABLE users ADD COLUMN mfa_prompted_at DATETIME"
+                );
               }
             });
           }
@@ -439,6 +460,7 @@ class Database {
           primary_color TEXT,
           logo_path TEXT,
           tagline TEXT,
+          custom_css TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -451,12 +473,16 @@ class Database {
               [],
               (err, columns) => {
                 if (!err && columns) {
-                  const hasTagline = columns.some((c) => c.name === "tagline");
-                  if (!hasTagline) {
-                    this.db.run(
-                      `ALTER TABLE branding_settings ADD COLUMN tagline TEXT`
-                    );
-                  }
+                  const ensure = (name, sql) => {
+                    if (!columns.some((c) => c.name === name)) {
+                      this.db.run(sql);
+                    }
+                  };
+                  ensure("tagline", "ALTER TABLE branding_settings ADD COLUMN tagline TEXT");
+                  ensure(
+                    "custom_css",
+                    "ALTER TABLE branding_settings ADD COLUMN custom_css TEXT"
+                  );
                 }
               }
             );
@@ -473,6 +499,8 @@ class Database {
           is_default INTEGER DEFAULT 0,
           hourly_rate REAL DEFAULT 0,
           km_rate REAL DEFAULT 0,
+          dot_rate REAL DEFAULT 0,
+          dot_rate_is_percent INTEGER DEFAULT 0,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -507,6 +535,32 @@ class Database {
                     console.error("Error adding km_rate:", err);
                   } else {
                     console.log("✓ Added km_rate column to invoice_templates");
+                  }
+                }
+              );
+            }
+            if (!columnNames.includes("dot_rate")) {
+              this.db.run(
+                "ALTER TABLE invoice_templates ADD COLUMN dot_rate REAL DEFAULT 0",
+                (err) => {
+                  if (err && !err.message.includes("duplicate column")) {
+                    console.error("Error adding dot_rate:", err);
+                  } else {
+                    console.log("✓ Added dot_rate column to invoice_templates");
+                  }
+                }
+              );
+            }
+            if (!columnNames.includes("dot_rate_is_percent")) {
+              this.db.run(
+                "ALTER TABLE invoice_templates ADD COLUMN dot_rate_is_percent INTEGER DEFAULT 0",
+                (err) => {
+                  if (err && !err.message.includes("duplicate column")) {
+                    console.error("Error adding dot_rate_is_percent:", err);
+                  } else {
+                    console.log(
+                      "✓ Added dot_rate_is_percent column to invoice_templates"
+                    );
                   }
                 }
               );

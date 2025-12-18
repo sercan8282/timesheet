@@ -1,3 +1,5 @@
+const DEFAULT_CUSTOM_CSS = `:root {\n  --branding-primary-color-fallback: #0066CC;\n}\n\n.btn-primary, .bg-brand, .badge-primary, .nav-pills .nav-link.active {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.text-brand, .icon-brand, .nav-link.active i, .sidebar .nav-link i {\n  color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.login-card .btn-primary {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n`;
+
 class App {
   constructor() {
     this.user = null;
@@ -17,6 +19,7 @@ class App {
         company_name: "Timesheet System",
         primary_color: "#0066CC",
       };
+      this.applyBranding();
     }
 
     const token = localStorage.getItem("token");
@@ -95,6 +98,23 @@ class App {
                 `;
       }
     }
+
+    const cssToApply =
+      this.branding.custom_css && this.branding.custom_css.trim().length > 0
+        ? this.branding.custom_css
+        : DEFAULT_CUSTOM_CSS;
+    this.applyCustomCss(cssToApply);
+  }
+
+  applyCustomCss(cssText) {
+    const styleId = "custom-branding-style";
+    let styleTag = document.getElementById(styleId);
+    if (!styleTag) {
+      styleTag = document.createElement("style");
+      styleTag.id = styleId;
+      document.head.appendChild(styleTag);
+    }
+    styleTag.textContent = cssText || "";
   }
 
   async showLogin() {

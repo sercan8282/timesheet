@@ -10,6 +10,11 @@ class API {
     localStorage.setItem("token", token);
   }
 
+  // Expose current JWT for callers that need raw token (e.g., manual fetch)
+  getToken() {
+    return this.token;
+  }
+
   clearToken() {
     this.token = null;
     localStorage.removeItem("token");
@@ -295,6 +300,14 @@ class API {
   async deleteUser(id) {
     return this.request(`/admin/users/${id}`, {
       method: "DELETE",
+    });
+  }
+
+  // Admin: reset user MFA (requires admin MFA token)
+  async resetUserMfa(id, mfaToken) {
+    return this.request(`/admin/users/${id}/reset-mfa`, {
+      method: "POST",
+      body: JSON.stringify({ mfaToken }),
     });
   }
 
@@ -730,6 +743,17 @@ class API {
     }
 
     return response.json();
+  }
+
+  async getBrandingCustomCss() {
+    return this.request(`/admin/branding-settings/custom-css`);
+  }
+
+  async updateBrandingCustomCss(payload) {
+    return this.request(`/admin/branding-settings/custom-css`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
   }
 
   // Public endpoints

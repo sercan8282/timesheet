@@ -351,8 +351,15 @@ async function generateInvoicePDF(invoiceId) {
       }
 
       if (item.item_rate !== null && item.item_rate !== undefined) {
+        const isDotPercent =
+          item.total_row_type === "dot_total" &&
+          (item.item_km === null || item.item_km === undefined);
+        const rateLabel = isDotPercent
+          ? `${parseFloat(item.item_rate).toFixed(2)}%`
+          : `€ ${parseFloat(item.item_rate).toFixed(2)}`;
+
         doc.text(
-          `€ ${parseFloat(item.item_rate).toFixed(2)}`,
+          rateLabel,
           tableLeft + tableWidth * col5,
           yPosition,
           { width: tableWidth * 0.11, align: "right" }

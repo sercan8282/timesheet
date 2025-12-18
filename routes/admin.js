@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const { body, validationResult } = require("express-validator");
 const db = require("../config/database");
 const { authMiddleware, adminMiddleware } = require("../middleware/auth");
+const speakeasy = require("speakeasy");
 const { testSMTPConnection, sendEmail } = require("../utils/email");
 const { generatePDF } = require("../utils/pdf");
 const { generateXLSX } = require("../utils/excel");
@@ -24,6 +25,7 @@ router.get("/users", async (req, res) => {
          u.id, u.username, u.full_name, u.role, u.is_blocked, u.created_at,
          u.company_id, u.phone, u.ritnumber, u.adr, u.mega_kast,
          u.can_fill_in, u.fill_in_company_id,
+         u.mfa_enabled, u.mfa_skip_count,
          c.name AS company_name,
          fc.name AS fill_in_company_name,
          COALESCE(lb.vacation_hours, 0) AS vacation_hours,
@@ -1191,6 +1193,65 @@ router.put(
   }
 );
 
+// Get custom CSS
+router.get("/branding-settings/custom-css", async (_req, res) => {
+  try {
+    const settings = await db.get(
+      "SELECT custom_css FROM branding_settings LIMIT 1"
+    );
+    res.json({ custom_css: settings?.custom_css || "" });
+  } catch (error) {
+    console.error("Error fetching custom CSS:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Update custom CSS
+router.put(
+  "/branding-settings/custom-css",
+  [
+    body("custom_css")
+      .isString()
+      .withMessage("CSS must be a string")
+      .isLength({ max: 20000 })
+      .withMessage("CSS too long (max 20000 chars)"),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { custom_css } = req.body;
+
+      const existing = await db.get("SELECT id FROM branding_settings LIMIT 1");
+      if (existing) {
+        await db.run(
+          `UPDATE branding_settings SET custom_css = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+          [custom_css, existing.id]
+        );
+      } else {
+        await db.run(
+          `INSERT INTO branding_settings (custom_css) VALUES (?)`,
+          [custom_css]
+        );
+      }
+
+      const updated = await db.get(
+        "SELECT custom_css FROM branding_settings LIMIT 1"
+      );
+      res.json({
+        message: "Custom CSS saved",
+        custom_css: updated?.custom_css || "",
+      });
+    } catch (error) {
+      console.error("Error updating custom CSS:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 // Configure multer for logo upload
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -1673,6 +1734,63 @@ router.get("/companies", async (req, res) => {
     res.json(companies);
   } catch (error) {
     console.error("Error fetching companies:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Reset MFA for a user (admin only) - requires admin's own MFA token
+router.post("/users/:id/reset-mfa", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { mfaToken } = req.body;
+
+    if (!mfaToken) {
+      return res.status(400).json({ error: "Admin MFA token is required" });
+    }
+
+    // Verify admin's own MFA
+    const admin = await db.get(
+      "SELECT mfa_enabled, mfa_secret FROM users WHERE id = ?",
+      [req.user.id]
+    );
+
+    if (!admin || !admin.mfa_enabled || !admin.mfa_secret) {
+      return res
+        .status(403)
+        .json({ error: "Admin MFA must be enabled to reset user MFA" });
+    }
+
+    const verified = speakeasy.totp.verify({
+      secret: admin.mfa_secret,
+      encoding: "base32",
+      token: mfaToken,
+      window: 2,
+    });
+
+    if (!verified) {
+      return res.status(401).json({ error: "Invalid admin MFA token" });
+    }
+
+    // Check if target user exists
+    const user = await db.get("SELECT id FROM users WHERE id = ?", [id]);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Reset MFA for target user
+    await db.run(
+      `UPDATE users 
+       SET mfa_enabled = 0, mfa_secret = NULL, mfa_backup_codes = NULL, mfa_skip_count = 0 
+       WHERE id = ?`,
+      [id]
+    );
+
+    res.json({
+      success: true,
+      message: "MFA reset successfully. User can set up new MFA on next login.",
+    });
+  } catch (error) {
+    console.error("Error resetting MFA:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
