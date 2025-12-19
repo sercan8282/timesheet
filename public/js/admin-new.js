@@ -8,6 +8,14 @@
   let allUsers = [];
   let allCompanies = [];
   let selectedCompanyId = null;
+  
+  // Leave management pagination state
+  let allLeaveBalances = [];
+  let allLeaveRequests = [];
+  let filteredLeaveBalances = [];
+  let filteredLeaveRequests = [];
+  let leaveBalancesPage = 1;
+  let leaveRequestsPage = 1;
 
   // Lightweight translation helper for admin UI
   function adminTr(key, fallback) {
@@ -749,38 +757,33 @@
     document.getElementById("refreshLeaveBalances").onclick = loadLeaveManagement;
     document.getElementById("refreshLeaveRequests").onclick = loadLeaveManagement;
 
-    let allLeaveBalances = [];
-    let allLeaveRequests = [];
-    let leaveBalancesPage = 1;
-    let leaveRequestsPage = 1;
-    const itemsPerPage = 10;
-
     // Setup search for leave balances
     document.getElementById("searchLeaveBalances").oninput = (e) => {
       const query = e.target.value.toLowerCase();
-      const filtered = allLeaveBalances.filter(item => {
+      filteredLeaveBalances = allLeaveBalances.filter(item => {
         const name = (item.full_name || item.username || "").toLowerCase();
         return name.includes(query);
       });
       leaveBalancesPage = 1;
-      renderLeaveBalancesTable(filtered, leaveBalancesPage);
+      renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
     };
 
     // Setup search for leave requests
     document.getElementById("searchLeaveRequests").oninput = (e) => {
       const query = e.target.value.toLowerCase();
-      const filtered = allLeaveRequests.filter(req => {
+      filteredLeaveRequests = allLeaveRequests.filter(req => {
         const name = (req.full_name || req.username || "").toLowerCase();
         return name.includes(query);
       });
       leaveRequestsPage = 1;
-      renderLeaveRequestsTable(filtered, leaveRequestsPage);
+      renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
     };
 
     try {
       const rows = await api.getLeaveBalances();
       allLeaveBalances = rows || [];
-      renderLeaveBalancesTable(allLeaveBalances, leaveBalancesPage);
+      filteredLeaveBalances = allLeaveBalances;
+      renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
     } catch (err) {
       console.error("Error loading leave balances:", err);
       document.getElementById("leaveBalancesWrapper").innerHTML = `<div class="alert alert-danger m-2">${err.message || "Failed to load"}</div>`;
@@ -789,7 +792,8 @@
     try {
       const requests = await api.getLeaveRequestsAdmin();
       allLeaveRequests = requests || [];
-      renderLeaveRequestsTable(allLeaveRequests, leaveRequestsPage);
+      filteredLeaveRequests = allLeaveRequests;
+      renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
     } catch (err) {
       console.error("Error loading leave requests:", err);
       document.getElementById("leaveRequestsWrapper").innerHTML = `<div class="alert alert-danger m-2">${err.message || "Failed to load"}</div>`;
@@ -802,14 +806,20 @@
     } catch (e) {}
   }
 
-  function renderLeaveBalancesTable(items) {
+  function renderLeaveBalancesTable(items, page = 1) {
     const wrapper = document.getElementById("leaveBalancesWrapper");
     if (!items || items.length === 0) {
       wrapper.innerHTML = `<div class="alert alert-info m-2">Geen gebruikers gevonden</div>`;
       return;
     }
 
-    const rowsHtml = items.map((it) => {
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(items.length / itemsPerPage);
+    const startIdx = (page - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    const pageItems = items.slice(startIdx, endIdx);
+
+    const rowsHtml = pageItems.map((it) => {
       const disabled = it.is_blocked ? "disabled" : "";
       const name = escapeHtml(it.full_name || it.username || "");
       return `
@@ -827,6 +837,25 @@
         </tr>`;
     }).join("");
 
+    // Pagination controls
+    let paginationHtml = '';
+    if (totalPages > 1) {
+      paginationHtml = `
+        <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light">
+          <small class="text-muted">${items.length} gebruikers</small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="leaveBalancesPrev" ${page === 1 ? 'disabled' : ''}>
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="btn btn-outline-secondary disabled">${page} / ${totalPages}</button>
+            <button class="btn btn-outline-secondary" id="leaveBalancesNext" ${page === totalPages ? 'disabled' : ''}>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     wrapper.innerHTML = `
       <table class="table table-sm table-hover mb-0">
         <thead class="table-light sticky-top">
@@ -839,7 +868,26 @@
         </thead>
         <tbody>${rowsHtml}</tbody>
       </table>
+      ${paginationHtml}
     `;
+
+    // Attach pagination event listeners
+    if (totalPages > 1) {
+      const prevBtn = document.getElementById("leaveBalancesPrev");
+      const nextBtn = document.getElementById("leaveBalancesNext");
+      if (prevBtn) {
+        prevBtn.onclick = () => {
+          leaveBalancesPage--;
+          renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
+        };
+      }
+      if (nextBtn) {
+        nextBtn.onclick = () => {
+          leaveBalancesPage++;
+          renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
+        };
+      }
+    }
 
     wrapper.querySelectorAll(".save-leave").forEach((btn) => {
       btn.onclick = async (e) => {
@@ -865,12 +913,18 @@
     });
   }
 
-  function renderLeaveRequestsTable(requests) {
+  function renderLeaveRequestsTable(requests, page = 1) {
     const wrapper = document.getElementById("leaveRequestsWrapper");
     if (!requests || requests.length === 0) {
       wrapper.innerHTML = `<div class="alert alert-info m-2">Geen verlofaanvragen</div>`;
       return;
     }
+
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(requests.length / itemsPerPage);
+    const startIdx = (page - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    const pageItems = requests.slice(startIdx, endIdx);
 
     const badge = (status) => {
       switch (status) {
@@ -880,7 +934,7 @@
       }
     };
 
-    const rowsHtml = requests.map((req) => {
+    const rowsHtml = pageItems.map((req) => {
       const period = `${new Date(req.start_date).toLocaleDateString("nl-NL")} - ${new Date(req.end_date).toLocaleDateString("nl-NL")}`;
       const canAct = req.status === "pending";
       const typeLabel = req.balance_type === "overtime" ? "Overuren" : "Verlof";
@@ -902,6 +956,25 @@
       `;
     }).join("");
 
+    // Pagination controls
+    let paginationHtml = '';
+    if (totalPages > 1) {
+      paginationHtml = `
+        <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light">
+          <small class="text-muted">${requests.length} aanvragen</small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="leaveRequestsPrev" ${page === 1 ? 'disabled' : ''}>
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="btn btn-outline-secondary disabled">${page} / ${totalPages}</button>
+            <button class="btn btn-outline-secondary" id="leaveRequestsNext" ${page === totalPages ? 'disabled' : ''}>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     wrapper.innerHTML = `
       <table class="table table-sm table-hover mb-0">
         <thead class="table-light sticky-top">
@@ -916,7 +989,26 @@
         </thead>
         <tbody>${rowsHtml}</tbody>
       </table>
+      ${paginationHtml}
     `;
+
+    // Attach pagination event listeners
+    if (totalPages > 1) {
+      const prevBtn = document.getElementById("leaveRequestsPrev");
+      const nextBtn = document.getElementById("leaveRequestsNext");
+      if (prevBtn) {
+        prevBtn.onclick = () => {
+          leaveRequestsPage--;
+          renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
+        };
+      }
+      if (nextBtn) {
+        nextBtn.onclick = () => {
+          leaveRequestsPage++;
+          renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
+        };
+      }
+    }
   }
 
   async function loadTranslationsForSelected() {
