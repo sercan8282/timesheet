@@ -7,91 +7,75 @@
   var currentAdminTab = "users";
   let allUsers = [];
   let allCompanies = [];
-  let selectedCompanyId = null;
-  
-  // Leave management pagination state
-  let allLeaveBalances = [];
-  let allLeaveRequests = [];
-  let filteredLeaveBalances = [];
-  let filteredLeaveRequests = [];
-  let leaveBalancesPage = 1;
-  let leaveRequestsPage = 1;
+  let currentSubmissions = [];
 
-  // Lightweight translation helper for admin UI
+  // Translation helper with safe fallback
   function adminTr(key, fallback) {
     try {
-      // Try UI namespace first, fallback to admin namespace
-      const tUi =
-        window.app && typeof window.app.t === "function"
-          ? window.app.t("ui", key)
-          : null;
-      const tAdmin =
-        window.app && typeof window.app.t === "function"
-          ? window.app.t("admin", key)
-          : null;
-      return tUi || tAdmin || fallback;
-    } catch (e) {
-      return fallback;
-    }
+      if (window.t) {
+        const res = window.t("ui", key);
+        if (res && typeof res === "string") return res;
+      }
+    } catch (_) {}
+    return fallback || key;
   }
 
-  // ========== GLOBAL FUNCTIONS ==========
-
-  function switchAdminTab(tab) {
+  async function switchAdminTab(tab) {
     currentAdminTab = tab;
 
-    document.querySelectorAll(".nav-tabs .nav-link").forEach((link) => {
-      link.classList.remove("active");
+    // Update nav active state
+    document.querySelectorAll("#adminNavTabs .nav-link").forEach((el) => {
+      if (el.dataset.tab === tab) {
+        el.classList.add("active");
+      } else {
+        el.classList.remove("active");
+      }
     });
 
-    const navLink = document.querySelector(`[data-tab="${tab}"]`);
-    if (navLink) {
-      navLink.classList.add("active");
-    }
-
     const container = document.getElementById("adminContent");
-    if (!container) return;
-
-    container.innerHTML =
-      '<div class="text-center"><div class="spinner-border"></div></div>';
+    if (container) {
+      container.innerHTML =
+        '<div class="text-center py-4"><div class="spinner-border"></div></div>';
+    }
 
     switch (tab) {
       case "users":
-        loadAdminUsers();
+        await loadAdminUsers();
         break;
       case "companies":
-        loadCompaniesManagement();
+        await loadCompaniesManagement();
         break;
       case "submissions":
-        loadAdminSubmissions();
+        await loadAdminSubmissions();
         break;
       case "hours-report":
-        loadHoursReport();
+        await loadHoursReport();
         break;
       case "leave":
-        loadLeaveManagement();
+        await loadLeaveManagement();
         break;
       case "fleet":
-        loadFleetManagement();
+        await loadFleetManagement();
         break;
       case "planning":
-        loadPlanningManagement();
+        await loadPlanningManagement();
         break;
       case "smtp":
-        loadSMTPSettings();
+        await loadSmtpSettings();
         break;
       case "branding":
-        loadBrandingSettings();
+        await loadBrandingSettings();
         break;
       case "menu":
-        loadMenuManagement();
+        await loadMenuManagement();
         break;
       case "translations":
-        loadTranslationsManagement();
+        await loadTranslationsManagement();
         break;
       default:
-        container.innerHTML =
-          '<div class="alert alert-info">Module not found</div>';
+        if (container) {
+          container.innerHTML = '<div class="alert alert-info">Module not found</div>';
+        }
     }
   }
 
@@ -1854,11 +1838,6 @@
     }
   }
 
-  function selectCompany(companyId) {
-    selectedCompanyId = companyId;
-    loadCompaniesManagement();
-  }
-
   function toggleAddFillInCompany() {
     const container = document.getElementById("addFillInCompanyContainer");
     const value = document.getElementById("addCanFillIn").value;
@@ -2412,15 +2391,16 @@
   function renderAdminUsers(users, adminMfaEnabled = false) {
     const container = document.getElementById("adminContent");
     container.innerHTML = `
-    <div class="mb-3">
+    <div class="mb-3 d-flex flex-wrap gap-2">
       <button class="btn btn-primary" onclick="showAddUserModal()">
         <i class="bi bi-plus-circle"></i> Add User
       </button>
     </div>
     <div class="table-responsive">
-      <table class="table table-striped table-hover">
+      <table class="table table-striped table-hover table-sm" id="usersTable">
         <thead class="table-dark">
           <tr>
+            <th style="width: 20px;" class="d-md-none"></th>
             <th>ID</th>
             <th>Username</th>
             <th>Full Name</th>
@@ -2428,49 +2408,50 @@
             <th>Role</th>
             <th>ADR</th>
             <th>Admin</th>
-            <th>Actions</th>
+            <th class="text-center d-none d-md-table-cell">Actions</th>
           </tr>
         </thead>
         <tbody>
           ${users
             .map(
               (user) => `
-            <tr>
-              <td>${user.id}</td>
-              <td>${user.username}</td>
-              <td>${user.full_name}</td>
-              <td>${user.company_name || "-"}</td>
-              <td><span class="badge bg-info">${user.role || "user"}</span></td>
-              <td>${
-                user.adr
-                  ? '<span class="badge bg-success">Yes</span>'
-                  : '<span class="badge bg-secondary">No</span>'
-              }</td>
-              <td>${
-                user.role === "admin"
-                  ? '<span class="badge bg-danger">Yes</span>'
-                  : '<span class="badge bg-secondary">No</span>'
-              }</td>
-              <td>
-                <button class="btn btn-sm btn-warning" onclick="openEditUserModal(${
-                  user.id
-                })">
-                  <i class="bi bi-pencil"></i> Edit
-                </button>
-                <button class="btn btn-sm btn-outline-danger mt-1" onclick="openResetMfaModal(${
-                  user.id
-                }, '${user.username}')">
-                  <i class="bi bi-shield-lock"></i> Reset MFA
-                </button>
-                ${
-                  adminMfaEnabled
-                    ? `
-                <button class="btn btn-sm btn-outline-primary mt-1" onclick="openResetPasswordModal(${user.id}, '${user.username}')">
-                  <i class="bi bi-key"></i> Reset wachtwoord
-                </button>
-                `
-                    : ""
-                }
+            <tr class="user-row" data-user-id="${user.id}">
+              <td class="text-center d-md-none" style="cursor: pointer; padding: 0.4rem 0.3rem;">
+                <i class="bi bi-chevron-down toggle-details" onclick="toggleUserDetails(${user.id})" style="font-size: 0.8rem;"></i>
+              </td>
+              <td><small>${user.id}</small></td>
+              <td><small>${user.username}</small></td>
+              <td><small>${user.full_name}</small></td>
+              <td><small>${user.company_name || "-"}</small></td>
+              <td><span class="badge bg-info" style="font-size: 0.75rem;">${user.role || "user"}</span></td>
+              <td><span class="badge ${user.adr ? 'bg-success' : 'bg-secondary'}" style="font-size: 0.75rem;">${user.adr ? 'Yes' : 'No'}</span></td>
+              <td><span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-secondary'}" style="font-size: 0.75rem;">${user.role === 'admin' ? 'Yes' : 'No'}</span></td>
+              <td class="text-center d-none d-md-table-cell">
+                <div class="d-flex justify-content-center gap-1">
+                  <button class="btn btn-warning btn-sm px-2" onclick="openEditUserModal(${user.id})" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="btn btn-outline-danger btn-sm px-2" onclick="openResetMfaModal(${user.id}, '${user.username}')" title="Reset MFA">
+                    <i class="bi bi-shield-lock"></i>
+                  </button>
+                  ${adminMfaEnabled ? `<button class="btn btn-outline-primary btn-sm px-2" onclick="openResetPasswordModal(${user.id}, '${user.username}')" title="Reset Password"><i class="bi bi-key"></i></button>` : ''}
+                </div>
+              </td>
+            </tr>
+            <tr class="user-details-row d-none" id="details-${user.id}">
+              <td colspan="9" style="padding: 0;">
+                <div class="p-3 bg-light border-top">
+                  <h6 class="mb-3">${user.full_name} - ${user.username}</h6>
+                  <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-warning btn-sm px-2 flex-grow-1" onclick="openEditUserModal(${user.id})">
+                      <i class="bi bi-pencil"></i> Edit
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm px-2 flex-grow-1" onclick="openResetMfaModal(${user.id}, '${user.username}')">
+                      <i class="bi bi-shield-lock"></i> Reset MFA
+                    </button>
+                    ${adminMfaEnabled ? `<button class="btn btn-outline-primary btn-sm px-2 flex-grow-1" onclick="openResetPasswordModal(${user.id}, '${user.username}')"><i class="bi bi-key"></i> Reset Wachtwoord</button>` : ''}
+                  </div>
+                </div>
               </td>
             </tr>
           `
@@ -2480,6 +2461,29 @@
       </table>
     </div>
   `;
+  
+    // Attach event listeners untuk toggle details
+    const detailsRows = container.querySelectorAll('.user-row');
+    detailsRows.forEach(row => {
+      row.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-details')) return;
+        const userId = this.getAttribute('data-user-id');
+        toggleUserDetails(userId);
+      });
+    });
+  }
+  
+  function toggleUserDetails(userId) {
+    const detailsRow = document.getElementById(`details-${userId}`);
+    if (detailsRow) {
+      detailsRow.classList.toggle('d-none');
+      // Scroll ke detail row
+      if (!detailsRow.classList.contains('d-none')) {
+        setTimeout(() => {
+          detailsRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      }
+    }
   }
 
   // ========== MFA RESET (ADMIN) ==========
@@ -2694,137 +2698,119 @@
   function renderCompaniesManagement(companies) {
     const container = document.getElementById("adminContent");
 
-    if (!selectedCompanyId && companies.length > 0) {
-      selectedCompanyId = companies[0].id;
-    }
-    const selectedCompany =
-      companies.find((c) => c.id === selectedCompanyId) ||
-      (companies.length > 0 ? companies[0] : null);
-
     container.innerHTML = `
-    <div class="row h-100">
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header bg-primary text-white">
-            <h6 class="mb-0">Companies</h6>
-          </div>
-          <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;">
-            <div class="list-group list-group-flush">
-              ${companies
-                .map(
-                  (company) => `
-                <button type="button" class="list-group-item list-group-item-action ${
-                  company.id === selectedCompanyId ? "active" : ""
-                }" 
-                        onclick="selectCompany(${company.id})">
-                  <strong>${company.name}</strong>
-                  <small class="d-block text-muted">${
-                    company.city || "-"
-                  }</small>
+    <div class="mb-3 d-flex flex-wrap gap-2">
+      <button class="btn btn-primary" onclick="showAddCompanyModal()">
+        <i class="bi bi-plus-circle"></i> Add Company
+      </button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-striped table-hover table-sm" id="companiesTable">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 20px;" class="d-md-none"></th>
+            <th>Name</th>
+            <th>City</th>
+            <th>Phone</th>
+            <th>KvK</th>
+            <th>BTW</th>
+            <th class="text-center d-none d-md-table-cell">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${companies
+            .map(
+              (company) => `
+            <tr class="company-row" data-company-id="${company.id}">
+              <td class="text-center d-md-none" style="cursor: pointer; padding: 0.4rem 0.3rem;">
+                <i class="bi bi-chevron-down toggle-details" onclick="toggleCompanyDetails(${company.id})" style="font-size: 0.8rem;"></i>
+              </td>
+              <td><small><strong>${company.name}</strong></small></td>
+              <td><small>${company.city || "-"}</small></td>
+              <td><small>${company.phone || "-"}</small></td>
+              <td><small>${company.kvk || "-"}</small></td>
+              <td><small>${company.btw || "-"}</small></td>
+              <td class="text-center d-none d-md-table-cell">
+                <button class="btn btn-sm btn-warning" onclick="openEditCompanyModal(${company.id})" title="Edit">
+                  <i class="bi bi-pencil"></i>
                 </button>
-              `
-                )
-                .join("")}
-            </div>
-          </div>
-          <div class="card-footer">
-            <button class="btn btn-primary btn-sm w-100" onclick="showAddCompanyModal()">
-              <i class="bi bi-plus-circle"></i> Add Company
-            </button>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-8">
-        ${
-          selectedCompany
-            ? `
-          <div class="card">
-            <div class="card-header bg-secondary text-white">
-              <div class="d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">${selectedCompany.name}</h6>
-                <button class="btn btn-sm btn-warning" onclick="openEditCompanyModal(${
-                  selectedCompany.id
-                })">
-                  <i class="bi bi-pencil"></i> Edit
-                </button>
-              </div>
-            </div>
-            <div class="card-body">
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label class="form-label text-muted">Company Name</label>
-                  <p class="form-control-plaintext"><strong>${
-                    selectedCompany.name
-                  }</strong></p>
+              </td>
+            </tr>
+            <tr class="company-details-row d-none" id="details-company-${company.id}">
+              <td colspan="7" style="padding: 0;">
+                <div class="p-3 bg-light border-top">
+                  <h6 class="mb-3">${company.name}</h6>
+                  <div class="row mb-3">
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Address</label>
+                      <p class="small">${company.address || "-"}</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Postal Code</label>
+                      <p class="small">${company.postal_code || "-"}</p>
+                    </div>
+                  </div>
+                  <div class="row mb-3">
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Phone</label>
+                      <p class="small">${company.phone || "-"}</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">Pause Time</label>
+                      <p class="small"><span class="badge bg-info">${company.pause_time || "00:30"}</span></p>
+                    </div>
+                  </div>
+                  <div class="row mb-3">
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">KvK Number</label>
+                      <p class="small">${company.kvk || "-"}</p>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label text-muted small">BTW Number</label>
+                      <p class="small">${company.btw || "-"}</p>
+                    </div>
+                  </div>
+                  <div class="d-grid gap-2 d-sm-flex gap-2">
+                    <button class="btn btn-warning btn-sm flex-grow-1" onclick="openEditCompanyModal(${company.id})">
+                      <i class="bi bi-pencil"></i> Edit
+                    </button>
+                  </div>
                 </div>
-                <div class="col-md-6">
-                  <label class="form-label text-muted">Phone Number</label>
-                  <p class="form-control-plaintext">${
-                    selectedCompany.phone || "-"
-                  }</p>
-                </div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label class="form-label text-muted">KvK Number</label>
-                  <p class="form-control-plaintext">${
-                    selectedCompany.kvk || "-"
-                  }</p>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label text-muted">BTW Number</label>
-                  <p class="form-control-plaintext">${
-                    selectedCompany.btw || "-"
-                  }</p>
-                </div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-12">
-                  <label class="form-label text-muted">Address</label>
-                  <p class="form-control-plaintext">${
-                    selectedCompany.address || "-"
-                  }</p>
-                </div>
-              </div>
-              <div class="row mb-3">
-                <div class="col-md-6">
-                  <label class="form-label text-muted">Postal Code</label>
-                  <p class="form-control-plaintext">${
-                    selectedCompany.postal_code || "-"
-                  }</p>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label text-muted">City</label>
-                  <p class="form-control-plaintext">${
-                    selectedCompany.city || "-"
-                  }</p>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-12">
-                  <label class="form-label text-muted">Pause Time</label>
-                  <p class="form-control-plaintext"><span class="badge bg-info">${
-                    selectedCompany.pause_time || "00:30"
-                  }</span></p>
-                </div>
-              </div>
-            </div>
-          </div>
-        `
-            : `
-          <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> Select a company from the list
-          </div>
-        `
-        }
-      </div>
+              </td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
     </div>
   `;
+
+    // Attach event listeners voor toggle details
+    const detailsRows = container.querySelectorAll('.company-row');
+    detailsRows.forEach(row => {
+      row.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-details')) return;
+        const companyId = this.getAttribute('data-company-id');
+        toggleCompanyDetails(companyId);
+      });
+    });
+  }
+
+  function toggleCompanyDetails(companyId) {
+    const detailsRow = document.getElementById(`details-company-${companyId}`);
+    if (detailsRow) {
+      detailsRow.classList.toggle('d-none');
+      // Scroll ke detail row
+      if (!detailsRow.classList.contains('d-none')) {
+        setTimeout(() => {
+          detailsRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 100);
+      }
+    }
   }
 
   // ========== PLACEHOLDER TABS ==========
-
-  let currentSubmissions = [];
 
   async function loadAdminSubmissions() {
     const container = document.getElementById("adminContent");
@@ -2852,7 +2838,7 @@
     }
 
     container.innerHTML = `
-    <div class="table-responsive">
+    <div class="table-responsive d-none d-md-block">
       <table class="table table-striped table-hover">
         <thead class="table-dark">
           <tr>
@@ -2932,7 +2918,121 @@
         </tbody>
       </table>
     </div>
+
+    <div class="d-md-none">
+      <table class="table table-striped table-hover table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 20px;"></th>
+            <th>User</th>
+            <th>Company</th>
+            <th>Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${submissions
+            .map((submission) => {
+              let weekStr = "-";
+              if (submission.week_numbers) {
+                const weeks = submission.week_numbers
+                  .split(",")
+                  .map((w) => `W${w.trim()}`);
+                weekStr = weeks.join(", ");
+              }
+
+              let submittedStr = "-";
+              if (submission.submission_date) {
+                submittedStr = new Date(
+                  submission.submission_date
+                ).toLocaleDateString("nl-NL");
+              }
+
+              return `
+            <tr class="submission-row" data-submission-id="${submission.id}">
+              <td class="text-center" style="cursor: pointer; padding: 0.4rem 0.3rem;">
+                <i class="bi bi-chevron-down toggle-details" onclick="toggleSubmissionDetails(${submission.id})" style="font-size: 0.8rem;"></i>
+              </td>
+              <td><small><strong>${submission.full_name || submission.username || "-"}</strong></small></td>
+              <td><small>${submission.company_name || "-"}</small></td>
+              <td><small><strong>${
+                submission.total_hours
+                  ? parseFloat(submission.total_hours).toFixed(2)
+                  : "0.00"
+              }</strong></small></td>
+            </tr>
+            <tr class="submission-details-row d-none" id="details-submission-${submission.id}">
+              <td colspan="4" style="padding: 0;">
+                <div class="p-3 bg-light border-top">
+                  <h6 class="mb-3">${submission.full_name || submission.username || "-"}</h6>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">ID</label>
+                      <p class="small">${submission.id}</p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Weeknummers</label>
+                      <p class="small">${weekStr}</p>
+                    </div>
+                  </div>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Status</label>
+                      <p class="small">
+                        <span class="badge ${getSubmissionStatusBadge(submission.status)}">
+                          ${submission.status || "pending"}
+                        </span>
+                      </p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Submitted</label>
+                      <p class="small">${submittedStr}</p>
+                    </div>
+                  </div>
+                  <div class="d-grid gap-2">
+                    <button class="btn btn-info btn-sm" onclick="viewSubmissionDetails(${submission.id})">
+                      <i class="bi bi-eye"></i> View Details
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="editSubmissionHours(${submission.id})">
+                      <i class="bi bi-pencil"></i> Edit Hours
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="emailSubmission(${submission.id})">
+                      <i class="bi bi-envelope"></i> Send Email
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteSubmission(${submission.id})">
+                      <i class="bi bi-trash"></i> Delete
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    </div>
   `;
+
+    // Attach event listeners for toggle details
+    const detailsRows = container.querySelectorAll('.submission-row');
+    detailsRows.forEach(row => {
+      row.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-details')) return;
+        const submissionId = this.getAttribute('data-submission-id');
+        toggleSubmissionDetails(submissionId);
+      });
+    });
+  }
+
+  function toggleSubmissionDetails(submissionId) {
+    const detailsRow = document.getElementById(`details-submission-${submissionId}`);
+    const icon = document.querySelector(`[data-submission-id="${submissionId}"] .toggle-details`);
+    
+    if (detailsRow && icon) {
+      detailsRow.classList.toggle('d-none');
+      icon.classList.toggle('bi-chevron-down');
+      icon.classList.toggle('bi-chevron-up');
+    }
   }
 
   function formatDateRange(startDate, endDate) {
@@ -4109,13 +4209,27 @@
           <button class="btn btn-outline-secondary" id="planningGenerateCompanyBtn" title="Voeg alle chauffeurs toe"><i class="bi bi-person-plus"></i></button>
         </div>
       </div>
-      <div class="btn-group">
+      <div class="btn-group d-none d-md-flex">
         <button class="btn btn-primary" id="planningAddBtn"><i class="bi bi-plus-circle"></i> Nieuwe planning</button>
         <button class="btn btn-outline-secondary" id="planningGenerateBtn"><i class="bi bi-magic"></i> Genereer week</button>
         <button class="btn btn-outline-info" id="planningGenerateVehiclesBtn"><i class="bi bi-truck"></i> Gen. per voertuig</button>
         <button class="btn btn-outline-warning" id="planningClearBtn"><i class="bi bi-trash"></i> Wis week</button>
         <button class="btn btn-outline-success" id="planningPdfBtn"><i class="bi bi-file-earmark-pdf"></i> Export PDF</button>
         <button class="btn btn-outline-info" id="planningEmailBtn"><i class="bi bi-envelope"></i> E-mail PDF</button>
+      </div>
+      <div class="d-md-none w-100">
+        <div class="d-grid gap-1">
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-primary" id="planningAddBtnMobile"><i class="bi bi-plus-circle"></i></button>
+            <button class="btn btn-outline-secondary" id="planningGenerateBtnMobile" title="Genereer week"><i class="bi bi-magic"></i></button>
+            <button class="btn btn-outline-info" id="planningGenerateVehiclesBtnMobile" title="Gen. per voertuig"><i class="bi bi-truck"></i></button>
+          </div>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-warning" id="planningClearBtnMobile" title="Wis week"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-outline-success" id="planningPdfBtnMobile" title="Export PDF"><i class="bi bi-file-earmark-pdf"></i></button>
+            <button class="btn btn-outline-info" id="planningEmailBtnMobile" title="E-mail PDF"><i class="bi bi-envelope"></i></button>
+          </div>
+        </div>
       </div>
     </div>
     <div id="planningList">
@@ -4135,16 +4249,32 @@
       );
       await loadPlanningManagement();
     };
-    document.getElementById("planningAddBtn").onclick = () =>
-      showAddPlanningModal();
-    document.getElementById("planningGenerateBtn").onclick = () =>
-      generatePlanning();
-    document.getElementById("planningClearBtn").onclick = () =>
-      clearPlanningWeek();
-    document.getElementById("planningPdfBtn").onclick = () =>
-      exportPlanningPDF();
-    document.getElementById("planningEmailBtn").onclick = () =>
-      emailPlanningPDF();
+    
+    // Desktop buttons
+    const addBtn = document.getElementById("planningAddBtn");
+    const generateBtn = document.getElementById("planningGenerateBtn");
+    const clearBtn = document.getElementById("planningClearBtn");
+    const pdfBtn = document.getElementById("planningPdfBtn");
+    const emailBtn = document.getElementById("planningEmailBtn");
+    
+    if (addBtn) addBtn.onclick = () => showAddPlanningModal();
+    if (generateBtn) generateBtn.onclick = () => generatePlanning();
+    if (clearBtn) clearBtn.onclick = () => clearPlanningWeek();
+    if (pdfBtn) pdfBtn.onclick = () => exportPlanningPDF();
+    if (emailBtn) emailBtn.onclick = () => emailPlanningPDF();
+    
+    // Mobile buttons
+    const addBtnMobile = document.getElementById("planningAddBtnMobile");
+    const generateBtnMobile = document.getElementById("planningGenerateBtnMobile");
+    const clearBtnMobile = document.getElementById("planningClearBtnMobile");
+    const pdfBtnMobile = document.getElementById("planningPdfBtnMobile");
+    const emailBtnMobile = document.getElementById("planningEmailBtnMobile");
+    
+    if (addBtnMobile) addBtnMobile.onclick = () => showAddPlanningModal();
+    if (generateBtnMobile) generateBtnMobile.onclick = () => generatePlanning();
+    if (clearBtnMobile) clearBtnMobile.onclick = () => clearPlanningWeek();
+    if (pdfBtnMobile) pdfBtnMobile.onclick = () => exportPlanningPDF();
+    if (emailBtnMobile) emailBtnMobile.onclick = () => emailPlanningPDF();
 
     try {
       const companies = await api.getCompanies();
@@ -4196,6 +4326,13 @@
       );
       if (genVehiclesBtn) {
         genVehiclesBtn.onclick = showGeneratePlanningByVehiclesModal;
+      }
+      
+      const genVehiclesBtnMobile = document.getElementById(
+        "planningGenerateVehiclesBtnMobile"
+      );
+      if (genVehiclesBtnMobile) {
+        genVehiclesBtnMobile.onclick = showGeneratePlanningByVehiclesModal;
       }
     } catch (error) {
       document.getElementById(
@@ -4299,7 +4436,7 @@
     })();
 
     wrapper.innerHTML = `
-    <div class="table-responsive">
+    <div class="table-responsive d-none d-md-block">
       <table class="table table-striped table-hover">
         <thead class="table-dark">
           <tr>
@@ -4318,7 +4455,116 @@
         <tbody>${rows}</tbody>
       </table>
     </div>
+
+    <div class="d-md-none">
+      <table class="table table-striped table-hover table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 20px;"></th>
+            <th>Rit</th>
+            <th>Dag</th>
+            <th>Chauffeur</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted
+            .map(
+              (e) => `
+            <tr class="planning-row" data-planning-id="${e.id}">
+              <td class="text-center" style="cursor: pointer; padding: 0.4rem 0.3rem;">
+                <i class="bi bi-chevron-down toggle-details" onclick="togglePlanningDetails(${e.id})" style="font-size: 0.8rem;"></i>
+              </td>
+              <td><small><strong>${e.route_number || "-"}</strong></small></td>
+              <td><small>${dayName(e.day_of_week)}</small></td>
+              <td><small>${e.driver_name || "-"}</small></td>
+            </tr>
+            <tr class="planning-details-row d-none" id="details-planning-${e.id}">
+              <td colspan="4" style="padding: 0;">
+                <div class="p-3 bg-light border-top">
+                  <h6 class="mb-3">Rit ${e.route_number || "-"} - ${dayName(e.day_of_week)}</h6>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Week</label>
+                      <p class="small">${e.week_number}</p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Chauffeur</label>
+                      <p class="small">${e.driver_name || "-"}</p>
+                    </div>
+                  </div>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">ADR</label>
+                      <p class="small">${e.adr ? "Ja" : "Nee"}</p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Truck Type</label>
+                      <p class="small">${
+                        e.mega_kast === "mega_and_kast"
+                          ? "Mega+Kast"
+                          : e.mega_kast === "nvt"
+                          ? "N.v.t."
+                          : "Mega"
+                      }</p>
+                    </div>
+                  </div>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Kenteken</label>
+                      <p class="small">${e.license_plate || "-"}</p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Telefoon</label>
+                      <p class="small">${e.phone_number || "-"}</p>
+                    </div>
+                  </div>
+                  ${e.notes ? `
+                  <div class="row mb-3">
+                    <div class="col-12">
+                      <label class="form-label text-muted small">Notities</label>
+                      <p class="small">${e.notes}</p>
+                    </div>
+                  </div>
+                  ` : ''}
+                  <div class="d-grid gap-2 d-sm-flex gap-2">
+                    <button class="btn btn-warning btn-sm flex-grow-1" onclick="showEditPlanningModal(${e.id})">
+                      <i class="bi bi-pencil"></i> Edit
+                    </button>
+                    <button class="btn btn-danger btn-sm flex-grow-1" onclick="deletePlanningEntry(${e.id})">
+                      <i class="bi bi-trash"></i> Delete
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
   `;
+
+    // Attach event listeners for toggle details
+    const detailsRows = wrapper.querySelectorAll('.planning-row');
+    detailsRows.forEach(row => {
+      row.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-details')) return;
+        const planningId = this.getAttribute('data-planning-id');
+        togglePlanningDetails(planningId);
+      });
+    });
+  }
+
+  function togglePlanningDetails(planningId) {
+    const detailsRow = document.getElementById(`details-planning-${planningId}`);
+    const icon = document.querySelector(`[data-planning-id="${planningId}"] .toggle-details`);
+    
+    if (detailsRow && icon) {
+      detailsRow.classList.toggle('d-none');
+      icon.classList.toggle('bi-chevron-down');
+      icon.classList.toggle('bi-chevron-up');
+    }
   }
 
   async function updatePlanningDriver(entryId, companyId, newDriverId) {
@@ -5280,7 +5526,10 @@
   window.submitAddCompany = submitAddCompany;
   window.openEditCompanyModal = openEditCompanyModal;
   window.submitEditCompany = submitEditCompany;
-  window.selectCompany = selectCompany;
+  window.toggleUserDetails = toggleUserDetails;
+  window.toggleCompanyDetails = toggleCompanyDetails;
+  window.toggleSubmissionDetails = toggleSubmissionDetails;
+  window.togglePlanningDetails = togglePlanningDetails;
   window.toggleAddFillInCompany = toggleAddFillInCompany;
   window.toggleEditFillInCompany = toggleEditFillInCompany;
   window.viewSubmissionDetails = viewSubmissionDetails;
