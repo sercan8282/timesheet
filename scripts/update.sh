@@ -96,12 +96,14 @@ if command -v pm2 >/dev/null 2>&1; then
   if [ -n "$PM2_BIN" ]; then
     # If the app exists, restart; else start and save
     if "$PM2_BIN" describe "$APP_NAME" >/dev/null 2>&1; then
-      log "Restarting PM2 app"; run "$PM2_BIN restart '$APP_NAME'" || say "PM2 restart failed"
+      log "Restarting PM2 app"; if ! "$PM2_BIN" restart "$APP_NAME"; then
+        log "PM2 restart failed; attempting fresh start"; "$PM2_BIN" delete "$APP_NAME" >/dev/null 2>&1 || true; "$PM2_BIN" start npm --name "$APP_NAME" -- start || log "PM2 start failed"
+      fi
     else
-      log "PM2 app '$APP_NAME' not found; starting it"
-      run "$PM2_BIN start npm --name '$APP_NAME' -- start" || say "PM2 start failed"
+      log "PM2 app '$APP_NAME' not found; starting it"; "$PM2_BIN" start npm --name "$APP_NAME" -- start || log "PM2 start failed"
     fi
-    run "$PM2_BIN save" || say "PM2 save failed"
+    "$PM2_BIN" save || log "PM2 save failed"
+    log "PM2 status after update:"; "$PM2_BIN" status "$APP_NAME" || true
   else
     log "PM2 not found in PATH; skip restart (run 'pm2 restart $APP_NAME' manually)"
   fi

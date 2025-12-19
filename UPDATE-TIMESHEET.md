@@ -131,6 +131,47 @@ pm2 ping
 
 - **X-Forwarded-For / rate-limit fout**: `trust proxy` staat aan in de app; zorg dat Nginx correct proxy’t en upstream klopt.
 
+### PM2 blijft op "stopped" staan (na System Update)
+
+Dit heeft meestal één van deze oorzaken:
+- **Startfout in de app**: `npm start` crasht door verkeerde `.env`, poortconflict of DB-probleem.
+- **PM2 PATH/user mismatch**: De update draait onder een omgeving waar `pm2` niet in `PATH` staat of onder een andere user dan waar PM2 actief is.
+- **Meerdere PM2 lijsten/processen**: PM2 draait onder verschillende users of er zijn oude processen die conflicten geven.
+
+Zo diagnoseer je het snel:
+```bash
+pm2 status timesheet
+pm2 logs timesheet --lines 200
+which pm2 || echo "pm2 niet gevonden in PATH"
+echo "$PATH"; echo "PM2_HOME=${PM2_HOME:-unset}"; whoami
+curl -sf http://localhost:3000/api/health || echo "Health endpoint faalt"
+```
+
+Zo los je het op:
+```bash
+# 1) Zorg dat er maar één instance is en start schoon
+pm2 stop timesheet || true
+pm2 delete timesheet || true
+pm2 start npm --name timesheet -- start
+pm2 save
+pm2 status timesheet
+
+# 2) Als pm2 niet gevonden wordt, laad nvm (indien gebruikt) en probeer opnieuw
+[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh" && hash pm2 2>/dev/null && echo "nvm geladen"
+pm2 start npm --name timesheet -- start || echo "PM2 start faalde"
+pm2 save
+
+# 3) Controleer de app-logs en pas .env aan
+pm2 logs timesheet --lines 200
+sed -n '1,120p' .env || true
+
+# 4) Check poort en Nginx upstream
+ss -ltn | grep 3000 || echo "Niets luistert op 3000"
+sudo nginx -t; sudo tail -n 100 /var/log/nginx/error.log
+```
+
+Tip: zet een vaste PM2-config met `ecosystem.config.js` (zie hieronder) en beheer PM2 onder één user (dezelfde als production). Dit voorkomt PATH/user issues.
+
 ## Menu-item "System Update" toevoegen (eenmalig)
 
 Het UI-menu komt uit de database. Na een code-update blijft je eigen navigatie intact. Voeg het menu-item zo toe:
