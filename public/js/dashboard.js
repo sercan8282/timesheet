@@ -131,12 +131,13 @@ function handleCompanyChange() {
 async function loadExistingTimesheets() {
   try {
     const data = await api.getTimesheets();
-    // Load only unsaved timesheets or add empty row
+    
+    // Load all saved timesheets (not just 5)
     if (data.length === 0) {
       addTimesheetRow();
     } else {
-      // Show recent timesheets for editing
-      data.slice(0, 5).forEach((ts) => {
+      // Show all timesheets for editing
+      data.forEach((ts) => {
         timesheets.push({
           id: ts.id,
           ritnumber: ts.ritnumber || "",
@@ -333,31 +334,57 @@ async function saveTimesheets() {
   const alertDiv = document.getElementById("timesheetAlert");
 
   try {
-    for (let ts of timesheets) {
-      if (!ts.saved) {
-        const data = {
-          date: ts.date,
-          startTime: ts.startTime,
-          endTime: ts.endTime,
-          startKm: parseFloat(ts.startKm),
-          endKm: parseFloat(ts.endKm),
-          pauseTime: ts.pauseTime,
-          ritnumber: ts.ritnumber || "",
-          companyId: selectedCompanyId || null,
-        };
+    // Read all current values from form inputs
+    const rows = document.querySelectorAll(".timesheet-row");
+    
+    if (rows.length === 0) {
+      showAlert("No timesheets to save", "warning");
+      return;
+    }
+    
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const inputCols = row.querySelectorAll(".col > input");
+      
+      if (inputCols.length < 11) {
+        continue;
+      }
+      
+      const data = {
+        date: inputCols[3]?.value || "",
+        startTime: inputCols[4]?.value || "",
+        endTime: inputCols[5]?.value || "",
+        startKm: parseFloat(inputCols[6]?.value || 0),
+        endKm: parseFloat(inputCols[7]?.value || 0),
+        pauseTime: inputCols[8]?.value || "00:00",
+        ritnumber: inputCols[1]?.value || "",
+        companyId: selectedCompanyId || null,
+      };
 
-        if (ts.id) {
-          await api.updateTimesheet(ts.id, data);
-        } else {
-          const result = await api.createTimesheet(data);
-          ts.id = result.id;
-        }
-        ts.saved = true;
+      // Validate required fields
+      if (!data.date || !data.startTime || !data.endTime) {
+        showAlert(`Row ${i + 1}: Date, Start Time, and End Time are required`, "warning");
+        continue;
+      }
+
+      const ts = timesheets[i];
+      
+      if (ts && ts.id) {
+        await api.updateTimesheet(ts.id, data);
+      } else if (ts) {
+        const result = await api.createTimesheet(data);
+        ts.id = result.id;
       }
     }
 
     showAlert("All timesheets saved successfully!", "success");
+    
+    // Reload timesheets after save - clear array first, then load
+    timesheets = [];
+    await loadExistingTimesheets();
+    renderTimesheetRows();
   } catch (error) {
+    console.error("[SAVE] Error:", error);
     showAlert(error.message, "danger");
   }
 }
@@ -429,6 +456,11 @@ async function submitTimesheetsWithEmail() {
 
 async function performSubmit(sendEmail = false) {
   const timesheetIds = timesheets.filter((ts) => ts.id).map((ts) => ts.id);
+
+  if (!Array.isArray(timesheetIds) || timesheetIds.length === 0) {
+    showAlert("No saved timesheets to submit. Please save first.", "warning");
+    return;
+  }
 
   try {
     const response = await api.submitTimesheets(timesheetIds, sendEmail);

@@ -60,7 +60,7 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { timesheetIds } = req.body;
+      const { timesheetIds, sendEmail } = req.body;
 
       // Verify all timesheets belong to the user
       const placeholders = timesheetIds.map(() => "?").join(",");
@@ -84,31 +84,37 @@ router.post(
       let emailStatus = "pending";
       let emailError = null;
 
-      // Try to send email, but don't fail submission if email fails
-      try {
-        await sendEmail(
-          `Timesheet Submission - ${req.user.fullName}`,
-          `Timesheet submission from ${
-            req.user.fullName
-          }\n\nDate: ${new Date().toLocaleString()}\nWeek(s): ${
-            summary.weekNumbers
-          }\nTotal entries: ${
-            timesheets.length
-          }\nTotal hours: ${summary.totalHours.toFixed(
-            2
-          )}\nTotal kilometers: ${summary.totalKm.toFixed(2)}`,
-          [
-            {
-              filename: fileName,
-              content: xlsxBuffer,
-            },
-          ]
-        );
-        emailStatus = "sent";
-      } catch (emailErr) {
-        console.error("Email sending failed:", emailErr);
-        emailError = emailErr.message;
-        emailStatus = "failed";
+      // Send email only when explicitly requested (default true for backward compatibility)
+      const shouldSendEmail = sendEmail !== false;
+
+      if (shouldSendEmail) {
+        try {
+          await sendEmail(
+            `Timesheet Submission - ${req.user.fullName}`,
+            `Timesheet submission from ${
+              req.user.fullName
+            }\n\nDate: ${new Date().toLocaleString()}\nWeek(s): ${
+              summary.weekNumbers
+            }\nTotal entries: ${
+              timesheets.length
+            }\nTotal hours: ${summary.totalHours.toFixed(
+              2
+            )}\nTotal kilometers: ${summary.totalKm.toFixed(2)}`,
+            [
+              {
+                filename: fileName,
+                content: xlsxBuffer,
+              },
+            ]
+          );
+          emailStatus = "sent";
+        } catch (emailErr) {
+          console.error("Email sending failed:", emailErr);
+          emailError = emailErr.message;
+          emailStatus = "failed";
+        }
+      } else {
+        emailStatus = "skipped";
       }
 
       // Calculate overtime hours (total hours - 40 hours per week)
@@ -171,6 +177,11 @@ router.post(
       if (emailStatus === "sent") {
         res.json({
           message: "Timesheets submitted and email sent successfully",
+          overtimeAdded: totalOvertime > 0 ? totalOvertime.toFixed(2) : 0,
+        });
+      } else if (emailStatus === "skipped") {
+        res.json({
+          message: "Timesheets submitted successfully (no email sent)",
           overtimeAdded: totalOvertime > 0 ? totalOvertime.toFixed(2) : 0,
         });
       } else {
