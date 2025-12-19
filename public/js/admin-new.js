@@ -705,6 +705,104 @@
     }
   }
 
+  // ===== Leave Balance Management =====
+  async function loadLeaveManagement() {
+    const container = document.getElementById("adminContent");
+    if (!container) return;
+    container.innerHTML = `
+      <div class="admin-hero">
+        <div>
+          <h5 class="mb-1"><span data-i18n="ui:admin.leave_balances">Leave Balances</span></h5>
+          <small data-i18n="ui:admin.leave_balances_sub">View and update vacation and overtime per employee.</small>
+        </div>
+        <div class="text-end">
+          <button class="btn btn-sm btn-outline-secondary" id="refreshLeaveBalancesBtn"><i class="bi bi-arrow-clockwise"></i> <span data-i18n="ui:refresh">Refresh</span></button>
+        </div>
+      </div>
+
+      <div class="glass-card p-3 shadow-soft" id="leaveBalancesWrapper">
+        <div class="text-center py-4"><div class="spinner-border"></div></div>
+      </div>
+    `;
+
+    document.getElementById("refreshLeaveBalancesBtn").onclick = loadLeaveManagement;
+
+    try {
+      const rows = await api.getLeaveBalances();
+      renderLeaveBalancesTable(rows || []);
+    } catch (err) {
+      console.error("Error loading leave balances:", err);
+      document.getElementById("leaveBalancesWrapper").innerHTML = `<div class="alert alert-danger">${err.message || "Failed to load leave balances"}</div>`;
+    }
+
+    try {
+      if (window.app && typeof window.app.applyTranslationsToDom === "function") {
+        window.app.applyTranslationsToDom();
+      }
+    } catch (e) {}
+  }
+
+  function renderLeaveBalancesTable(items) {
+    const wrapper = document.getElementById("leaveBalancesWrapper");
+    const rowsHtml = (items || []).map((it) => {
+      const disabled = it.is_blocked ? "disabled" : "";
+      return `
+        <tr data-user-id="${it.user_id}">
+          <td>${escapeHtml(it.full_name || it.username || "")}${it.is_blocked ? ' <span class="badge bg-secondary">blocked</span>' : ''}</td>
+          <td><input type="number" step="0.25" min="0" class="form-control form-control-sm vacation-hours" value="${Number(it.vacation_hours || 0).toFixed(2)}" ${disabled} /></td>
+          <td><input type="number" step="0.25" min="0" class="form-control form-control-sm overtime-hours" value="${Number(it.overtime_hours || 0).toFixed(2)}" ${disabled} /></td>
+          <td>
+            <button class="btn btn-sm btn-primary save-leave" ${disabled}><i class="bi bi-save"></i> <span data-i18n="ui:save">Save</span></button>
+          </td>
+        </tr>`;
+    }).join("");
+
+    wrapper.innerHTML = `
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th data-i18n="ui:user">User</th>
+              <th data-i18n="ui:leave.vacation_hours">Vacation Hours</th>
+              <th data-i18n="ui:leave.overtime_hours">Overtime Hours</th>
+              <th style="width:120px" data-i18n="ui:menu.actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    `;
+
+    wrapper.querySelectorAll(".save-leave").forEach((btn) => {
+      btn.onclick = async (e) => {
+        const tr = e.target.closest("tr");
+        if (!tr) return;
+        const userId = tr.getAttribute("data-user-id");
+        const vacation = parseFloat(tr.querySelector(".vacation-hours").value || "0");
+        const overtime = parseFloat(tr.querySelector(".overtime-hours").value || "0");
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        try {
+          await api.updateLeaveBalance(userId, { vacationHours: vacation, overtimeHours: overtime });
+          showToast(adminTr("saved", "Saved"), "success");
+        } catch (err) {
+          console.error("Failed to save leave balance:", err);
+          showToast(err.message || "Failed to save", "danger");
+        } finally {
+          btn.innerHTML = original;
+          btn.disabled = false;
+        }
+      };
+    });
+
+    try {
+      if (window.app && typeof window.app.applyTranslationsToDom === "function") {
+        window.app.applyTranslationsToDom();
+      }
+    } catch (e) {}
+  }
+
   async function loadTranslationsForSelected() {
     const ns = document.getElementById("translationsNamespace").value;
     const locale = document.getElementById("translationsLocale").value;
