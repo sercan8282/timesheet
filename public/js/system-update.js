@@ -11,6 +11,7 @@
           <div class="d-flex gap-2 mb-3">
             <button id="startUpdateBtn" class="btn btn-primary"><span data-i18n="ui:system_update.start">Start Update</span></button>
             <button id="clearLogBtn" class="btn btn-outline-secondary"><span data-i18n="ui:system_update.clear_log">Clear Log</span></button>
+            <a class="btn btn-outline-info" href="/docs/update-timesheet.md" target="_blank">Update Guide</a>
           </div>
           <div id="updateStatus" class="small" style="white-space:pre-wrap; background:#0f172a; color:#e2e8f0; padding:12px; border-radius:6px; min-height:160px;">
             <div class="text-muted" data-i18n="ui:system_update.idle">No update in progress.</div>
