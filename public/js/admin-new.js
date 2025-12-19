@@ -715,9 +715,12 @@
         <!-- Compact Leave Balances Section -->
         <div class="col-md-4">
           <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-              <h6 class="mb-0"><i class="bi bi-people"></i> Verlofsaldo Beheer</h6>
-              <button class="btn btn-light btn-sm" id="refreshLeaveBalances"><i class="bi bi-arrow-clockwise"></i></button>
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-2"><i class="bi bi-people"></i> Verlofsaldo Beheer</h6>
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control form-control-sm" id="searchLeaveBalances" placeholder="Zoek medewerker..." />
+                <button class="btn btn-light btn-sm" id="refreshLeaveBalances"><i class="bi bi-arrow-clockwise"></i></button>
+              </div>
             </div>
             <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;" id="leaveBalancesWrapper">
               <div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div></div>
@@ -728,9 +731,12 @@
         <!-- Leave Requests Section -->
         <div class="col-md-8">
           <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-              <h6 class="mb-0"><i class="bi bi-calendar-check"></i> Verlofaanvragen</h6>
-              <button class="btn btn-light btn-sm" id="refreshLeaveRequests"><i class="bi bi-arrow-clockwise"></i></button>
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-2"><i class="bi bi-calendar-check"></i> Verlofaanvragen</h6>
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control form-control-sm" id="searchLeaveRequests" placeholder="Zoek medewerker..." />
+                <button class="btn btn-light btn-sm" id="refreshLeaveRequests"><i class="bi bi-arrow-clockwise"></i></button>
+              </div>
             </div>
             <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;" id="leaveRequestsWrapper">
               <div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div></div>
@@ -743,9 +749,38 @@
     document.getElementById("refreshLeaveBalances").onclick = loadLeaveManagement;
     document.getElementById("refreshLeaveRequests").onclick = loadLeaveManagement;
 
+    let allLeaveBalances = [];
+    let allLeaveRequests = [];
+    let leaveBalancesPage = 1;
+    let leaveRequestsPage = 1;
+    const itemsPerPage = 10;
+
+    // Setup search for leave balances
+    document.getElementById("searchLeaveBalances").oninput = (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = allLeaveBalances.filter(item => {
+        const name = (item.full_name || item.username || "").toLowerCase();
+        return name.includes(query);
+      });
+      leaveBalancesPage = 1;
+      renderLeaveBalancesTable(filtered, leaveBalancesPage);
+    };
+
+    // Setup search for leave requests
+    document.getElementById("searchLeaveRequests").oninput = (e) => {
+      const query = e.target.value.toLowerCase();
+      const filtered = allLeaveRequests.filter(req => {
+        const name = (req.full_name || req.username || "").toLowerCase();
+        return name.includes(query);
+      });
+      leaveRequestsPage = 1;
+      renderLeaveRequestsTable(filtered, leaveRequestsPage);
+    };
+
     try {
       const rows = await api.getLeaveBalances();
-      renderLeaveBalancesTable(rows || []);
+      allLeaveBalances = rows || [];
+      renderLeaveBalancesTable(allLeaveBalances, leaveBalancesPage);
     } catch (err) {
       console.error("Error loading leave balances:", err);
       document.getElementById("leaveBalancesWrapper").innerHTML = `<div class="alert alert-danger m-2">${err.message || "Failed to load"}</div>`;
@@ -753,7 +788,8 @@
 
     try {
       const requests = await api.getLeaveRequestsAdmin();
-      renderLeaveRequestsTable(requests || []);
+      allLeaveRequests = requests || [];
+      renderLeaveRequestsTable(allLeaveRequests, leaveRequestsPage);
     } catch (err) {
       console.error("Error loading leave requests:", err);
       document.getElementById("leaveRequestsWrapper").innerHTML = `<div class="alert alert-danger m-2">${err.message || "Failed to load"}</div>`;
