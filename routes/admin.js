@@ -75,20 +75,34 @@ router.post("/system/update", async (req, res) => {
   updateStatusMessages = [];
   broadcastUpdateStatus({ stage: "start", message: "Preparing update" });
 
-  // Determine script to run
-  const scriptPath = path.join(__dirname, "..", "scripts", "update.sh");
-  const exists = fs.existsSync(scriptPath);
-  if (!exists) {
-    broadcastUpdateStatus({ stage: "error", message: "Update script not found" });
-    updateInProgress = false;
-    return res.status(500).json({ error: "Update script not found" });
+  // Determine platform-specific script and spawn command
+  const projectRoot = path.join(__dirname, "..");
+  const isWin = process.platform === "win32";
+  let child;
+  if (isWin) {
+    const ps1 = path.join(projectRoot, "scripts", "update.ps1");
+    if (!fs.existsSync(ps1)) {
+      broadcastUpdateStatus({ stage: "error", message: "Windows update script not found" });
+      updateInProgress = false;
+      return res.status(500).json({ error: "Windows update script not found" });
+    }
+    const args = [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      ps1,
+    ];
+    child = spawn("powershell", args, { cwd: projectRoot });
+  } else {
+    const sh = path.join(projectRoot, "scripts", "update.sh");
+    if (!fs.existsSync(sh)) {
+      broadcastUpdateStatus({ stage: "error", message: "Linux update script not found" });
+      updateInProgress = false;
+      return res.status(500).json({ error: "Linux update script not found" });
+    }
+    child = spawn("bash", [sh], { cwd: projectRoot });
   }
-
-  // Spawn bash script (works on Linux servers). Use shell for portability.
-  const child = spawn(`bash \"${scriptPath}\"`, {
-    shell: true,
-    cwd: path.join(__dirname, ".."),
-  });
 
   child.stdout.on("data", (data) => {
     const lines = String(data).split(/\r?\n/).filter(Boolean);

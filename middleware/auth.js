@@ -3,7 +3,10 @@ const db = require("../config/database");
 
 const authMiddleware = async (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
+    // Support Authorization header and fallback to token in query for SSE/EventSource
+    const headerToken = req.headers.authorization?.split(" ")[1];
+    const queryToken = req.query && (req.query.token || req.query.access_token);
+    const token = headerToken || queryToken;
 
     if (!token) {
       return res.status(401).json({ error: "Authentication required" });

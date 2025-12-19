@@ -1025,7 +1025,9 @@ class API {
   }
 
   subscribeUpdateStatus(onMessage) {
-    const url = `${API_BASE_URL}/admin/system/update/status`;
+    const token = localStorage.getItem("token");
+    const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+    const url = `${API_BASE_URL}/admin/system/update/status${qs}`;
     const es = new EventSource(url);
     es.onmessage = (evt) => {
       if (!evt || typeof onMessage !== "function") return;
