@@ -709,30 +709,54 @@
   async function loadLeaveManagement() {
     const container = document.getElementById("adminContent");
     if (!container) return;
+    
     container.innerHTML = `
-      <div class="admin-hero">
-        <div>
-          <h5 class="mb-1"><span data-i18n="ui:admin.leave_balances">Leave Balances</span></h5>
-          <small data-i18n="ui:admin.leave_balances_sub">View and update vacation and overtime per employee.</small>
+      <div class="row">
+        <!-- Compact Leave Balances Section -->
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="bi bi-people"></i> Verlofsaldo Beheer</h6>
+              <button class="btn btn-light btn-sm" id="refreshLeaveBalances"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;" id="leaveBalancesWrapper">
+              <div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div></div>
+            </div>
+          </div>
         </div>
-        <div class="text-end">
-          <button class="btn btn-sm btn-outline-secondary" id="refreshLeaveBalancesBtn"><i class="bi bi-arrow-clockwise"></i> <span data-i18n="ui:refresh">Refresh</span></button>
-        </div>
-      </div>
 
-      <div class="glass-card p-3 shadow-soft" id="leaveBalancesWrapper">
-        <div class="text-center py-4"><div class="spinner-border"></div></div>
+        <!-- Leave Requests Section -->
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="bi bi-calendar-check"></i> Verlofaanvragen</h6>
+              <button class="btn btn-light btn-sm" id="refreshLeaveRequests"><i class="bi bi-arrow-clockwise"></i></button>
+            </div>
+            <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;" id="leaveRequestsWrapper">
+              <div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div></div>
+            </div>
+          </div>
+        </div>
       </div>
     `;
 
-    document.getElementById("refreshLeaveBalancesBtn").onclick = loadLeaveManagement;
+    document.getElementById("refreshLeaveBalances").onclick = loadLeaveManagement;
+    document.getElementById("refreshLeaveRequests").onclick = loadLeaveManagement;
 
     try {
       const rows = await api.getLeaveBalances();
       renderLeaveBalancesTable(rows || []);
     } catch (err) {
       console.error("Error loading leave balances:", err);
-      document.getElementById("leaveBalancesWrapper").innerHTML = `<div class="alert alert-danger">${err.message || "Failed to load leave balances"}</div>`;
+      document.getElementById("leaveBalancesWrapper").innerHTML = `<div class="alert alert-danger m-2">${err.message || "Failed to load"}</div>`;
+    }
+
+    try {
+      const requests = await api.getLeaveRequestsAdmin();
+      renderLeaveRequestsTable(requests || []);
+    } catch (err) {
+      console.error("Error loading leave requests:", err);
+      document.getElementById("leaveRequestsWrapper").innerHTML = `<div class="alert alert-danger m-2">${err.message || "Failed to load"}</div>`;
     }
 
     try {
@@ -744,33 +768,41 @@
 
   function renderLeaveBalancesTable(items) {
     const wrapper = document.getElementById("leaveBalancesWrapper");
-    const rowsHtml = (items || []).map((it) => {
+    if (!items || items.length === 0) {
+      wrapper.innerHTML = `<div class="alert alert-info m-2">Geen gebruikers gevonden</div>`;
+      return;
+    }
+
+    const rowsHtml = items.map((it) => {
       const disabled = it.is_blocked ? "disabled" : "";
+      const name = escapeHtml(it.full_name || it.username || "");
       return `
-        <tr data-user-id="${it.user_id}">
-          <td>${escapeHtml(it.full_name || it.username || "")}${it.is_blocked ? ' <span class="badge bg-secondary">blocked</span>' : ''}</td>
-          <td><input type="number" step="0.25" min="0" class="form-control form-control-sm vacation-hours" value="${Number(it.vacation_hours || 0).toFixed(2)}" ${disabled} /></td>
-          <td><input type="number" step="0.25" min="0" class="form-control form-control-sm overtime-hours" value="${Number(it.overtime_hours || 0).toFixed(2)}" ${disabled} /></td>
-          <td>
-            <button class="btn btn-sm btn-primary save-leave" ${disabled}><i class="bi bi-save"></i> <span data-i18n="ui:save">Save</span></button>
+        <tr data-user-id="${it.user_id}" style="font-size: 0.875rem;">
+          <td class="py-2">${name}${it.is_blocked ? ' <span class="badge bg-secondary">blocked</span>' : ''}</td>
+          <td class="py-2" style="width: 80px;">
+            <input type="number" step="0.25" min="0" class="form-control form-control-sm vacation-hours" value="${Number(it.vacation_hours || 0).toFixed(2)}" ${disabled} style="font-size: 0.75rem;" />
+          </td>
+          <td class="py-2" style="width: 80px;">
+            <input type="number" step="0.25" min="0" class="form-control form-control-sm overtime-hours" value="${Number(it.overtime_hours || 0).toFixed(2)}" ${disabled} style="font-size: 0.75rem;" />
+          </td>
+          <td class="py-2" style="width: 60px;">
+            <button class="btn btn-sm btn-primary save-leave px-2" ${disabled} title="Opslaan"><i class="bi bi-save"></i></button>
           </td>
         </tr>`;
     }).join("");
 
     wrapper.innerHTML = `
-      <div class="table-responsive">
-        <table class="table table-sm align-middle">
-          <thead>
-            <tr>
-              <th data-i18n="ui:user">User</th>
-              <th data-i18n="ui:leave.vacation_hours">Vacation Hours</th>
-              <th data-i18n="ui:leave.overtime_hours">Overtime Hours</th>
-              <th style="width:120px" data-i18n="ui:menu.actions">Actions</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-      </div>
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light sticky-top">
+          <tr style="font-size: 0.75rem;">
+            <th>Gebruiker</th>
+            <th style="width: 80px;">Verlof (u)</th>
+            <th style="width: 80px;">Overuren (u)</th>
+            <th style="width: 60px;"></th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
     `;
 
     wrapper.querySelectorAll(".save-leave").forEach((btn) => {
@@ -785,22 +817,70 @@
         btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
         try {
           await api.updateLeaveBalance(userId, { vacationHours: vacation, overtimeHours: overtime });
-          showToast(adminTr("saved", "Saved"), "success");
+          showToast("Opgeslagen", "success");
         } catch (err) {
           console.error("Failed to save leave balance:", err);
-          showToast(err.message || "Failed to save", "danger");
+          showToast(err.message || "Opslaan mislukt", "danger");
         } finally {
           btn.innerHTML = original;
           btn.disabled = false;
         }
       };
     });
+  }
 
-    try {
-      if (window.app && typeof window.app.applyTranslationsToDom === "function") {
-        window.app.applyTranslationsToDom();
+  function renderLeaveRequestsTable(requests) {
+    const wrapper = document.getElementById("leaveRequestsWrapper");
+    if (!requests || requests.length === 0) {
+      wrapper.innerHTML = `<div class="alert alert-info m-2">Geen verlofaanvragen</div>`;
+      return;
+    }
+
+    const badge = (status) => {
+      switch (status) {
+        case "approved": return "bg-success";
+        case "rejected": return "bg-danger";
+        default: return "bg-warning text-dark";
       }
-    } catch (e) {}
+    };
+
+    const rowsHtml = requests.map((req) => {
+      const period = `${new Date(req.start_date).toLocaleDateString("nl-NL")} - ${new Date(req.end_date).toLocaleDateString("nl-NL")}`;
+      const canAct = req.status === "pending";
+      const typeLabel = req.balance_type === "overtime" ? "Overuren" : "Verlof";
+
+      return `
+        <tr style="font-size: 0.875rem;">
+          <td class="py-2">${escapeHtml(req.full_name || req.username || "-")}</td>
+          <td class="py-2">${typeLabel}</td>
+          <td class="py-2">${period}</td>
+          <td class="py-2 text-end"><strong>${parseFloat(req.hours_requested || 0).toFixed(2)} u</strong></td>
+          <td class="py-2 text-center"><span class="badge ${badge(req.status)}">${req.status}</span></td>
+          <td class="py-2">
+            <div class="btn-group btn-group-sm" role="group">
+              <button class="btn btn-success btn-sm" ${canAct ? "" : "disabled"} onclick="adminDecideLeave(${req.id}, 'approved')" title="Goedkeuren"><i class="bi bi-check"></i></button>
+              <button class="btn btn-danger btn-sm" ${canAct ? "" : "disabled"} onclick="adminDecideLeave(${req.id}, 'rejected')" title="Afwijzen"><i class="bi bi-x"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    wrapper.innerHTML = `
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light sticky-top">
+          <tr style="font-size: 0.75rem;">
+            <th>Gebruiker</th>
+            <th>Type</th>
+            <th>Periode</th>
+            <th class="text-end">Uren</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Acties</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+    `;
   }
 
   async function loadTranslationsForSelected() {
@@ -3187,166 +3267,7 @@
     }
   }
 
-  async function loadLeaveManagement() {
-    const container = document.getElementById("adminContent");
-    container.innerHTML = `
-    <div class="row h-100">
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-people"></i> Gebruikers Verlofsaldo</h6>
-            <button class="btn btn-light btn-sm" id="refreshLeaveUsers"><i class="bi bi-arrow-clockwise"></i></button>
-          </div>
-          <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;" id="leaveUsersWrapper">
-            <div class="text-center py-4"><div class="spinner-border"></div></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-8">
-        <div class="card">
-          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-calendar-check"></i> Verlofaanvragen</h6>
-            <button class="btn btn-light btn-sm" id="refreshLeaveRequests"><i class="bi bi-arrow-clockwise"></i></button>
-          </div>
-          <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;" id="leaveRequestsWrapper">
-            <div class="text-center py-4"><div class="spinner-border"></div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
 
-    document.getElementById("refreshLeaveUsers").onclick = loadLeaveManagement;
-    document.getElementById("refreshLeaveRequests").onclick =
-      loadLeaveManagement;
-
-    try {
-      // Load users and their leave balances
-      const users = await api.getUsers();
-      const userRows = users
-        .map(
-          (user) => `
-      <tr>
-        <td class="small">${user.full_name || user.username || "-"}</td>
-        <td class="text-end small"><span class="badge bg-info">${parseFloat(
-          user.vacation_hours || 0
-        ).toFixed(2)} u</span></td>
-        <td class="text-end small"><span class="badge bg-success">${parseFloat(
-          user.overtime_hours || 0
-        ).toFixed(2)} u</span></td>
-      </tr>
-    `
-        )
-        .join("");
-
-      document.getElementById("leaveUsersWrapper").innerHTML = `
-      <div class="table-responsive">
-        <table class="table table-sm table-hover mb-0">
-          <thead class="table-light sticky-top">
-            <tr>
-              <th>Gebruiker</th>
-              <th class="text-end">Verlof</th>
-              <th class="text-end">Overuren</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${userRows}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-      // Load leave requests
-      const requests = await api.getLeaveRequestsAdmin();
-
-      if (!requests || requests.length === 0) {
-        document.getElementById(
-          "leaveRequestsWrapper"
-        ).innerHTML = `<div class="alert alert-info m-3">${adminTr(
-          "leave.no_requests",
-          "No leave requests"
-        )}</div>`;
-      } else {
-        const badge = (status) => {
-          switch (status) {
-            case "approved":
-              return "bg-success";
-            case "rejected":
-              return "bg-danger";
-            default:
-              return "bg-warning text-dark";
-          }
-        };
-
-        const rows = requests
-          .map((req) => {
-            const period = `${new Date(req.start_date).toLocaleDateString(
-              "nl-NL"
-            )} - ${new Date(req.end_date).toLocaleDateString("nl-NL")}`;
-            const canAct = req.status === "pending";
-
-            return `
-          <tr>
-            <td class="small">${req.full_name || req.username || "-"}</td>
-            <td class="small">${
-              req.balance_type === "overtime" ? "Overuren" : "Verlof"
-            }</td>
-            <td class="small">${period}</td>
-            <td class="text-end small"><strong>${parseFloat(
-              req.hours_requested || 0
-            ).toFixed(2)} u</strong></td>
-            <td class="text-center"><span class="badge ${badge(req.status)}">${
-              req.status
-            }</span></td>
-            <td>
-              <div class="btn-group btn-group-sm" role="group">
-                <button class="btn btn-success btn-sm" ${
-                  canAct ? "" : "disabled"
-                } onclick="adminDecideLeave(${
-              req.id
-            }, 'approved')" title="Goedkeuren"><i class="bi bi-check"></i></button>
-                <button class="btn btn-danger btn-sm" ${
-                  canAct ? "" : "disabled"
-                } onclick="adminDecideLeave(${
-              req.id
-            }, 'rejected')" title="Afwijzen"><i class="bi bi-x"></i></button>
-              </div>
-            </td>
-          </tr>
-        `;
-          })
-          .join("");
-
-        document.getElementById("leaveRequestsWrapper").innerHTML = `
-        <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0">
-            <thead class="table-light sticky-top">
-              <tr>
-                <th>Gebruiker</th>
-                <th>Type</th>
-                <th>Periode</th>
-                <th class="text-end">Uren</th>
-                <th class="text-center">Status</th>
-                <th class="text-center">Acties</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
-        </div>
-      `;
-      }
-    } catch (error) {
-      console.error("[ADMIN] Error loading leave management:", error);
-      document.getElementById(
-        "leaveUsersWrapper"
-      ).innerHTML = `<div class="alert alert-danger m-3">Error: ${error.message}</div>`;
-      document.getElementById(
-        "leaveRequestsWrapper"
-      ).innerHTML = `<div class="alert alert-danger m-3">Error: ${error.message}</div>`;
-    }
-  }
 
   window.adminDecideLeave = async function (id, status) {
     try {
