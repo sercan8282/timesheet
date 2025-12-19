@@ -2269,7 +2269,7 @@ class Database {
         ["field", "week", "de", "Woche"],
 
         ["field", "ritnumber", "en", "Ritnumber"],
-        ["field", "ritnumber", "nl", "Ritnumber"],
+        ["field", "ritnumber", "nl", "Rit nummer"],
         ["field", "ritnumber", "de", "Ritnumber"],
 
         ["field", "name", "en", "Name"],
