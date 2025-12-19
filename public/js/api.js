@@ -54,7 +54,7 @@ class API {
     const data = await response.json();
 
     if (!response.ok) {
-      // Log full error details for debugging
+      // Log error for debugging
       console.error("API Error Response:", data);
 
       // Handle validation errors
