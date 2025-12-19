@@ -460,3 +460,19 @@ html[lang="en-GB"] input[type="time"] {
     padding: 1rem !important;
   }
 }
+
+/* Invoice header responsive buttons */
+.card-header .d-flex {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+  .card-header .d-flex .d-flex {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .card-header .d-flex .d-flex .btn {
+    width: 100%;
+  }
+}

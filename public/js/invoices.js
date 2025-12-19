@@ -1568,15 +1568,17 @@ const invoiceManager = {
 
               <!-- Line Items -->
               <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                  <h5 class="mb-0">Factuurregels</h5>
-                  <div>
-                    <button class="btn btn-sm btn-outline-info me-2" onclick="invoiceManager.showSubmissionHistoryModal()">
-                      <i class="bi bi-clock-history"></i> Importeer uit History
-                    </button>
-                    <button class="btn btn-sm btn-primary" onclick="invoiceManager.addLineItem()">
-                      <i class="bi bi-plus"></i> Regel Toevoegen
-                    </button>
+                <div class="card-header">
+                  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h5 class="mb-0">Factuurregels</h5>
+                    <div class="d-flex gap-2 flex-wrap">
+                      <button class="btn btn-sm btn-outline-info" onclick="invoiceManager.showSubmissionHistoryModal()">
+                        <i class="bi bi-clock-history"></i> Importeer uit History
+                      </button>
+                      <button class="btn btn-sm btn-primary" onclick="invoiceManager.addLineItem()">
+                        <i class="bi bi-plus"></i> Regel Toevoegen
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div class="card-body">
