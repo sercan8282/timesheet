@@ -8,6 +8,14 @@
   let allUsers = [];
   let allCompanies = [];
   let selectedCompanyId = null;
+  
+  // Leave management pagination state
+  let allLeaveBalances = [];
+  let allLeaveRequests = [];
+  let filteredLeaveBalances = [];
+  let filteredLeaveRequests = [];
+  let leaveBalancesPage = 1;
+  let leaveRequestsPage = 1;
 
   // Lightweight translation helper for admin UI
   function adminTr(key, fallback) {
@@ -702,6 +710,304 @@
       }
     } catch (err) {
       // ignore
+    }
+  }
+
+  // ===== Leave Balance Management =====
+  async function loadLeaveManagement() {
+    const container = document.getElementById("adminContent");
+    if (!container) return;
+    
+    container.innerHTML = `
+      <div class="row">
+        <!-- Compact Leave Balances Section -->
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-2"><i class="bi bi-people"></i> Verlofsaldo Beheer</h6>
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control form-control-sm" id="searchLeaveBalances" placeholder="Zoek medewerker..." />
+                <button class="btn btn-light btn-sm" id="refreshLeaveBalances"><i class="bi bi-arrow-clockwise"></i></button>
+              </div>
+            </div>
+            <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;" id="leaveBalancesWrapper">
+              <div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leave Requests Section -->
+        <div class="col-md-8">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h6 class="mb-2"><i class="bi bi-calendar-check"></i> Verlofaanvragen</h6>
+              <div class="input-group input-group-sm">
+                <input type="text" class="form-control form-control-sm" id="searchLeaveRequests" placeholder="Zoek medewerker..." />
+                <button class="btn btn-light btn-sm" id="refreshLeaveRequests"><i class="bi bi-arrow-clockwise"></i></button>
+              </div>
+            </div>
+            <div class="card-body p-0" style="max-height: 500px; overflow-y: auto;" id="leaveRequestsWrapper">
+              <div class="text-center py-4"><div class="spinner-border spinner-border-sm"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById("refreshLeaveBalances").onclick = loadLeaveManagement;
+    document.getElementById("refreshLeaveRequests").onclick = loadLeaveManagement;
+
+    // Setup search for leave balances
+    document.getElementById("searchLeaveBalances").oninput = (e) => {
+      const query = e.target.value.toLowerCase();
+      filteredLeaveBalances = allLeaveBalances.filter(item => {
+        const name = (item.full_name || item.username || "").toLowerCase();
+        return name.includes(query);
+      });
+      leaveBalancesPage = 1;
+      renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
+    };
+
+    // Setup search for leave requests
+    document.getElementById("searchLeaveRequests").oninput = (e) => {
+      const query = e.target.value.toLowerCase();
+      filteredLeaveRequests = allLeaveRequests.filter(req => {
+        const name = (req.full_name || req.username || "").toLowerCase();
+        return name.includes(query);
+      });
+      leaveRequestsPage = 1;
+      renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
+    };
+
+    try {
+      const rows = await api.getLeaveBalances();
+      allLeaveBalances = rows || [];
+      filteredLeaveBalances = allLeaveBalances;
+      renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
+    } catch (err) {
+      console.error("Error loading leave balances:", err);
+      document.getElementById("leaveBalancesWrapper").innerHTML = `<div class="alert alert-danger m-2">${err.message || "Failed to load"}</div>`;
+    }
+
+    try {
+      const requests = await api.getLeaveRequestsAdmin();
+      allLeaveRequests = requests || [];
+      filteredLeaveRequests = allLeaveRequests;
+      renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
+    } catch (err) {
+      console.error("Error loading leave requests:", err);
+      document.getElementById("leaveRequestsWrapper").innerHTML = `<div class="alert alert-danger m-2">${err.message || "Failed to load"}</div>`;
+    }
+
+    try {
+      if (window.app && typeof window.app.applyTranslationsToDom === "function") {
+        window.app.applyTranslationsToDom();
+      }
+    } catch (e) {}
+  }
+
+  function renderLeaveBalancesTable(items, page = 1) {
+    const wrapper = document.getElementById("leaveBalancesWrapper");
+    if (!items || items.length === 0) {
+      wrapper.innerHTML = `<div class="alert alert-info m-2">Geen gebruikers gevonden</div>`;
+      return;
+    }
+
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(items.length / itemsPerPage);
+    const startIdx = (page - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    const pageItems = items.slice(startIdx, endIdx);
+
+    const rowsHtml = pageItems.map((it) => {
+      const disabled = it.is_blocked ? "disabled" : "";
+      const name = escapeHtml(it.full_name || it.username || "");
+      return `
+        <tr data-user-id="${it.user_id}" style="font-size: 0.875rem;">
+          <td class="py-2">${name}${it.is_blocked ? ' <span class="badge bg-secondary">blocked</span>' : ''}</td>
+          <td class="py-2" style="width: 80px;">
+            <input type="number" step="0.25" min="0" class="form-control form-control-sm vacation-hours" value="${Number(it.vacation_hours || 0).toFixed(2)}" ${disabled} style="font-size: 0.75rem;" />
+          </td>
+          <td class="py-2" style="width: 80px;">
+            <input type="number" step="0.25" min="0" class="form-control form-control-sm overtime-hours" value="${Number(it.overtime_hours || 0).toFixed(2)}" ${disabled} style="font-size: 0.75rem;" />
+          </td>
+          <td class="py-2" style="width: 60px;">
+            <button class="btn btn-sm btn-primary save-leave px-2" ${disabled} title="Opslaan"><i class="bi bi-save"></i></button>
+          </td>
+        </tr>`;
+    }).join("");
+
+    // Pagination controls
+    let paginationHtml = '';
+    if (totalPages > 1) {
+      paginationHtml = `
+        <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light">
+          <small class="text-muted">${items.length} gebruikers</small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="leaveBalancesPrev" ${page === 1 ? 'disabled' : ''}>
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="btn btn-outline-secondary disabled">${page} / ${totalPages}</button>
+            <button class="btn btn-outline-secondary" id="leaveBalancesNext" ${page === totalPages ? 'disabled' : ''}>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    wrapper.innerHTML = `
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light sticky-top">
+          <tr style="font-size: 0.75rem;">
+            <th>Gebruiker</th>
+            <th style="width: 80px;">Verlof (u)</th>
+            <th style="width: 80px;">Overuren (u)</th>
+            <th style="width: 60px;"></th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      ${paginationHtml}
+    `;
+
+    // Attach pagination event listeners
+    if (totalPages > 1) {
+      const prevBtn = document.getElementById("leaveBalancesPrev");
+      const nextBtn = document.getElementById("leaveBalancesNext");
+      if (prevBtn) {
+        prevBtn.onclick = () => {
+          leaveBalancesPage--;
+          renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
+        };
+      }
+      if (nextBtn) {
+        nextBtn.onclick = () => {
+          leaveBalancesPage++;
+          renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
+        };
+      }
+    }
+
+    wrapper.querySelectorAll(".save-leave").forEach((btn) => {
+      btn.onclick = async (e) => {
+        const tr = e.target.closest("tr");
+        if (!tr) return;
+        const userId = tr.getAttribute("data-user-id");
+        const vacation = parseFloat(tr.querySelector(".vacation-hours").value || "0");
+        const overtime = parseFloat(tr.querySelector(".overtime-hours").value || "0");
+        btn.disabled = true;
+        const original = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        try {
+          await api.updateLeaveBalance(userId, { vacationHours: vacation, overtimeHours: overtime });
+          showToast("Opgeslagen", "success");
+        } catch (err) {
+          console.error("Failed to save leave balance:", err);
+          showToast(err.message || "Opslaan mislukt", "danger");
+        } finally {
+          btn.innerHTML = original;
+          btn.disabled = false;
+        }
+      };
+    });
+  }
+
+  function renderLeaveRequestsTable(requests, page = 1) {
+    const wrapper = document.getElementById("leaveRequestsWrapper");
+    if (!requests || requests.length === 0) {
+      wrapper.innerHTML = `<div class="alert alert-info m-2">Geen verlofaanvragen</div>`;
+      return;
+    }
+
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(requests.length / itemsPerPage);
+    const startIdx = (page - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    const pageItems = requests.slice(startIdx, endIdx);
+
+    const badge = (status) => {
+      switch (status) {
+        case "approved": return "bg-success";
+        case "rejected": return "bg-danger";
+        default: return "bg-warning text-dark";
+      }
+    };
+
+    const rowsHtml = pageItems.map((req) => {
+      const period = `${new Date(req.start_date).toLocaleDateString("nl-NL")} - ${new Date(req.end_date).toLocaleDateString("nl-NL")}`;
+      const canAct = req.status === "pending";
+      const typeLabel = req.balance_type === "overtime" ? "Overuren" : "Verlof";
+
+      return `
+        <tr style="font-size: 0.875rem;">
+          <td class="py-2">${escapeHtml(req.full_name || req.username || "-")}</td>
+          <td class="py-2">${typeLabel}</td>
+          <td class="py-2">${period}</td>
+          <td class="py-2 text-end"><strong>${parseFloat(req.hours_requested || 0).toFixed(2)} u</strong></td>
+          <td class="py-2 text-center"><span class="badge ${badge(req.status)}">${req.status}</span></td>
+          <td class="py-2">
+            <div class="btn-group btn-group-sm" role="group">
+              <button class="btn btn-success btn-sm" ${canAct ? "" : "disabled"} onclick="adminDecideLeave(${req.id}, 'approved')" title="Goedkeuren"><i class="bi bi-check"></i></button>
+              <button class="btn btn-danger btn-sm" ${canAct ? "" : "disabled"} onclick="adminDecideLeave(${req.id}, 'rejected')" title="Afwijzen"><i class="bi bi-x"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    // Pagination controls
+    let paginationHtml = '';
+    if (totalPages > 1) {
+      paginationHtml = `
+        <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light">
+          <small class="text-muted">${requests.length} aanvragen</small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-secondary" id="leaveRequestsPrev" ${page === 1 ? 'disabled' : ''}>
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="btn btn-outline-secondary disabled">${page} / ${totalPages}</button>
+            <button class="btn btn-outline-secondary" id="leaveRequestsNext" ${page === totalPages ? 'disabled' : ''}>
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    wrapper.innerHTML = `
+      <table class="table table-sm table-hover mb-0">
+        <thead class="table-light sticky-top">
+          <tr style="font-size: 0.75rem;">
+            <th>Gebruiker</th>
+            <th>Type</th>
+            <th>Periode</th>
+            <th class="text-end">Uren</th>
+            <th class="text-center">Status</th>
+            <th class="text-center">Acties</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      ${paginationHtml}
+    `;
+
+    // Attach pagination event listeners
+    if (totalPages > 1) {
+      const prevBtn = document.getElementById("leaveRequestsPrev");
+      const nextBtn = document.getElementById("leaveRequestsNext");
+      if (prevBtn) {
+        prevBtn.onclick = () => {
+          leaveRequestsPage--;
+          renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
+        };
+      }
+      if (nextBtn) {
+        nextBtn.onclick = () => {
+          leaveRequestsPage++;
+          renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
+        };
+      }
     }
   }
 
@@ -3089,166 +3395,7 @@
     }
   }
 
-  async function loadLeaveManagement() {
-    const container = document.getElementById("adminContent");
-    container.innerHTML = `
-    <div class="row h-100">
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-people"></i> Gebruikers Verlofsaldo</h6>
-            <button class="btn btn-light btn-sm" id="refreshLeaveUsers"><i class="bi bi-arrow-clockwise"></i></button>
-          </div>
-          <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;" id="leaveUsersWrapper">
-            <div class="text-center py-4"><div class="spinner-border"></div></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-8">
-        <div class="card">
-          <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h6 class="mb-0"><i class="bi bi-calendar-check"></i> Verlofaanvragen</h6>
-            <button class="btn btn-light btn-sm" id="refreshLeaveRequests"><i class="bi bi-arrow-clockwise"></i></button>
-          </div>
-          <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;" id="leaveRequestsWrapper">
-            <div class="text-center py-4"><div class="spinner-border"></div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
 
-    document.getElementById("refreshLeaveUsers").onclick = loadLeaveManagement;
-    document.getElementById("refreshLeaveRequests").onclick =
-      loadLeaveManagement;
-
-    try {
-      // Load users and their leave balances
-      const users = await api.getUsers();
-      const userRows = users
-        .map(
-          (user) => `
-      <tr>
-        <td class="small">${user.full_name || user.username || "-"}</td>
-        <td class="text-end small"><span class="badge bg-info">${parseFloat(
-          user.vacation_hours || 0
-        ).toFixed(2)} u</span></td>
-        <td class="text-end small"><span class="badge bg-success">${parseFloat(
-          user.overtime_hours || 0
-        ).toFixed(2)} u</span></td>
-      </tr>
-    `
-        )
-        .join("");
-
-      document.getElementById("leaveUsersWrapper").innerHTML = `
-      <div class="table-responsive">
-        <table class="table table-sm table-hover mb-0">
-          <thead class="table-light sticky-top">
-            <tr>
-              <th>Gebruiker</th>
-              <th class="text-end">Verlof</th>
-              <th class="text-end">Overuren</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${userRows}
-          </tbody>
-        </table>
-      </div>
-    `;
-
-      // Load leave requests
-      const requests = await api.getLeaveRequestsAdmin();
-
-      if (!requests || requests.length === 0) {
-        document.getElementById(
-          "leaveRequestsWrapper"
-        ).innerHTML = `<div class="alert alert-info m-3">${adminTr(
-          "leave.no_requests",
-          "No leave requests"
-        )}</div>`;
-      } else {
-        const badge = (status) => {
-          switch (status) {
-            case "approved":
-              return "bg-success";
-            case "rejected":
-              return "bg-danger";
-            default:
-              return "bg-warning text-dark";
-          }
-        };
-
-        const rows = requests
-          .map((req) => {
-            const period = `${new Date(req.start_date).toLocaleDateString(
-              "nl-NL"
-            )} - ${new Date(req.end_date).toLocaleDateString("nl-NL")}`;
-            const canAct = req.status === "pending";
-
-            return `
-          <tr>
-            <td class="small">${req.full_name || req.username || "-"}</td>
-            <td class="small">${
-              req.balance_type === "overtime" ? "Overuren" : "Verlof"
-            }</td>
-            <td class="small">${period}</td>
-            <td class="text-end small"><strong>${parseFloat(
-              req.hours_requested || 0
-            ).toFixed(2)} u</strong></td>
-            <td class="text-center"><span class="badge ${badge(req.status)}">${
-              req.status
-            }</span></td>
-            <td>
-              <div class="btn-group btn-group-sm" role="group">
-                <button class="btn btn-success btn-sm" ${
-                  canAct ? "" : "disabled"
-                } onclick="adminDecideLeave(${
-              req.id
-            }, 'approved')" title="Goedkeuren"><i class="bi bi-check"></i></button>
-                <button class="btn btn-danger btn-sm" ${
-                  canAct ? "" : "disabled"
-                } onclick="adminDecideLeave(${
-              req.id
-            }, 'rejected')" title="Afwijzen"><i class="bi bi-x"></i></button>
-              </div>
-            </td>
-          </tr>
-        `;
-          })
-          .join("");
-
-        document.getElementById("leaveRequestsWrapper").innerHTML = `
-        <div class="table-responsive">
-          <table class="table table-sm table-hover mb-0">
-            <thead class="table-light sticky-top">
-              <tr>
-                <th>Gebruiker</th>
-                <th>Type</th>
-                <th>Periode</th>
-                <th class="text-end">Uren</th>
-                <th class="text-center">Status</th>
-                <th class="text-center">Acties</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${rows}
-            </tbody>
-          </table>
-        </div>
-      `;
-      }
-    } catch (error) {
-      console.error("[ADMIN] Error loading leave management:", error);
-      document.getElementById(
-        "leaveUsersWrapper"
-      ).innerHTML = `<div class="alert alert-danger m-3">Error: ${error.message}</div>`;
-      document.getElementById(
-        "leaveRequestsWrapper"
-      ).innerHTML = `<div class="alert alert-danger m-3">Error: ${error.message}</div>`;
-    }
-  }
 
   window.adminDecideLeave = async function (id, status) {
     try {
