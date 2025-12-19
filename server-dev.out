@@ -1,0 +1,19 @@
+Server running on http://localhost:3000
+Environment: development
+Connected to SQLite database
+✓ Ensured translation_imports table exists
+✓ Migrated user 5 company assignment to user_companies
+✓ Migrated user 6 company assignment to user_companies
+✓ Migrated user 7 company assignment to user_companies
+✓ Migrated user 8 company assignment to user_companies
+✓ Migrated user 9 company assignment to user_companies
+✓ Migrated user 10 company assignment to user_companies
+✓ Migrated user 11 company assignment to user_companies
+✓ Migrated user 12 company assignment to user_companies
+✓ Migrated user 13 company assignment to user_companies
+✓ Migrated user 14 company assignment to user_companies
+✓ Migrated user 15 company assignment to user_companies
+✓ Migrated user 16 company assignment to user_companies
+✓ Migrated user 4 company assignment to user_companies
+✓ Migrated user 2 company assignment to user_companies
+✓ Migrated user 3 company assignment to user_companies

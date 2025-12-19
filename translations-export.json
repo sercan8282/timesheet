@@ -1,0 +1,1010 @@
+[
+  {
+    "namespace": "field",
+    "key": "fleet.apk_due_date",
+    "locale": "de",
+    "text": "APK gültig bis"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.apk_due_date",
+    "locale": "en",
+    "text": "APK Due Date"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.apk_due_date",
+    "locale": "nl",
+    "text": "APK geldig tot"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.company",
+    "locale": "de",
+    "text": "Firma"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.company",
+    "locale": "en",
+    "text": "Company"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.company",
+    "locale": "nl",
+    "text": "Bedrijf"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.km",
+    "locale": "de",
+    "text": "KM"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.km",
+    "locale": "en",
+    "text": "KM"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.km",
+    "locale": "nl",
+    "text": "KM"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.license_plate",
+    "locale": "de",
+    "text": "Kennzeichen"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.license_plate",
+    "locale": "en",
+    "text": "License Plate"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.license_plate",
+    "locale": "nl",
+    "text": "Kenteken"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.rit_number",
+    "locale": "de",
+    "text": "Rit-Nummer"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.rit_number",
+    "locale": "en",
+    "text": "Rit Number"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.rit_number",
+    "locale": "nl",
+    "text": "Rit nummer"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.truck_type",
+    "locale": "de",
+    "text": "Truck-Typ"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.truck_type",
+    "locale": "en",
+    "text": "Truck Type"
+  },
+  {
+    "namespace": "field",
+    "key": "fleet.truck_type",
+    "locale": "nl",
+    "text": "Truck Type"
+  },
+  {
+    "namespace": "field",
+    "key": "users.adr",
+    "locale": "de",
+    "text": "ADR"
+  },
+  {
+    "namespace": "field",
+    "key": "users.adr",
+    "locale": "en",
+    "text": "ADR"
+  },
+  {
+    "namespace": "field",
+    "key": "users.adr",
+    "locale": "nl",
+    "text": "ADR"
+  },
+  {
+    "namespace": "field",
+    "key": "users.company",
+    "locale": "de",
+    "text": "Firma"
+  },
+  {
+    "namespace": "field",
+    "key": "users.company",
+    "locale": "en",
+    "text": "Company"
+  },
+  {
+    "namespace": "field",
+    "key": "users.company",
+    "locale": "nl",
+    "text": "Bedrijf"
+  },
+  {
+    "namespace": "field",
+    "key": "users.fullName",
+    "locale": "de",
+    "text": "Vollständiger Name *"
+  },
+  {
+    "namespace": "field",
+    "key": "users.fullName",
+    "locale": "en",
+    "text": "Full Name *"
+  },
+  {
+    "namespace": "field",
+    "key": "users.fullName",
+    "locale": "nl",
+    "text": "Volledige naam *"
+  },
+  {
+    "namespace": "field",
+    "key": "users.password",
+    "locale": "de",
+    "text": "Passwort *"
+  },
+  {
+    "namespace": "field",
+    "key": "users.password",
+    "locale": "en",
+    "text": "Password *"
+  },
+  {
+    "namespace": "field",
+    "key": "users.password",
+    "locale": "nl",
+    "text": "Wachtwoord *"
+  },
+  {
+    "namespace": "field",
+    "key": "users.phone",
+    "locale": "de",
+    "text": "Telefonnummer"
+  },
+  {
+    "namespace": "field",
+    "key": "users.phone",
+    "locale": "en",
+    "text": "Phone Number"
+  },
+  {
+    "namespace": "field",
+    "key": "users.phone",
+    "locale": "nl",
+    "text": "Telefoonnummer"
+  },
+  {
+    "namespace": "field",
+    "key": "users.ritnumber",
+    "locale": "de",
+    "text": "Rit-Nummer"
+  },
+  {
+    "namespace": "field",
+    "key": "users.ritnumber",
+    "locale": "en",
+    "text": "Rit Number"
+  },
+  {
+    "namespace": "field",
+    "key": "users.ritnumber",
+    "locale": "nl",
+    "text": "Rit nummer"
+  },
+  {
+    "namespace": "field",
+    "key": "users.role",
+    "locale": "de",
+    "text": "Rolle"
+  },
+  {
+    "namespace": "field",
+    "key": "users.role",
+    "locale": "en",
+    "text": "Role"
+  },
+  {
+    "namespace": "field",
+    "key": "users.role",
+    "locale": "nl",
+    "text": "Rol"
+  },
+  {
+    "namespace": "field",
+    "key": "users.truckType",
+    "locale": "de",
+    "text": "Truck-Typ"
+  },
+  {
+    "namespace": "field",
+    "key": "users.truckType",
+    "locale": "en",
+    "text": "Truck Type"
+  },
+  {
+    "namespace": "field",
+    "key": "users.truckType",
+    "locale": "nl",
+    "text": "Truck Type"
+  },
+  {
+    "namespace": "field",
+    "key": "users.username",
+    "locale": "de",
+    "text": "Benutzername *"
+  },
+  {
+    "namespace": "field",
+    "key": "users.username",
+    "locale": "en",
+    "text": "Username *"
+  },
+  {
+    "namespace": "field",
+    "key": "users.username",
+    "locale": "nl",
+    "text": "Gebruikersnaam *"
+  },
+  {
+    "namespace": "menu",
+    "key": "admin",
+    "locale": "de",
+    "text": "Admin"
+  },
+  {
+    "namespace": "menu",
+    "key": "admin",
+    "locale": "en",
+    "text": "Admin"
+  },
+  {
+    "namespace": "menu",
+    "key": "admin",
+    "locale": "nl",
+    "text": "Admin"
+  },
+  {
+    "namespace": "menu",
+    "key": "dashboard",
+    "locale": "de",
+    "text": "Dashboard"
+  },
+  {
+    "namespace": "menu",
+    "key": "dashboard",
+    "locale": "en",
+    "text": "Dashboard"
+  },
+  {
+    "namespace": "menu",
+    "key": "dashboard",
+    "locale": "nl",
+    "text": "Startpagina"
+  },
+  {
+    "namespace": "menu",
+    "key": "history",
+    "locale": "de",
+    "text": "History"
+  },
+  {
+    "namespace": "menu",
+    "key": "history",
+    "locale": "en",
+    "text": "History"
+  },
+  {
+    "namespace": "menu",
+    "key": "history",
+    "locale": "nl",
+    "text": "History"
+  },
+  {
+    "namespace": "menu",
+    "key": "invoices",
+    "locale": "de",
+    "text": "Invoices"
+  },
+  {
+    "namespace": "menu",
+    "key": "invoices",
+    "locale": "en",
+    "text": "Invoices"
+  },
+  {
+    "namespace": "menu",
+    "key": "invoices",
+    "locale": "nl",
+    "text": "Invoices"
+  },
+  {
+    "namespace": "menu",
+    "key": "leave",
+    "locale": "de",
+    "text": "Verlof"
+  },
+  {
+    "namespace": "menu",
+    "key": "leave",
+    "locale": "en",
+    "text": "Verlof"
+  },
+  {
+    "namespace": "menu",
+    "key": "leave",
+    "locale": "nl",
+    "text": "Verlof"
+  },
+  {
+    "namespace": "menu",
+    "key": "revenue",
+    "locale": "de",
+    "text": "Omzet"
+  },
+  {
+    "namespace": "menu",
+    "key": "revenue",
+    "locale": "en",
+    "text": "Omzet"
+  },
+  {
+    "namespace": "menu",
+    "key": "revenue",
+    "locale": "nl",
+    "text": "Omzet"
+  },
+  {
+    "namespace": "menu",
+    "key": "weekly-hours",
+    "locale": "de",
+    "text": "Weekly Hours"
+  },
+  {
+    "namespace": "menu",
+    "key": "weekly-hours",
+    "locale": "en",
+    "text": "Weekly Hours"
+  },
+  {
+    "namespace": "menu",
+    "key": "weekly-hours",
+    "locale": "nl",
+    "text": "Weekly Hours"
+  },
+  {
+    "namespace": "ui",
+    "key": "actions",
+    "locale": "de",
+    "text": "Aktionen"
+  },
+  {
+    "namespace": "ui",
+    "key": "actions",
+    "locale": "en",
+    "text": "Actions"
+  },
+  {
+    "namespace": "ui",
+    "key": "actions",
+    "locale": "nl",
+    "text": "Acties"
+  },
+  {
+    "namespace": "ui",
+    "key": "add",
+    "locale": "de",
+    "text": "Hinzufügen"
+  },
+  {
+    "namespace": "ui",
+    "key": "add",
+    "locale": "en",
+    "text": "Add"
+  },
+  {
+    "namespace": "ui",
+    "key": "add",
+    "locale": "nl",
+    "text": "Toevoegen"
+  },
+  {
+    "namespace": "ui",
+    "key": "added_locale",
+    "locale": "de",
+    "text": "Sprache hinzugefügt"
+  },
+  {
+    "namespace": "ui",
+    "key": "added_locale",
+    "locale": "en",
+    "text": "Added locale"
+  },
+  {
+    "namespace": "ui",
+    "key": "added_locale",
+    "locale": "nl",
+    "text": "Taal toegevoegd"
+  },
+  {
+    "namespace": "ui",
+    "key": "admin.menu_management",
+    "locale": "de",
+    "text": "Menüverwaltung"
+  },
+  {
+    "namespace": "ui",
+    "key": "admin.menu_management",
+    "locale": "en",
+    "text": "Menu Management"
+  },
+  {
+    "namespace": "ui",
+    "key": "admin.menu_management",
+    "locale": "nl",
+    "text": "Menubeheer"
+  },
+  {
+    "namespace": "ui",
+    "key": "admin.translations",
+    "locale": "de",
+    "text": "Übersetzungen"
+  },
+  {
+    "namespace": "ui",
+    "key": "admin.translations",
+    "locale": "en",
+    "text": "Translations"
+  },
+  {
+    "namespace": "ui",
+    "key": "admin.translations",
+    "locale": "nl",
+    "text": "Vertalingen"
+  },
+  {
+    "namespace": "ui",
+    "key": "brand.title",
+    "locale": "de",
+    "text": "Zeiterfassungssystem"
+  },
+  {
+    "namespace": "ui",
+    "key": "brand.title",
+    "locale": "en",
+    "text": "Timesheet System"
+  },
+  {
+    "namespace": "ui",
+    "key": "brand.title",
+    "locale": "nl",
+    "text": "Timesheet Systeem"
+  },
+  {
+    "namespace": "ui",
+    "key": "change_password",
+    "locale": "de",
+    "text": "Passwort ändern"
+  },
+  {
+    "namespace": "ui",
+    "key": "change_password",
+    "locale": "en",
+    "text": "Change Password"
+  },
+  {
+    "namespace": "ui",
+    "key": "change_password",
+    "locale": "nl",
+    "text": "Wachtwoord wijzigen"
+  },
+  {
+    "namespace": "ui",
+    "key": "delete",
+    "locale": "de",
+    "text": "Löschen"
+  },
+  {
+    "namespace": "ui",
+    "key": "delete",
+    "locale": "en",
+    "text": "Delete"
+  },
+  {
+    "namespace": "ui",
+    "key": "delete",
+    "locale": "nl",
+    "text": "Verwijderen"
+  },
+  {
+    "namespace": "ui",
+    "key": "error_exporting_template",
+    "locale": "de",
+    "text": "Fehler beim Exportieren der Vorlage"
+  },
+  {
+    "namespace": "ui",
+    "key": "error_exporting_template",
+    "locale": "en",
+    "text": "Error exporting template"
+  },
+  {
+    "namespace": "ui",
+    "key": "error_exporting_template",
+    "locale": "nl",
+    "text": "Fout bij exporteren van template"
+  },
+  {
+    "namespace": "ui",
+    "key": "error_loading_translations",
+    "locale": "de",
+    "text": "Fehler beim Laden der Übersetzungen"
+  },
+  {
+    "namespace": "ui",
+    "key": "error_loading_translations",
+    "locale": "en",
+    "text": "Error loading translations"
+  },
+  {
+    "namespace": "ui",
+    "key": "error_loading_translations",
+    "locale": "nl",
+    "text": "Fout bij laden van vertalingen"
+  },
+  {
+    "namespace": "ui",
+    "key": "export_csv",
+    "locale": "de",
+    "text": "CSV exportieren"
+  },
+  {
+    "namespace": "ui",
+    "key": "export_csv",
+    "locale": "en",
+    "text": "Export CSV"
+  },
+  {
+    "namespace": "ui",
+    "key": "export_csv",
+    "locale": "nl",
+    "text": "CSV exporteren"
+  },
+  {
+    "namespace": "ui",
+    "key": "export_json",
+    "locale": "de",
+    "text": "JSON exportieren"
+  },
+  {
+    "namespace": "ui",
+    "key": "export_json",
+    "locale": "en",
+    "text": "Export JSON"
+  },
+  {
+    "namespace": "ui",
+    "key": "export_json",
+    "locale": "nl",
+    "text": "JSON exporteren"
+  },
+  {
+    "namespace": "ui",
+    "key": "export_template_csv",
+    "locale": "de",
+    "text": "Vorlage exportieren (CSV)"
+  },
+  {
+    "namespace": "ui",
+    "key": "export_template_csv",
+    "locale": "en",
+    "text": "Export Template (CSV)"
+  },
+  {
+    "namespace": "ui",
+    "key": "export_template_csv",
+    "locale": "nl",
+    "text": "Template exporteren (CSV)"
+  },
+  {
+    "namespace": "ui",
+    "key": "exported_template",
+    "locale": "de",
+    "text": "Vorlage exportiert"
+  },
+  {
+    "namespace": "ui",
+    "key": "exported_template",
+    "locale": "en",
+    "text": "Exported template"
+  },
+  {
+    "namespace": "ui",
+    "key": "exported_template",
+    "locale": "nl",
+    "text": "Template geëxporteerd"
+  },
+  {
+    "namespace": "ui",
+    "key": "import",
+    "locale": "de",
+    "text": "Importieren"
+  },
+  {
+    "namespace": "ui",
+    "key": "import",
+    "locale": "en",
+    "text": "Import"
+  },
+  {
+    "namespace": "ui",
+    "key": "import",
+    "locale": "nl",
+    "text": "Importeren"
+  },
+  {
+    "namespace": "ui",
+    "key": "key",
+    "locale": "de",
+    "text": "Schlüssel"
+  },
+  {
+    "namespace": "ui",
+    "key": "key",
+    "locale": "en",
+    "text": "Key"
+  },
+  {
+    "namespace": "ui",
+    "key": "key",
+    "locale": "nl",
+    "text": "Sleutel"
+  },
+  {
+    "namespace": "ui",
+    "key": "language",
+    "locale": "de",
+    "text": "Sprache"
+  },
+  {
+    "namespace": "ui",
+    "key": "language",
+    "locale": "en",
+    "text": "Language"
+  },
+  {
+    "namespace": "ui",
+    "key": "language",
+    "locale": "nl",
+    "text": "Taal"
+  },
+  {
+    "namespace": "ui",
+    "key": "load",
+    "locale": "de",
+    "text": "Laden"
+  },
+  {
+    "namespace": "ui",
+    "key": "load",
+    "locale": "en",
+    "text": "Load"
+  },
+  {
+    "namespace": "ui",
+    "key": "load",
+    "locale": "nl",
+    "text": "Laden"
+  },
+  {
+    "namespace": "ui",
+    "key": "load_translations",
+    "locale": "de",
+    "text": "Übersetzungen laden"
+  },
+  {
+    "namespace": "ui",
+    "key": "load_translations",
+    "locale": "en",
+    "text": "Load Translations"
+  },
+  {
+    "namespace": "ui",
+    "key": "load_translations",
+    "locale": "nl",
+    "text": "Vertalingen laden"
+  },
+  {
+    "namespace": "ui",
+    "key": "loaded_translations",
+    "locale": "de",
+    "text": "Übersetzungen geladen"
+  },
+  {
+    "namespace": "ui",
+    "key": "loaded_translations",
+    "locale": "en",
+    "text": "Loaded translations"
+  },
+  {
+    "namespace": "ui",
+    "key": "loaded_translations",
+    "locale": "nl",
+    "text": "Vertalingen geladen"
+  },
+  {
+    "namespace": "ui",
+    "key": "locale",
+    "locale": "de",
+    "text": "Sprache"
+  },
+  {
+    "namespace": "ui",
+    "key": "locale",
+    "locale": "en",
+    "text": "Locale"
+  },
+  {
+    "namespace": "ui",
+    "key": "locale",
+    "locale": "nl",
+    "text": "Taal"
+  },
+  {
+    "namespace": "ui",
+    "key": "logout",
+    "locale": "de",
+    "text": "Abmelden"
+  },
+  {
+    "namespace": "ui",
+    "key": "logout",
+    "locale": "en",
+    "text": "Logout"
+  },
+  {
+    "namespace": "ui",
+    "key": "logout",
+    "locale": "nl",
+    "text": "Uitloggen"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.label",
+    "locale": "de",
+    "text": "Beschriftung"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.label",
+    "locale": "en",
+    "text": "Label"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.label",
+    "locale": "nl",
+    "text": "Label"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.page_key",
+    "locale": "de",
+    "text": "Seiten-Schlüssel"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.page_key",
+    "locale": "en",
+    "text": "Page Key"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.page_key",
+    "locale": "nl",
+    "text": "Pagina sleutel"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.translation",
+    "locale": "de",
+    "text": "Übersetzung"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.translation",
+    "locale": "en",
+    "text": "Translation"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.translation",
+    "locale": "nl",
+    "text": "Vertaling"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.visible",
+    "locale": "de",
+    "text": "Sichtbar"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.visible",
+    "locale": "en",
+    "text": "Visible"
+  },
+  {
+    "namespace": "ui",
+    "key": "menu.visible",
+    "locale": "nl",
+    "text": "Zichtbaar"
+  },
+  {
+    "namespace": "ui",
+    "key": "namespace",
+    "locale": "de",
+    "text": "Namensraum"
+  },
+  {
+    "namespace": "ui",
+    "key": "namespace",
+    "locale": "en",
+    "text": "Namespace"
+  },
+  {
+    "namespace": "ui",
+    "key": "namespace",
+    "locale": "nl",
+    "text": "Namespace"
+  },
+  {
+    "namespace": "ui",
+    "key": "no",
+    "locale": "de",
+    "text": "Nein"
+  },
+  {
+    "namespace": "ui",
+    "key": "no",
+    "locale": "en",
+    "text": "No"
+  },
+  {
+    "namespace": "ui",
+    "key": "no",
+    "locale": "nl",
+    "text": "Nee"
+  },
+  {
+    "namespace": "ui",
+    "key": "save",
+    "locale": "de",
+    "text": "Speichern"
+  },
+  {
+    "namespace": "ui",
+    "key": "save",
+    "locale": "en",
+    "text": "Save"
+  },
+  {
+    "namespace": "ui",
+    "key": "save",
+    "locale": "nl",
+    "text": "Opslaan"
+  },
+  {
+    "namespace": "ui",
+    "key": "save_translations",
+    "locale": "de",
+    "text": "Übersetzungen speichern"
+  },
+  {
+    "namespace": "ui",
+    "key": "save_translations",
+    "locale": "en",
+    "text": "Save Translations"
+  },
+  {
+    "namespace": "ui",
+    "key": "save_translations",
+    "locale": "nl",
+    "text": "Vertalingen opslaan"
+  },
+  {
+    "namespace": "ui",
+    "key": "text",
+    "locale": "de",
+    "text": "Text"
+  },
+  {
+    "namespace": "ui",
+    "key": "text",
+    "locale": "en",
+    "text": "Text"
+  },
+  {
+    "namespace": "ui",
+    "key": "text",
+    "locale": "nl",
+    "text": "Tekst"
+  },
+  {
+    "namespace": "ui",
+    "key": "translations_saved",
+    "locale": "de",
+    "text": "Übersetzungen gespeichert"
+  },
+  {
+    "namespace": "ui",
+    "key": "translations_saved",
+    "locale": "en",
+    "text": "Translations saved"
+  },
+  {
+    "namespace": "ui",
+    "key": "translations_saved",
+    "locale": "nl",
+    "text": "Vertalingen opgeslagen"
+  },
+  {
+    "namespace": "ui",
+    "key": "welcome",
+    "locale": "de",
+    "text": "Willkommen,"
+  },
+  {
+    "namespace": "ui",
+    "key": "welcome",
+    "locale": "en",
+    "text": "Welcome,"
+  },
+  {
+    "namespace": "ui",
+    "key": "welcome",
+    "locale": "nl",
+    "text": "Welkom,"
+  },
+  {
+    "namespace": "ui",
+    "key": "yes",
+    "locale": "de",
+    "text": "Ja"
+  },
+  {
+    "namespace": "ui",
+    "key": "yes",
+    "locale": "en",
+    "text": "Yes"
+  },
+  {
+    "namespace": "ui",
+    "key": "yes",
+    "locale": "nl",
+    "text": "Ja"
+  }
+]

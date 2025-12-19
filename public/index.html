@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Timesheet Management System</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.min.css"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <!-- Force 24-hour time format -->
+    <script>
+      // Force en-GB locale for time inputs to ensure 24-hour format
+      document.documentElement.lang = "en-GB";
+    </script>
+
+    <!-- Navigation -->
+    <nav
+      class="navbar navbar-expand-lg navbar-dark bg-primary"
+      id="mainNav"
+      style="display: none"
+    >
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#" onclick="app.loadPage('dashboard')">
+          <i class="bi bi-calendar-check"></i> <span data-i18n="ui:brand.title">Timesheet System</span>
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item" id="nav-dashboard">
+              <a class="nav-link" href="#" onclick="app.loadPage('dashboard')">
+                <i class="bi bi-house"></i> <span data-i18n="menu:dashboard">Dashboard</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" onclick="app.loadPage('history')">
+                <i class="bi bi-clock-history"></i> <span data-i18n="menu:history">History</span>
+              </a>
+            </li>
+            <li class="nav-item" id="nav-weekly-hours">
+              <a
+                class="nav-link"
+                href="#"
+                onclick="app.loadPage('weekly-hours')"
+              >
+                <i class="bi bi-bar-chart"></i> <span data-i18n="menu:weekly_hours">Weekly Hours</span>
+              </a>
+            </li>
+            <li class="nav-item" id="nav-leave">
+              <a class="nav-link" href="#" onclick="app.loadPage('leave')">
+                <i class="bi bi-airplane"></i> <span data-i18n="menu:leave">Verlof</span>
+              </a>
+            </li>
+            <li class="nav-item" id="nav-invoices" style="display: none">
+              <a class="nav-link" href="#" onclick="app.loadPage('invoices')">
+                <i class="bi bi-receipt"></i> <span data-i18n="menu:invoices">Invoices</span>
+              </a>
+            </li>
+            <li class="nav-item" id="nav-revenue" style="display: none">
+              <a class="nav-link" href="#" onclick="app.loadPage('revenue')">
+                <i class="bi bi-graph-up"></i> <span data-i18n="menu:revenue">Omzet</span>
+              </a>
+            </li>
+            <li class="nav-item" id="nav-admin" style="display: none">
+              <a class="nav-link" href="#" onclick="app.loadPage('admin')">
+                <i class="bi bi-gear"></i> <span data-i18n="menu:admin">Admin</span>
+              </a>
+            </li>
+          </ul>
+          <ul class="navbar-nav">
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="userDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+              >
+                <i class="bi bi-person-circle"></i> <span data-i18n="ui:welcome">Welcome,</span>
+                <span id="userName"></span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    onclick="app.loadPage('change-password')"
+                  >
+                    <i class="bi bi-key"></i> <span data-i18n="ui:change_password">Change Password</span>
+                  </a>
+                </li>
+                <!-- Language selector hidden for now; keep structure for future use -->
+                <li>
+                  <a class="dropdown-item" href="#" onclick="app.logout()">
+                    <i class="bi bi-box-arrow-right"></i> <span data-i18n="ui:logout">Logout</span>
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div id="app"></div>
+
+    <!-- Toast Container -->
+    <div
+      class="toast-container position-fixed bottom-0 end-0 p-3"
+      id="toastContainer"
+    ></div>
+
+    <!-- Scripts - LOAD IN CORRECT ORDER -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="/js/api.js?v=20251211"></script>
+    <script src="/js/mfa.js?v=20251211"></script>
+    <script src="/js/mfa-settings.js?v=20251211"></script>
+    <script src="/js/auth.js?v=20251211"></script>
+    <script src="/js/dashboard.js?v=20251211"></script>
+    <script src="/js/history.js?v=20251211"></script>
+    <script src="/js/weekly-summary.js?v=20251211"></script>
+    <script src="/js/leave.js?v=20251211"></script>
+
+    <script src="/js/revenue.js?v=20251211"></script>
+    <script src="/js/admin-new.js?v=20251211"></script>
+
+    <!-- Invoice Management -->
+    <script src="/js/invoices.js?v=20251216"></script>
+
+    <!-- App LAST -->
+    <script src="/js/app.js?v=20251211"></script>
+  </body>
+</html>
