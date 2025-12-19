@@ -46,11 +46,22 @@ try {
   Say "Updating database..."
   npm run init-db | Write-Output
 
-  # Restart application if pm2 exists
+  # Restart application if pm2 exists (robust)
   Say "Restarting application..."
   $pm2 = Get-Command pm2 -ErrorAction SilentlyContinue
   if ($pm2) {
-    try { pm2 restart all | Write-Output } catch { Say "PM2 restart failed or not configured" }
+    try {
+      $exists = (& pm2 describe timesheet) 2>$null
+      if ($LASTEXITCODE -eq 0) {
+        & pm2 restart timesheet | Write-Output
+      } else {
+        Say "PM2 app 'timesheet' not found; starting it"
+        & pm2 start npm --name timesheet -- start | Write-Output
+      }
+      & pm2 save | Write-Output
+    } catch {
+      Say "PM2 restart/start/save failed: $($_.Exception.Message)"
+    }
   } else {
     Say "PM2 not found; restart your app if needed"
   }

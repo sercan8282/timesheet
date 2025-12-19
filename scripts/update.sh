@@ -92,12 +92,18 @@ log "Running init-db (idempotent)"; run "npm run init-db" || true
 
 # 6) Start/Restart app
 if command -v pm2 >/dev/null 2>&1; then
-  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-    log "Restarting PM2 app"; run "pm2 restart '$APP_NAME'"
+  PM2_BIN="$(command -v pm2 2>/dev/null || which pm2 2>/dev/null || echo '')"
+  if [ -n "$PM2_BIN" ]; then
+    # If the app exists, restart; else start and save
+    if "$PM2_BIN" describe "$APP_NAME" >/dev/null 2>&1; then
+      log "Restarting PM2 app"; run "$PM2_BIN restart '$APP_NAME'" || say "PM2 restart failed"
+    else
+      log "PM2 app '$APP_NAME' not found; starting it"
+      run "$PM2_BIN start npm --name '$APP_NAME' -- start" || say "PM2 start failed"
+    fi
+    run "$PM2_BIN save" || say "PM2 save failed"
   else
-    log "Starting PM2 app"
-    run "pm2 start npm --name '$APP_NAME' -- start"
-    run "pm2 save"
+    log "PM2 not found in PATH; skip restart (run 'pm2 restart $APP_NAME' manually)"
   fi
 else
   log "PM2 not installed. Start app manually: npm start &"
