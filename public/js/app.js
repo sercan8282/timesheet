@@ -176,6 +176,7 @@ class App {
         invoices: "bi-receipt",
         revenue: "bi-graph-up",
         admin: "bi-gear",
+        "system-update": "bi-arrow-repeat",
       };
 
       const html = items
@@ -398,6 +399,17 @@ class App {
             }
             this.applyTranslationsToDom();
           }, 50);
+        } else {
+          alert("Access denied");
+        }
+        break;
+      case "system-update":
+        if (this.user.isAdmin) {
+          document.getElementById("app").innerHTML = renderSystemUpdate();
+          if (typeof initSystemUpdate === "function") {
+            initSystemUpdate();
+          }
+          this.applyTranslationsToDom();
         } else {
           alert("Access denied");
         }

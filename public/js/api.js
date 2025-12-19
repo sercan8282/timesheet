@@ -1016,6 +1016,31 @@ class API {
     }
     return data;
   }
+
+  // =========================
+  // System Update (Admin)
+  // =========================
+  async startSystemUpdate() {
+    return this.request(`/admin/system/update`, { method: "POST" });
+  }
+
+  subscribeUpdateStatus(onMessage) {
+    const token = localStorage.getItem("token");
+    const qs = token ? `?token=${encodeURIComponent(token)}` : "";
+    const url = `${API_BASE_URL}/admin/system/update/status${qs}`;
+    const es = new EventSource(url);
+    es.onmessage = (evt) => {
+      if (!evt || typeof onMessage !== "function") return;
+      let payload = evt.data;
+      try {
+        payload = JSON.parse(evt.data);
+      } catch (e) {
+        // keep as string
+      }
+      onMessage(payload);
+    };
+    return es;
+  }
 }
 
 const api = new API();

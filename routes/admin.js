@@ -18,6 +18,114 @@ const router = express.Router();
 router.use(authMiddleware);
 router.use(adminMiddleware);
 
+// =========================
+// System Update (background)
+// =========================
+const { spawn } = require("child_process");
+let updateInProgress = false;
+let updateStatusMessages = [];
+const updateSseClients = new Set();
+
+// Helper: broadcast status to SSE clients
+function broadcastUpdateStatus(line) {
+  const msg = typeof line === "string" ? line : JSON.stringify(line);
+  updateStatusMessages.push(msg);
+  updateSseClients.forEach((res) => {
+    try {
+      res.write(`data: ${msg}\n\n`);
+    } catch (e) {
+      // drop broken client
+      updateSseClients.delete(res);
+    }
+  });
+}
+
+// SSE stream of update status
+router.get("/system/update/status", (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders && res.flushHeaders();
+
+  // Send existing messages
+  try {
+    updateStatusMessages.forEach((msg) => {
+      res.write(`data: ${msg}\n\n`);
+    });
+  } catch (e) {}
+
+  // Keep connection open
+  updateSseClients.add(res);
+
+  req.on("close", () => {
+    updateSseClients.delete(res);
+    try {
+      res.end();
+    } catch (e) {}
+  });
+});
+
+// Trigger system update (asynchronous)
+router.post("/system/update", async (req, res) => {
+  if (updateInProgress) {
+    return res.status(429).json({ error: "Update already in progress" });
+  }
+
+  updateInProgress = true;
+  updateStatusMessages = [];
+  broadcastUpdateStatus({ stage: "start", message: "Preparing update" });
+
+  // Determine platform-specific script and spawn command
+  const projectRoot = path.join(__dirname, "..");
+  const isWin = process.platform === "win32";
+  let child;
+  if (isWin) {
+    const ps1 = path.join(projectRoot, "scripts", "update.ps1");
+    if (!fs.existsSync(ps1)) {
+      broadcastUpdateStatus({ stage: "error", message: "Windows update script not found" });
+      updateInProgress = false;
+      return res.status(500).json({ error: "Windows update script not found" });
+    }
+    const args = [
+      "-NoProfile",
+      "-ExecutionPolicy",
+      "Bypass",
+      "-File",
+      ps1,
+    ];
+    child = spawn("powershell", args, { cwd: projectRoot });
+  } else {
+    const sh = path.join(projectRoot, "scripts", "update.sh");
+    if (!fs.existsSync(sh)) {
+      broadcastUpdateStatus({ stage: "error", message: "Linux update script not found" });
+      updateInProgress = false;
+      return res.status(500).json({ error: "Linux update script not found" });
+    }
+    child = spawn("bash", [sh], { cwd: projectRoot });
+  }
+
+  child.stdout.on("data", (data) => {
+    const lines = String(data).split(/\r?\n/).filter(Boolean);
+    lines.forEach((line) => broadcastUpdateStatus(line));
+  });
+
+  child.stderr.on("data", (data) => {
+    const lines = String(data).split(/\r?\n/).filter(Boolean);
+    lines.forEach((line) => broadcastUpdateStatus(`[error] ${line}`));
+  });
+
+  child.on("close", (code) => {
+    if (code === 0) {
+      broadcastUpdateStatus({ stage: "done", message: "Update complete" });
+    } else {
+      broadcastUpdateStatus({ stage: "error", message: `Update failed with code ${code}` });
+    }
+    updateInProgress = false;
+  });
+
+  res.json({ ok: true, started: true });
+});
+
 // Update or insert translations (bulk)
 router.put("/i18n", async (req, res) => {
   try {
@@ -189,6 +297,43 @@ router.get("/i18n/keys", async (req, res) => {
     res.json(keys);
   } catch (error) {
     console.error("Error fetching translation keys:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// =========================
+// Admin: UI Menu Management
+// =========================
+// Upsert menu items: [{ page_key, label, sort_order, visible }]
+router.put("/ui/menu", async (req, res) => {
+  try {
+    const items = req.body;
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ error: "Expected an array of menu items" });
+    }
+
+    for (const it of items) {
+      const page_key = it.page_key && String(it.page_key).trim();
+      const label = it.label != null ? String(it.label) : "";
+      const sort_order = Number.isFinite(it.sort_order) ? it.sort_order : 0;
+      const visible = it.visible ? 1 : 0;
+      if (!page_key) continue;
+
+      // Insert or replace
+      await db.run(
+        `INSERT OR REPLACE INTO ui_menu (page_key, label, sort_order, visible)
+         VALUES (?, ?, ?, ?)`,
+        [page_key, label, sort_order, visible]
+      );
+    }
+
+    // Return updated list
+    const rows = await db.all(
+      `SELECT page_key, label, sort_order, visible FROM ui_menu ORDER BY sort_order ASC`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error("Error updating UI menu:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

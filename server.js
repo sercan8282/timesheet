@@ -227,6 +227,15 @@ app.get("/api/branding", async (req, res) => {
   }
 });
 
+// Simple health check (no auth)
+app.get("/api/health", (req, res) => {
+  try {
+    res.json({ ok: true, uptime: process.uptime(), env: process.env.NODE_ENV || "development" });
+  } catch (e) {
+    res.status(500).json({ ok: false });
+  }
+});
+
 // Serve static files AFTER API routes
 app.use(express.static(path.join(__dirname, "public")));
 
