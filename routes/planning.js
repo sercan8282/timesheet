@@ -358,7 +358,7 @@ router.post("/generate/:weekNumber", async (req, res) => {
               [
                 weekNumber,
                 day,
-                driver.ritnumber,
+                driver.ritnumber || "",
                 driver.id,
                 vehicle?.id || null,
                 company.id,
@@ -441,7 +441,7 @@ router.post("/generate/:weekNumber/company/:companyId", async (req, res) => {
             [
               weekNumber,
               day,
-              driver.ritnumber,
+              driver.ritnumber || "",
               driver.id,
               vehicle?.id || null,
               companyId,
