@@ -385,3 +385,68 @@ html[lang="en-GB"] input[type="time"] {
 .input-chip .btn {
   padding: 4px 10px;
 }
+
+  /* Responsive timesheet rows for mobile */
+  .timesheet-row {
+    background-color: #ffffff;
+    transition: box-shadow 0.2s;
+  }
+
+  .timesheet-row:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Mobile-specific adjustments */
+  @media (max-width: 767px) {
+    /* Full-width buttons on mobile */
+    .btn-mobile-full {
+      width: 100%;
+    }
+  
+    .timesheet-row {
+      margin-bottom: 1rem !important;
+      padding: 0.75rem !important;
+    }
+  
+    .timesheet-row .form-label {
+      font-weight: 600;
+      margin-bottom: 0.25rem !important;
+    }
+  
+    .timesheet-row .form-control-sm {
+      font-size: 0.95rem;
+      padding: 0.5rem;
+      height: auto;
+    }
+  
+    .timesheet-row input[type="time"],
+    .timesheet-row input[type="date"] {
+      min-height: 44px; /* Better touch target */
+    }
+  
+    .timesheet-row .btn-danger {
+      padding: 0.5rem;
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+  
+    /* Make readonly fields visually distinct */
+    .timesheet-row input[readonly] {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+  }
+
+  /* Tablet adjustments */
+  @media (min-width: 768px) and (max-width: 991px) {
+    .timesheet-row {
+      padding: 0.5rem !important;
+    }
+  }
+
+  /* Desktop - compact view */
+  @media (min-width: 992px) {
+    .timesheet-row {
+      align-items: end !important;
+    }
+  }
