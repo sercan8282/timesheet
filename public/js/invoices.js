@@ -19,7 +19,7 @@ const invoiceManager = {
       this.invoices = await api.getInvoices();
     } catch (error) {
       console.error("Error loading invoice data:", error);
-      showToast(t('ui', 'invoice.load_error'), "error");
+      showToast(t("ui", "invoice.load_error"), "error");
     }
   },
 
@@ -188,17 +188,17 @@ const invoiceManager = {
       const templateSelect = document.getElementById("importTemplateSelect");
 
       if (!input.files || input.files.length === 0) {
-        showToast(t('ui', 'select_min_one_pdf'), "error");
+        showToast(t("ui", "select_min_one_pdf"), "error");
         return;
       }
 
       if (input.files.length > 20) {
-        showToast(t('ui', 'max_20_files'), "error");
+        showToast(t("ui", "max_20_files"), "error");
         return;
       }
 
       if (!templateSelect.value) {
-        showToast(t('ui', 'select_template'), "error");
+        showToast(t("ui", "select_template"), "error");
         return;
       }
 
@@ -293,12 +293,14 @@ const invoiceManager = {
       if (!parserSelect) return;
 
       if (importTemplates.length === 0) {
-        parserSelect.innerHTML =
-          `<option value="">${t('ui', 'no_import_templates')}</option>`;
+        parserSelect.innerHTML = `<option value="">${t(
+          "ui",
+          "no_import_templates"
+        )}</option>`;
         parserSelect.disabled = true;
       } else {
         parserSelect.innerHTML =
-          `<option value="">-- ${t('ui', 'select_import_format')} --</option>` +
+          `<option value="">-- ${t("ui", "select_import_format")} --</option>` +
           importTemplates
             .map(
               (t) =>
@@ -311,15 +313,20 @@ const invoiceManager = {
       console.error("Error loading import templates:", error);
       const parserSelect = document.getElementById("importPdfParserSelect");
       if (parserSelect) {
-        parserSelect.innerHTML =
-          `<option value="">${t('ui', 'invoice.templates_load_error_option')}</option>`;
+        parserSelect.innerHTML = `<option value="">${t(
+          "ui",
+          "invoice.templates_load_error_option"
+        )}</option>`;
       }
     }
   },
 
   renderInvoiceRows() {
     if (this.invoices.length === 0) {
-      return `<tr><td colspan="7" class="text-center text-muted">${t('ui', 'invoice.none_found')}</td></tr>`;
+      return `<tr><td colspan="7" class="text-center text-muted">${t(
+        "ui",
+        "invoice.none_found"
+      )}</td></tr>`;
     }
 
     return this.invoices
@@ -341,12 +348,12 @@ const invoiceManager = {
             <div class="btn-group btn-group-sm">
               <button class="btn btn-outline-primary" onclick="invoiceManager.viewInvoice(${
                 invoice.id
-              })" title="${t('ui', 'view')}">
+              })" title="${t("ui", "view")}">
                 <i class="bi bi-eye"></i>
               </button>
               <button class="btn btn-outline-secondary" onclick="invoiceManager.showEditInvoice(${
                 invoice.id
-              })" title="${t('ui', 'edit')}">
+              })" title="${t("ui", "edit")}">
                 <i class="bi bi-pencil"></i>
               </button>
               <button class="btn btn-outline-success" onclick="invoiceManager.downloadPDF(${
@@ -361,7 +368,7 @@ const invoiceManager = {
               </button>
               <button class="btn btn-outline-danger" onclick="invoiceManager.deleteInvoice(${
                 invoice.id
-              })" title="${t('ui', 'delete')}">
+              })" title="${t("ui", "delete")}">
                 <i class="bi bi-trash"></i>
               </button>
             </div>
@@ -566,7 +573,7 @@ const invoiceManager = {
     ).checked;
 
     if (!name) {
-      showToast(t('ui', 'invoice.template_name_required'), "error");
+      showToast(t("ui", "invoice.template_name_required"), "error");
       return;
     }
 
@@ -581,12 +588,15 @@ const invoiceManager = {
         dot_rate_is_percent: dot_rate_is_percent ? 1 : 0,
       });
 
-      showToast(t('ui', 'invoice.template_created'), "success");
+      showToast(t("ui", "invoice.template_created"), "success");
       await this.loadData();
       this.editTemplate(template.id);
     } catch (error) {
       console.error("Error creating template:", error);
-      showToast(`${t('ui', 'invoice.template_create_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.template_create_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -596,7 +606,7 @@ const invoiceManager = {
       this.renderTemplateEditor();
     } catch (error) {
       console.error("Error loading template:", error);
-      showToast(t('ui', 'invoice.template_load_failed'), "error");
+      showToast(t("ui", "invoice.template_load_failed"), "error");
     }
   },
 
@@ -977,7 +987,7 @@ const invoiceManager = {
     ).checked;
 
     if (!name) {
-      showToast(t('ui', 'invoice.template_name_required'), "error");
+      showToast(t("ui", "invoice.template_name_required"), "error");
       return;
     }
 
@@ -992,12 +1002,15 @@ const invoiceManager = {
         dot_rate_is_percent: dot_rate_is_percent ? 1 : 0,
       });
 
-      showToast(t('ui', 'invoice.template_updated'), "success");
+      showToast(t("ui", "invoice.template_updated"), "success");
       await this.loadData();
       await this.editTemplate(this.currentTemplate.id);
     } catch (error) {
       console.error("Error updating template:", error);
-      showToast(`${t('ui', 'invoice.template_update_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.template_update_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -1024,7 +1037,7 @@ const invoiceManager = {
       const fontWeight = document.getElementById("element-font-weight").value;
 
       if (!content) {
-        showToast(t('ui', 'invoice.text_required'), "error");
+        showToast(t("ui", "invoice.text_required"), "error");
         return;
       }
 
@@ -1039,7 +1052,7 @@ const invoiceManager = {
       const fontWeight = document.getElementById("element-font-weight").value;
 
       if (!content) {
-        showToast(t('ui', 'invoice.text_required'), "error");
+        showToast(t("ui", "invoice.text_required"), "error");
         return;
       }
 
@@ -1050,7 +1063,7 @@ const invoiceManager = {
     } else if (type === "image") {
       const imageFile = document.getElementById("element-image").files[0];
       if (!imageFile) {
-        showToast(t('ui', 'invoice.select_image'), "error");
+        showToast(t("ui", "invoice.select_image"), "error");
         return;
       }
       formData.append("image", imageFile);
@@ -1058,11 +1071,14 @@ const invoiceManager = {
 
     try {
       await api.addTemplateElement(templateId, formData);
-      showToast(t('ui', 'invoice.element_added'), "success");
+      showToast(t("ui", "invoice.element_added"), "success");
       await this.editTemplate(templateId);
     } catch (error) {
       console.error("Error adding element:", error);
-      showToast(`${t('ui', 'invoice.element_add_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.element_add_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -1070,7 +1086,10 @@ const invoiceManager = {
     const elements = this.currentTemplate.elements || [];
 
     if (elements.length === 0) {
-      return `<p class="text-muted text-center">${t('ui', 'invoice.no_elements')}</p>`;
+      return `<p class="text-muted text-center">${t(
+        "ui",
+        "invoice.no_elements"
+      )}</p>`;
     }
 
     return elements
@@ -1128,7 +1147,7 @@ const invoiceManager = {
       (e) => e.id === elementId
     );
     if (!element) {
-      showToast(t('ui', 'invoice.element_not_found'), "error");
+      showToast(t("ui", "invoice.element_not_found"), "error");
       return;
     }
 
@@ -1293,7 +1312,7 @@ const invoiceManager = {
         elementId,
         formData
       );
-      showToast(t('ui', 'invoice.element_updated'), "success");
+      showToast(t("ui", "invoice.element_updated"), "success");
 
       // Close modal
       const modal = bootstrap.Modal.getInstance(
@@ -1305,22 +1324,25 @@ const invoiceManager = {
       await this.editTemplate(this.currentTemplate.id);
     } catch (error) {
       console.error("Error updating element:", error);
-      showToast(`${t('ui', 'invoice.element_update_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.element_update_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
   async deleteElement(elementId) {
-    if (!confirm(t('ui', 'confirm_delete_element'))) {
+    if (!confirm(t("ui", "confirm_delete_element"))) {
       return;
     }
 
     try {
       await api.deleteTemplateElement(this.currentTemplate.id, elementId);
-      showToast(t('ui', 'invoice.element_deleted'), "success");
+      showToast(t("ui", "invoice.element_deleted"), "success");
       await this.editTemplate(this.currentTemplate.id);
     } catch (error) {
       console.error("Error deleting element:", error);
-      showToast(t('ui', 'invoice.element_delete_failed'), "error");
+      showToast(t("ui", "invoice.element_delete_failed"), "error");
     }
   },
 
@@ -1328,7 +1350,7 @@ const invoiceManager = {
     try {
       const sourceTemplate = this.templates.find((t) => t.id === templateId);
       if (!sourceTemplate) {
-        showToast(t('ui', 'invoice.template_not_found'), "error");
+        showToast(t("ui", "invoice.template_not_found"), "error");
         return;
       }
 
@@ -1364,28 +1386,37 @@ const invoiceManager = {
         }
       }
 
-      showToast(`${t('ui', 'invoice.template_created')}: ${newName}`, "success");
+      showToast(
+        `${t("ui", "invoice.template_created")}: ${newName}`,
+        "success"
+      );
       await this.loadData();
       this.showTemplates();
     } catch (error) {
       console.error("Error duplicating template:", error);
-      showToast(`${t('ui', 'invoice.template_duplicate_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.template_duplicate_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
   async deleteTemplate(templateId) {
-    if (!confirm(t('ui', 'confirm_delete_template'))) {
+    if (!confirm(t("ui", "confirm_delete_template"))) {
       return;
     }
 
     try {
       await api.deleteInvoiceTemplate(templateId);
-      showToast(t('ui', 'invoice.template_deleted'), "success");
+      showToast(t("ui", "invoice.template_deleted"), "success");
       await this.loadData();
       this.showTemplates();
     } catch (error) {
       console.error("Error deleting template:", error);
-      showToast(`${t('ui', 'invoice.template_delete_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.template_delete_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -1393,14 +1424,14 @@ const invoiceManager = {
     try {
       const templateId = this.currentTemplate.id;
       if (!templateId) {
-        showToast(t('ui', 'invoice.template_id_missing'), "error");
+        showToast(t("ui", "invoice.template_id_missing"), "error");
         return;
       }
 
       const pdfUrl = `/api/invoices/template/${templateId}/preview-pdf`;
       console.log("Fetching PDF preview:", pdfUrl);
 
-      showToast(t('ui', 'invoice.pdf_generating'), "info");
+      showToast(t("ui", "invoice.pdf_generating"), "info");
 
       // Fetch PDF as blob
       const response = await fetch(pdfUrl);
@@ -1431,7 +1462,10 @@ const invoiceManager = {
       showToast("PDF preview geopend", "success");
     } catch (error) {
       console.error("Error generating preview:", error);
-      showToast(`${t('ui', 'invoice.preview_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.preview_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -1606,7 +1640,7 @@ const invoiceManager = {
       this.addLineItem();
     } catch (error) {
       console.error("Error showing create invoice:", error);
-      showToast(t('ui', 'invoice.prepare_failed'), "error");
+      showToast(t("ui", "invoice.prepare_failed"), "error");
     }
   },
 
@@ -1779,7 +1813,7 @@ const invoiceManager = {
       this.calculateTotals();
     } catch (error) {
       console.error("Error showing edit invoice:", error);
-      showToast(t('ui', 'invoice.load_for_edit_failed'), "error");
+      showToast(t("ui", "invoice.load_for_edit_failed"), "error");
     }
   },
 
@@ -1788,7 +1822,7 @@ const invoiceManager = {
       const submissions = await api.getSubmissions();
 
       if (!submissions || submissions.length === 0) {
-        showToast(t('ui', 'invoice.no_submission_history'), "info");
+        showToast(t("ui", "invoice.no_submission_history"), "info");
         return;
       }
 
@@ -2006,7 +2040,7 @@ const invoiceManager = {
       modal.show();
     } catch (error) {
       console.error("Error loading submission history:", error);
-      showToast(t('ui', 'invoice.submission_history_load_failed'), "error");
+      showToast(t("ui", "invoice.submission_history_load_failed"), "error");
     }
   },
 
@@ -2360,7 +2394,7 @@ const invoiceManager = {
     }
 
     if (lineItems.length === 0) {
-      showToast(t('ui', 'invoice.add_at_least_one_line'), "error");
+      showToast(t("ui", "invoice.add_at_least_one_line"), "error");
       return null;
     }
 
@@ -2381,12 +2415,12 @@ const invoiceManager = {
         payload.status = this.editingInvoiceStatus || "draft";
         invoice = await api.updateInvoice(this.editingInvoiceId, payload);
         if (!returnInvoice) {
-          showToast(t('ui', 'invoice.updated'), "success");
+          showToast(t("ui", "invoice.updated"), "success");
         }
       } else {
         invoice = await api.createInvoice(payload);
         if (!returnInvoice) {
-          showToast(t('ui', 'invoice.saved'), "success");
+          showToast(t("ui", "invoice.saved"), "success");
         }
       }
 
@@ -2403,7 +2437,7 @@ const invoiceManager = {
       return invoice;
     } catch (error) {
       console.error("Error saving invoice:", error);
-      showToast(`${t('ui', 'invoice.save_failed')}: ${error.message}`, "error");
+      showToast(`${t("ui", "invoice.save_failed")}: ${error.message}`, "error");
       return null;
     }
   },
@@ -2432,13 +2466,13 @@ const invoiceManager = {
       if (addressElement && addressElement.content) {
         document.getElementById("customer-address").value =
           addressElement.content;
-        showToast(t('ui', 'invoice.customer_filled_from_template'), "success");
+        showToast(t("ui", "invoice.customer_filled_from_template"), "success");
       } else {
-        showToast(t('ui', 'invoice.customer_missing_in_template'), "info");
+        showToast(t("ui", "invoice.customer_missing_in_template"), "info");
       }
     } catch (error) {
       console.error("Error filling customer from template:", error);
-      showToast(t('ui', 'invoice.template_data_load_failed'), "error");
+      showToast(t("ui", "invoice.template_data_load_failed"), "error");
     }
   },
 
@@ -2448,7 +2482,7 @@ const invoiceManager = {
 
     try {
       const result = await api.generateInvoicePDF(invoice.id);
-      showToast(t('ui', 'invoice.pdf_generated'), "success");
+      showToast(t("ui", "invoice.pdf_generated"), "success");
 
       // Download PDF
       const blob = await api.downloadInvoicePDF(invoice.id);
@@ -2465,7 +2499,10 @@ const invoiceManager = {
       this.renderInvoiceList();
     } catch (error) {
       console.error("Error generating PDF:", error);
-      showToast(`${t('ui', 'invoice.pdf_generate_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.pdf_generate_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -2622,8 +2659,13 @@ const invoiceManager = {
                   ${
                     invoice.original_pdf_path
                       ? `
-                  <button class="btn btn-warning w-100 mb-2" onclick="invoiceManager.downloadOriginalPDF(${invoice.id})">
-                    <i class="bi bi-file-earmark-pdf"></i> ${t('ui','invoice.download_original_pdf')}
+                  <button class="btn btn-warning w-100 mb-2" onclick="invoiceManager.downloadOriginalPDF(${
+                    invoice.id
+                  })">
+                    <i class="bi bi-file-earmark-pdf"></i> ${t(
+                      "ui",
+                      "invoice.download_original_pdf"
+                    )}
                   </button>
                   `
                       : ""
@@ -2637,7 +2679,7 @@ const invoiceManager = {
                   <button class="btn btn-outline-danger w-100" onclick="invoiceManager.deleteInvoice(${
                     invoice.id
                   })">
-                    <i class="bi bi-trash"></i> ${t('ui','delete')}
+                    <i class="bi bi-trash"></i> ${t("ui", "delete")}
                   </button>
                 </div>
               </div>
@@ -2647,13 +2689,13 @@ const invoiceManager = {
       `;
     } catch (error) {
       console.error("Error viewing invoice:", error);
-      showToast(t('ui', 'invoice.load_failed'), "error");
+      showToast(t("ui", "invoice.load_failed"), "error");
     }
   },
 
   async downloadPDF(invoiceId) {
     try {
-      showToast(t('ui', 'invoice.pdf_generating'), "info");
+      showToast(t("ui", "invoice.pdf_generating"), "info");
       const blob = await api.downloadInvoicePDF(invoiceId);
 
       const url = window.URL.createObjectURL(blob);
@@ -2665,16 +2707,16 @@ const invoiceManager = {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      showToast(t('ui', 'invoice.pdf_downloaded'), "success");
+      showToast(t("ui", "invoice.pdf_downloaded"), "success");
     } catch (error) {
       console.error("Error downloading PDF:", error);
-      showToast(t('ui', 'invoice.download_pdf_failed'), "error");
+      showToast(t("ui", "invoice.download_pdf_failed"), "error");
     }
   },
 
   async downloadOriginalPDF(invoiceId) {
     try {
-      showToast(t('ui', 'invoice.original_pdf_downloading'), "info");
+      showToast(t("ui", "invoice.original_pdf_downloading"), "info");
 
       const response = await fetch(
         `${API_BASE_URL}/admin/invoices/invoices/${invoiceId}/original-pdf`,
@@ -2700,10 +2742,13 @@ const invoiceManager = {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      showToast(t('ui', 'invoice.original_pdf_downloaded'), "success");
+      showToast(t("ui", "invoice.original_pdf_downloaded"), "success");
     } catch (error) {
       console.error("Error downloading original PDF:", error);
-      showToast(`${t('ui', 'invoice.download_original_pdf_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.download_original_pdf_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -2760,7 +2805,7 @@ Met vriendelijke groet</textarea>
       modal.show();
     } catch (error) {
       console.error("Error showing email modal:", error);
-      showToast(t('ui', 'invoice.invoice_data_load_failed'), "error");
+      showToast(t("ui", "invoice.invoice_data_load_failed"), "error");
     }
   },
 
@@ -2770,7 +2815,7 @@ Met vriendelijke groet</textarea>
     const message = document.getElementById("email-message").value.trim();
 
     if (!recipient) {
-      showToast(t('ui', 'invoice.email_required'), "error");
+      showToast(t("ui", "invoice.email_required"), "error");
       return;
     }
 
@@ -2781,7 +2826,7 @@ Met vriendelijke groet</textarea>
         message: message,
       });
 
-      showToast(t('ui', 'invoice.email_sent'), "success");
+      showToast(t("ui", "invoice.email_sent"), "success");
 
       const modal = bootstrap.Modal.getInstance(
         document.getElementById("emailInvoiceModal")
@@ -2792,23 +2837,29 @@ Met vriendelijke groet</textarea>
       this.renderInvoiceList();
     } catch (error) {
       console.error("Error sending email:", error);
-      showToast(`${t('ui', 'invoice.email_send_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.email_send_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
   async deleteInvoice(invoiceId) {
-    if (!confirm(t('ui', 'confirm_delete_invoice'))) {
+    if (!confirm(t("ui", "confirm_delete_invoice"))) {
       return;
     }
 
     try {
       await api.deleteInvoice(invoiceId);
-      showToast(t('ui', 'invoice.deleted'), "success");
+      showToast(t("ui", "invoice.deleted"), "success");
       await this.loadData();
       this.renderInvoiceList();
     } catch (error) {
       console.error("Error deleting invoice:", error);
-      showToast(`${t('ui', 'invoice.invoice_delete_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.invoice_delete_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -2851,11 +2902,14 @@ Met vriendelijke groet</textarea>
     const ids = Array.from(checkboxes).map((cb) => cb.value);
 
     if (ids.length === 0) {
-      showToast(t('ui', 'invoice.none_selected'), "error");
+      showToast(t("ui", "invoice.none_selected"), "error");
       return;
     }
 
-    const confirmMessage = t('ui', 'invoice.confirm_delete_selected').replace('{count}', ids.length);
+    const confirmMessage = t("ui", "invoice.confirm_delete_selected").replace(
+      "{count}",
+      ids.length
+    );
     if (!confirm(confirmMessage)) {
       return;
     }
@@ -2875,10 +2929,13 @@ Met vriendelijke groet</textarea>
       }
 
       if (errorCount === 0) {
-        showToast(t('ui', 'invoice.selected_deleted'), "success");
+        showToast(t("ui", "invoice.selected_deleted"), "success");
       } else {
         showToast(
-          `${successCount} ${t('ui','invoice.deleted_short')}, ${errorCount} ${t('ui','invoice.failed_short')}`,
+          `${successCount} ${t(
+            "ui",
+            "invoice.deleted_short"
+          )}, ${errorCount} ${t("ui", "invoice.failed_short")}`,
           "warning"
         );
       }
@@ -2888,7 +2945,10 @@ Met vriendelijke groet</textarea>
       this.renderInvoiceList();
     } catch (error) {
       console.error("Error bulk deleting:", error);
-      showToast(`${t('ui', 'invoice.delete_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.delete_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -2906,13 +2966,16 @@ Met vriendelijke groet</textarea>
     );
 
     if (oldInvoices.length === 0) {
-      showToast(t('ui', 'invoice.none_found_before_date').replace('{date}', beforeDate), "info");
+      showToast(
+        t("ui", "invoice.none_found_before_date").replace("{date}", beforeDate),
+        "info"
+      );
       return;
     }
 
-    const confirmMessage = t('ui', 'invoice.confirm_delete_before_date')
-      .replace('{count}', oldInvoices.length)
-      .replace('{date}', beforeDate);
+    const confirmMessage = t("ui", "invoice.confirm_delete_before_date")
+      .replace("{count}", oldInvoices.length)
+      .replace("{date}", beforeDate);
     if (!confirm(confirmMessage)) {
       return;
     }
@@ -2932,10 +2995,18 @@ Met vriendelijke groet</textarea>
       }
 
       if (errorCount === 0) {
-        showToast(t('ui', 'invoice.deleted_before_date').replace('{count}', successCount).replace('{date}', beforeDate), "success");
+        showToast(
+          t("ui", "invoice.deleted_before_date")
+            .replace("{count}", successCount)
+            .replace("{date}", beforeDate),
+          "success"
+        );
       } else {
         showToast(
-          `${successCount} ${t('ui','invoice.deleted_short')}, ${errorCount} ${t('ui','invoice.failed_short')}`,
+          `${successCount} ${t(
+            "ui",
+            "invoice.deleted_short"
+          )}, ${errorCount} ${t("ui", "invoice.failed_short")}`,
           "warning"
         );
       }
@@ -2944,16 +3015,26 @@ Met vriendelijke groet</textarea>
       this.renderInvoiceList();
     } catch (error) {
       console.error("Error deleting old invoices:", error);
-      showToast(`${t('ui', 'invoice.delete_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.delete_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
   async clearAllInvoices() {
-    if (!confirm(t('ui', 'invoice.clear_all_warning').replace('{count}', this.invoices.length))) {
+    if (
+      !confirm(
+        t("ui", "invoice.clear_all_warning").replace(
+          "{count}",
+          this.invoices.length
+        )
+      )
+    ) {
       return;
     }
 
-    if (!confirm(t('ui', 'invoice.clear_all_final_confirm'))) {
+    if (!confirm(t("ui", "invoice.clear_all_final_confirm"))) {
       return;
     }
 
@@ -2972,10 +3053,16 @@ Met vriendelijke groet</textarea>
       }
 
       if (errorCount === 0) {
-        showToast(t('ui', 'invoice.all_deleted').replace('{count}', successCount), "success");
+        showToast(
+          t("ui", "invoice.all_deleted").replace("{count}", successCount),
+          "success"
+        );
       } else {
         showToast(
-          `${successCount} ${t('ui','invoice.deleted_short')}, ${errorCount} ${t('ui','invoice.failed_short')}`,
+          `${successCount} ${t(
+            "ui",
+            "invoice.deleted_short"
+          )}, ${errorCount} ${t("ui", "invoice.failed_short")}`,
           "warning"
         );
       }
@@ -2984,7 +3071,10 @@ Met vriendelijke groet</textarea>
       this.renderInvoiceList();
     } catch (error) {
       console.error("Error clearing all invoices:", error);
-      showToast(`${t('ui', 'invoice.delete_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.delete_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
@@ -3097,11 +3187,14 @@ Met vriendelijke groet</textarea>
       <div class="container-fluid mt-4">
         <div class="row mb-4">
           <div class="col">
-            <h2><i class="bi bi-plus-circle"></i> ${t('ui','invoice.import_template_new')}</h2>
+            <h2><i class="bi bi-plus-circle"></i> ${t(
+              "ui",
+              "invoice.import_template_new"
+            )}</h2>
           </div>
           <div class="col-auto">
             <button class="btn btn-outline-secondary" onclick="invoiceManager.showImportSettings()">
-              <i class="bi bi-arrow-left"></i> ${t('ui','back')}
+              <i class="bi bi-arrow-left"></i> ${t("ui", "back")}
             </button>
           </div>
         </div>
@@ -3110,27 +3203,45 @@ Met vriendelijke groet</textarea>
           <div class="col-md-6">
             <div class="card">
               <div class="card-header">
-                <h5>${t('ui','invoice.template_details')}</h5>
+                <h5>${t("ui", "invoice.template_details")}</h5>
               </div>
               <div class="card-body">
                 <div class="mb-3">
-                  <label class="form-label">${t('ui','invoice.template_name')} *</label>
-                  <input type="text" class="form-control" id="import-template-name" placeholder="${t('ui','invoice.template_name_placeholder')}">
+                  <label class="form-label">${t(
+                    "ui",
+                    "invoice.template_name"
+                  )} *</label>
+                  <input type="text" class="form-control" id="import-template-name" placeholder="${t(
+                    "ui",
+                    "invoice.template_name_placeholder"
+                  )}">
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">${t('ui','invoice.description')}</label>
-                  <textarea class="form-control" id="import-template-desc" rows="2" placeholder="${t('ui','invoice.description_placeholder')}"></textarea>
+                  <label class="form-label">${t(
+                    "ui",
+                    "invoice.description"
+                  )}</label>
+                  <textarea class="form-control" id="import-template-desc" rows="2" placeholder="${t(
+                    "ui",
+                    "invoice.description_placeholder"
+                  )}"></textarea>
                 </div>
                 <div class="mb-3">
-                  <label class="form-label">${t('ui','invoice.parser_type')} *</label>
+                  <label class="form-label">${t(
+                    "ui",
+                    "invoice.parser_type"
+                  )} *</label>
                   <select class="form-select" id="import-template-parser">
-                    <option value="">-- ${t('ui','invoice.select_parser_type')} --</option>
+                    <option value="">-- ${t(
+                      "ui",
+                      "invoice.select_parser_type"
+                    )} --</option>
                     <option value="mainfreight">Mainfreight</option>
                     <option value="generic">Generic (Regex)</option>
                   </select>
                 </div>
                 <button class="btn btn-primary" onclick="invoiceManager.saveImportTemplate()">
-                  <i class="bi bi-save"></i> ${t('ui','save')}
+                  <i class="bi bi-save"></i> ${t("ui", "save")}
                 </button>
               </div>
             </div>
@@ -3138,7 +3249,7 @@ Met vriendelijke groet</textarea>
           <div class="col-md-6">
             <div class="card bg-light">
               <div class="card-header">
-                <h5>${t('ui','info')}</h5>
+                <h5>${t("ui", "info")}</h5>
               </div>
               <div class="card-body">
                 <p><strong>Parser Types:</strong></p>
@@ -3163,7 +3274,7 @@ Met vriendelijke groet</textarea>
     const parser_type = document.getElementById("import-template-parser").value;
 
     if (!name || !parser_type) {
-      showToast(t('ui', 'invoice.import_template_required'), "error");
+      showToast(t("ui", "invoice.import_template_required"), "error");
       return;
     }
 
@@ -3175,25 +3286,31 @@ Met vriendelijke groet</textarea>
         config: {},
       });
 
-      showToast(t('ui', 'invoice.import_template_created'), "success");
+      showToast(t("ui", "invoice.import_template_created"), "success");
       await this.showImportSettings();
     } catch (error) {
       console.error("Error saving import template:", error);
-      showToast(`${t('ui', 'invoice.import_template_save_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.import_template_save_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 
   async deleteImportTemplate(templateId) {
-    if (!confirm(t('ui', 'invoice.import_template_delete_confirm'))) {
+    if (!confirm(t("ui", "invoice.import_template_delete_confirm"))) {
       return;
     }
 
     try {
       // TODO: implement delete endpoint
-      showToast(t('ui', 'invoice.feature_not_available'), "info");
+      showToast(t("ui", "invoice.feature_not_available"), "info");
     } catch (error) {
       console.error("Error deleting import template:", error);
-      showToast(`${t('ui', 'invoice.import_template_delete_failed')}: ${error.message}`, "error");
+      showToast(
+        `${t("ui", "invoice.import_template_delete_failed")}: ${error.message}`,
+        "error"
+      );
     }
   },
 };

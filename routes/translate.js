@@ -49,11 +49,16 @@ router.post("/", async (req, res) => {
       }
 
       const data = await resp.json();
-      translated = data.translations && data.translations[0] && data.translations[0].text;
+      translated =
+        data.translations && data.translations[0] && data.translations[0].text;
     } else if (normalizedProvider === "google") {
       const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
       if (!apiKey) {
-        return res.status(400).json({ error: "GOOGLE_TRANSLATE_API_KEY is not configured on the server" });
+        return res
+          .status(400)
+          .json({
+            error: "GOOGLE_TRANSLATE_API_KEY is not configured on the server",
+          });
       }
 
       const body = {
@@ -62,15 +67,20 @@ router.post("/", async (req, res) => {
       };
       if (source) body.source = source;
 
-      const resp = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      const resp = await fetch(
+        `https://translation.googleapis.com/language/translate/v2?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
 
       if (!resp.ok) {
         const errBody = await resp.text();
-        return res.status(502).json({ error: `Google error ${resp.status}: ${errBody}` });
+        return res
+          .status(502)
+          .json({ error: `Google error ${resp.status}: ${errBody}` });
       }
 
       const data = await resp.json();

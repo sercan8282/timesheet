@@ -1,10 +1,10 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const sqlite3 = require("sqlite3").verbose();
+const path = require("path");
 
-const dbPath = path.join(__dirname, 'timesheet.db');
+const dbPath = path.join(__dirname, "timesheet.db");
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
-    console.error('Error opening database:', err);
+    console.error("Error opening database:", err);
     process.exit(1);
   }
 });
@@ -26,23 +26,23 @@ setTimeout(() => {
   ];
 
   // Get current max sort_order
-  db.get('SELECT MAX(sort_order) as max_order FROM ui_menu', [], (err, row) => {
+  db.get("SELECT MAX(sort_order) as max_order FROM ui_menu", [], (err, row) => {
     if (err) {
-      console.error('Error getting max sort_order:', err);
+      console.error("Error getting max sort_order:", err);
       db.close();
       process.exit(1);
     }
 
-    const startOrder = (row && row.max_order !== null) ? row.max_order + 1 : 7;
-    console.log('Starting at sort_order:', startOrder);
-    
+    const startOrder = row && row.max_order !== null ? row.max_order + 1 : 7;
+    console.log("Starting at sort_order:", startOrder);
+
     const stmt = db.prepare(
-      'INSERT OR REPLACE INTO ui_menu (page_key, label, sort_order, visible) VALUES (?, ?, ?, ?)'
+      "INSERT OR REPLACE INTO ui_menu (page_key, label, sort_order, visible) VALUES (?, ?, ?, ?)"
     );
 
     adminItems.forEach((item, idx) => {
       stmt.run(item.k, item.l, startOrder + idx, 1);
-      console.log('Added:', item.k);
+      console.log("Added:", item.k);
     });
 
     stmt.finalize();
@@ -85,7 +85,7 @@ setTimeout(() => {
     ];
 
     const transStmt = db.prepare(
-      'INSERT OR REPLACE INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)'
+      "INSERT OR REPLACE INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)"
     );
 
     adminMenuLabels.forEach((item) => {
@@ -94,9 +94,9 @@ setTimeout(() => {
 
     transStmt.finalize((err) => {
       if (err) {
-        console.error('Error adding translations:', err);
+        console.error("Error adding translations:", err);
       } else {
-        console.log('✓ Added admin menu items and translations');
+        console.log("✓ Added admin menu items and translations");
       }
       db.close();
       process.exit(0);

@@ -1,9 +1,11 @@
 const DEFAULT_CUSTOM_CSS = `:root {\n  --branding-primary-color-fallback: #0066CC;\n}\n\n.btn-primary, .bg-brand, .badge-primary, .nav-pills .nav-link.active {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n.text-brand, .icon-brand, .sidebar .nav-link i {\n  color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n\n/* Ensure active nav icons contrast with the active background */\n.nav-link.active i, .navbar .nav-link.active i {\n  color: #ffffff;\n}\n\n.login-card .btn-primary {\n  background-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n  border-color: var(--branding-primary-color, var(--branding-primary-color-fallback));\n}\n`;
 
 // Global translation helper function
-window.t = function(namespace, key) {
+window.t = function (namespace, key) {
   if (window.app && window.app.translations) {
-    return window.app.translations[`${namespace}:${key}`] || `${namespace}:${key}`;
+    return (
+      window.app.translations[`${namespace}:${key}`] || `${namespace}:${key}`
+    );
   }
   return `${namespace}:${key}`;
 };
@@ -302,7 +304,7 @@ class App {
   loadPage(page) {
     // Track current page
     this.currentPage = page;
-    
+
     // Update active nav
     document.querySelectorAll(".navbar-nav .nav-link").forEach((link) => {
       link.classList.remove("active");

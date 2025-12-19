@@ -188,9 +188,24 @@ class Database {
         ["admin", "select_company", "en", "Select company"],
         ["admin", "select_company", "nl", "Selecteer bedrijf"],
         ["admin", "select_company", "de", "Firma auswählen"],
-        ["admin", "confirm_delete", "en", "Are you sure you want to delete? This cannot be undone."],
-        ["admin", "confirm_delete", "nl", "Weet je zeker dat je dit wilt verwijderen? Dit kan niet ongedaan gemaakt worden."],
-        ["admin", "confirm_delete", "de", "Möchten Sie wirklich löschen? Dies kann nicht rückgängig gemacht werden."],
+        [
+          "admin",
+          "confirm_delete",
+          "en",
+          "Are you sure you want to delete? This cannot be undone.",
+        ],
+        [
+          "admin",
+          "confirm_delete",
+          "nl",
+          "Weet je zeker dat je dit wilt verwijderen? Dit kan niet ongedaan gemaakt worden.",
+        ],
+        [
+          "admin",
+          "confirm_delete",
+          "de",
+          "Möchten Sie wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
+        ],
 
         // Fleet management
         ["admin", "fleet.no_vehicles", "en", "No vehicles"],
@@ -198,7 +213,12 @@ class Database {
         ["admin", "fleet.no_vehicles", "de", "Keine Fahrzeuge"],
         ["admin", "fleet.add_first", "en", "Add a vehicle first."],
         ["admin", "fleet.add_first", "nl", "Voeg eerst een voertuig toe."],
-        ["admin", "fleet.add_first", "de", "Fügen Sie zuerst ein Fahrzeug hinzu."],
+        [
+          "admin",
+          "fleet.add_first",
+          "de",
+          "Fügen Sie zuerst ein Fahrzeug hinzu.",
+        ],
         ["admin", "fleet.no_maintenance", "en", "No maintenance records"],
         ["admin", "fleet.no_maintenance", "nl", "Geen onderhoud geregistreerd"],
         ["admin", "fleet.no_maintenance", "de", "Keine Wartungseinträge"],
@@ -222,7 +242,12 @@ class Database {
         ["admin", "fleet.edit_maintenance", "de", "Wartung bearbeiten"],
         ["admin", "fleet.license_required", "en", "License plate is required"],
         ["admin", "fleet.license_required", "nl", "Kenteken is verplicht"],
-        ["admin", "fleet.license_required", "de", "Kennzeichen ist erforderlich"],
+        [
+          "admin",
+          "fleet.license_required",
+          "de",
+          "Kennzeichen ist erforderlich",
+        ],
         ["admin", "fleet.date_required", "en", "Date is required"],
         ["admin", "fleet.date_required", "nl", "Datum is verplicht"],
         ["admin", "fleet.date_required", "de", "Datum ist erforderlich"],
@@ -230,16 +255,36 @@ class Database {
         // Planning
         ["admin", "planning.no_planning", "en", "No planning for this week"],
         ["admin", "planning.no_planning", "nl", "Geen planning voor deze week"],
-        ["admin", "planning.no_planning", "de", "Keine Planung für diese Woche"],
+        [
+          "admin",
+          "planning.no_planning",
+          "de",
+          "Keine Planung für diese Woche",
+        ],
         ["admin", "planning.new_planning", "en", "New planning"],
         ["admin", "planning.new_planning", "nl", "Nieuwe planning"],
         ["admin", "planning.new_planning", "de", "Neue Planung"],
         ["admin", "planning.edit_planning", "en", "Edit planning"],
         ["admin", "planning.edit_planning", "nl", "Bewerk planning"],
         ["admin", "planning.edit_planning", "de", "Planung bearbeiten"],
-        ["admin", "planning.select_company_first", "en", "Select company first"],
-        ["admin", "planning.select_company_first", "nl", "Selecteer eerst een bedrijf"],
-        ["admin", "planning.select_company_first", "de", "Wählen Sie zuerst eine Firma"],
+        [
+          "admin",
+          "planning.select_company_first",
+          "en",
+          "Select company first",
+        ],
+        [
+          "admin",
+          "planning.select_company_first",
+          "nl",
+          "Selecteer eerst een bedrijf",
+        ],
+        [
+          "admin",
+          "planning.select_company_first",
+          "de",
+          "Wählen Sie zuerst eine Firma",
+        ],
         ["admin", "planning.week_number", "en", "Week number"],
         ["admin", "planning.week_number", "nl", "Weeknummer"],
         ["admin", "planning.week_number", "de", "Wochennummer"],
@@ -264,9 +309,24 @@ class Database {
         ["admin", "planning.day", "en", "Day"],
         ["admin", "planning.day", "nl", "Dag"],
         ["admin", "planning.day", "de", "Tag"],
-        ["admin", "planning.confirm_clear", "en", "Clear planning for this company in this week?"],
-        ["admin", "planning.confirm_clear", "nl", "Planning voor dit bedrijf in deze week wissen?"],
-        ["admin", "planning.confirm_clear", "de", "Planung für diese Firma in dieser Woche löschen?"],
+        [
+          "admin",
+          "planning.confirm_clear",
+          "en",
+          "Clear planning for this company in this week?",
+        ],
+        [
+          "admin",
+          "planning.confirm_clear",
+          "nl",
+          "Planning voor dit bedrijf in deze week wissen?",
+        ],
+        [
+          "admin",
+          "planning.confirm_clear",
+          "de",
+          "Planung für diese Firma in dieser Woche löschen?",
+        ],
         ["admin", "planning.cleared", "en", "Planning cleared"],
         ["admin", "planning.cleared", "nl", "Planning gewist"],
         ["admin", "planning.cleared", "de", "Planung gelöscht"],
@@ -275,13 +335,23 @@ class Database {
         ["admin", "planning.driver_updated", "de", "Fahrer aktualisiert"],
         ["admin", "planning.update_failed", "en", "Update failed"],
         ["admin", "planning.update_failed", "nl", "Update mislukt"],
-        ["admin", "planning.update_failed", "de", "Aktualisierung fehlgeschlagen"],
+        [
+          "admin",
+          "planning.update_failed",
+          "de",
+          "Aktualisierung fehlgeschlagen",
+        ],
         ["admin", "planning.delete_failed", "en", "Delete failed"],
         ["admin", "planning.delete_failed", "nl", "Verwijderen mislukt"],
         ["admin", "planning.delete_failed", "de", "Löschen fehlgeschlagen"],
         ["admin", "planning.generate_failed", "en", "Generate failed"],
         ["admin", "planning.generate_failed", "nl", "Genereren mislukt"],
-        ["admin", "planning.generate_failed", "de", "Generierung fehlgeschlagen"],
+        [
+          "admin",
+          "planning.generate_failed",
+          "de",
+          "Generierung fehlgeschlagen",
+        ],
         ["admin", "planning.clear_failed", "en", "Clear failed"],
         ["admin", "planning.clear_failed", "nl", "Wissen mislukt"],
         ["admin", "planning.clear_failed", "de", "Löschen fehlgeschlagen"],
@@ -297,9 +367,24 @@ class Database {
         ["admin", "planning.no_drivers", "en", "No drivers"],
         ["admin", "planning.no_drivers", "nl", "Geen chauffeurs"],
         ["admin", "planning.no_drivers", "de", "Keine Fahrer"],
-        ["admin", "planning.select_min_fields", "en", "Select company, driver and enter route"],
-        ["admin", "planning.select_min_fields", "nl", "Selecteer bedrijf, chauffeur en vul route in"],
-        ["admin", "planning.select_min_fields", "de", "Wählen Sie Firma, Fahrer und geben Sie Route ein"],
+        [
+          "admin",
+          "planning.select_min_fields",
+          "en",
+          "Select company, driver and enter route",
+        ],
+        [
+          "admin",
+          "planning.select_min_fields",
+          "nl",
+          "Selecteer bedrijf, chauffeur en vul route in",
+        ],
+        [
+          "admin",
+          "planning.select_min_fields",
+          "de",
+          "Wählen Sie Firma, Fahrer und geben Sie Route ein",
+        ],
 
         // Leave management
         ["admin", "leave.no_requests", "en", "No leave requests"],
@@ -333,35 +418,71 @@ class Database {
         ["admin", "day.fri", "de", "Fr"],
 
         // MFA
-        ["admin", "mfa.reset_confirm", "en", "Confirm with your own MFA code to reset this user's MFA"],
-        ["admin", "mfa.reset_confirm", "nl", "Bevestig met je eigen MFA code om de MFA van deze gebruiker te resetten"],
-        ["admin", "mfa.reset_confirm", "de", "Bestätigen Sie mit Ihrem eigenen MFA-Code, um die MFA dieses Benutzers zurückzusetzen"],
+        [
+          "admin",
+          "mfa.reset_confirm",
+          "en",
+          "Confirm with your own MFA code to reset this user's MFA",
+        ],
+        [
+          "admin",
+          "mfa.reset_confirm",
+          "nl",
+          "Bevestig met je eigen MFA code om de MFA van deze gebruiker te resetten",
+        ],
+        [
+          "admin",
+          "mfa.reset_confirm",
+          "de",
+          "Bestätigen Sie mit Ihrem eigenen MFA-Code, um die MFA dieses Benutzers zurückzusetzen",
+        ],
         ["admin", "mfa.admin_code", "en", "Admin MFA code"],
         ["admin", "mfa.admin_code", "nl", "Admin MFA code"],
         ["admin", "mfa.admin_code", "de", "Admin MFA-Code"],
-        ["admin", "mfa.reset_success", "en", "MFA reset. User must setup MFA again at next login."],
-        ["admin", "mfa.reset_success", "nl", "MFA is gereset. Gebruiker moet opnieuw MFA instellen bij volgende login."],
-        ["admin", "mfa.reset_success", "de", "MFA zurückgesetzt. Benutzer muss MFA beim nächsten Login erneut einrichten."],
+        [
+          "admin",
+          "mfa.reset_success",
+          "en",
+          "MFA reset. User must setup MFA again at next login.",
+        ],
+        [
+          "admin",
+          "mfa.reset_success",
+          "nl",
+          "MFA is gereset. Gebruiker moet opnieuw MFA instellen bij volgende login.",
+        ],
+        [
+          "admin",
+          "mfa.reset_success",
+          "de",
+          "MFA zurückgesetzt. Benutzer muss MFA beim nächsten Login erneut einrichten.",
+        ],
         ["admin", "mfa.invalid_code", "en", "Enter a valid 6-digit code"],
-        ["admin", "mfa.invalid_code", "nl", "Voer een geldige 6-cijferige code in"],
-        ["admin", "mfa.invalid_code", "de", "Geben Sie einen gültigen 6-stelligen Code ein"],
+        [
+          "admin",
+          "mfa.invalid_code",
+          "nl",
+          "Voer een geldige 6-cijferige code in",
+        ],
+        [
+          "admin",
+          "mfa.invalid_code",
+          "de",
+          "Geben Sie einen gültigen 6-stelligen Code ein",
+        ],
       ];
 
       adminDefaults.forEach((t) => {
-        this.db.get(
-          `SELECT COUNT(*) AS cnt FROM translations WHERE namespace = ? AND key = ? AND locale = ?`,
-          [t[0], t[1], t[2]],
-          (err, row) => {
-            if (!err && row && row.cnt === 0) {
-              this.db.run(
-                `INSERT INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)`,
-                t,
-                (err2) => {
-                  if (err2)
-                    console.error("Error inserting admin translation", err2.message);
-                }
+        // Use INSERT OR IGNORE to avoid UNIQUE constraint errors
+        this.db.run(
+          `INSERT OR IGNORE INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)`,
+          t,
+          (err) => {
+            if (err && !err.message.includes("UNIQUE constraint failed"))
+              console.error(
+                "Error inserting admin translation",
+                err.message
               );
-            }
           }
         );
       });
@@ -485,38 +606,123 @@ class Database {
         ["ui", "withdraw", "de", "Zurückziehen"],
 
         // Leave hints
-        ["ui", "leave_edit_hint", "en", "Adjust the data and click \"Update\""],
-        ["ui", "leave_edit_hint", "nl", "Pas de gegevens aan en klik op \"Bijwerken\""],
-        ["ui", "leave_edit_hint", "de", "Passen Sie die Daten an und klicken Sie auf \"Aktualisieren\""],
+        ["ui", "leave_edit_hint", "en", 'Adjust the data and click "Update"'],
+        [
+          "ui",
+          "leave_edit_hint",
+          "nl",
+          'Pas de gegevens aan en klik op "Bijwerken"',
+        ],
+        [
+          "ui",
+          "leave_edit_hint",
+          "de",
+          'Passen Sie die Daten an und klicken Sie auf "Aktualisieren"',
+        ],
 
         // Invoice flows
         ["ui", "invoice.load_error", "en", "Error loading invoice data"],
-        ["ui", "invoice.load_error", "nl", "Fout bij laden van factuurgegevens"],
-        ["ui", "invoice.load_error", "de", "Fehler beim Laden der Rechnungsdaten"],
+        [
+          "ui",
+          "invoice.load_error",
+          "nl",
+          "Fout bij laden van factuurgegevens",
+        ],
+        [
+          "ui",
+          "invoice.load_error",
+          "de",
+          "Fehler beim Laden der Rechnungsdaten",
+        ],
 
-        ["ui", "invoice.template_name_required", "en", "Template name is required"],
-        ["ui", "invoice.template_name_required", "nl", "Template naam is verplicht"],
-        ["ui", "invoice.template_name_required", "de", "Vorlagenname ist erforderlich"],
+        [
+          "ui",
+          "invoice.template_name_required",
+          "en",
+          "Template name is required",
+        ],
+        [
+          "ui",
+          "invoice.template_name_required",
+          "nl",
+          "Template naam is verplicht",
+        ],
+        [
+          "ui",
+          "invoice.template_name_required",
+          "de",
+          "Vorlagenname ist erforderlich",
+        ],
 
         ["ui", "invoice.template_created", "en", "Template created"],
-        ["ui", "invoice.template_created", "nl", "Template succesvol aangemaakt"],
+        [
+          "ui",
+          "invoice.template_created",
+          "nl",
+          "Template succesvol aangemaakt",
+        ],
         ["ui", "invoice.template_created", "de", "Vorlage erstellt"],
 
-        ["ui", "invoice.template_create_failed", "en", "Error creating template"],
-        ["ui", "invoice.template_create_failed", "nl", "Fout bij aanmaken template"],
-        ["ui", "invoice.template_create_failed", "de", "Fehler beim Erstellen der Vorlage"],
+        [
+          "ui",
+          "invoice.template_create_failed",
+          "en",
+          "Error creating template",
+        ],
+        [
+          "ui",
+          "invoice.template_create_failed",
+          "nl",
+          "Fout bij aanmaken template",
+        ],
+        [
+          "ui",
+          "invoice.template_create_failed",
+          "de",
+          "Fehler beim Erstellen der Vorlage",
+        ],
 
         ["ui", "invoice.template_load_failed", "en", "Error loading template"],
         ["ui", "invoice.template_load_failed", "nl", "Fout bij laden template"],
-        ["ui", "invoice.template_load_failed", "de", "Fehler beim Laden der Vorlage"],
+        [
+          "ui",
+          "invoice.template_load_failed",
+          "de",
+          "Fehler beim Laden der Vorlage",
+        ],
 
         ["ui", "invoice.template_updated", "en", "Template settings updated"],
-        ["ui", "invoice.template_updated", "nl", "Template instellingen bijgewerkt"],
-        ["ui", "invoice.template_updated", "de", "Vorlageneinstellungen aktualisiert"],
+        [
+          "ui",
+          "invoice.template_updated",
+          "nl",
+          "Template instellingen bijgewerkt",
+        ],
+        [
+          "ui",
+          "invoice.template_updated",
+          "de",
+          "Vorlageneinstellungen aktualisiert",
+        ],
 
-        ["ui", "invoice.template_update_failed", "en", "Error updating template"],
-        ["ui", "invoice.template_update_failed", "nl", "Fout bij bijwerken template"],
-        ["ui", "invoice.template_update_failed", "de", "Fehler beim Aktualisieren der Vorlage"],
+        [
+          "ui",
+          "invoice.template_update_failed",
+          "en",
+          "Error updating template",
+        ],
+        [
+          "ui",
+          "invoice.template_update_failed",
+          "nl",
+          "Fout bij bijwerken template",
+        ],
+        [
+          "ui",
+          "invoice.template_update_failed",
+          "de",
+          "Fehler beim Aktualisieren der Vorlage",
+        ],
 
         ["ui", "invoice.text_required", "en", "Text content is required"],
         ["ui", "invoice.text_required", "nl", "Tekst inhoud is verplicht"],
@@ -531,8 +737,18 @@ class Database {
         ["ui", "invoice.element_added", "de", "Element hinzugefügt"],
 
         ["ui", "invoice.element_add_failed", "en", "Error adding element"],
-        ["ui", "invoice.element_add_failed", "nl", "Fout bij toevoegen element"],
-        ["ui", "invoice.element_add_failed", "de", "Fehler beim Hinzufügen des Elements"],
+        [
+          "ui",
+          "invoice.element_add_failed",
+          "nl",
+          "Fout bij toevoegen element",
+        ],
+        [
+          "ui",
+          "invoice.element_add_failed",
+          "de",
+          "Fehler beim Hinzufügen des Elements",
+        ],
 
         ["ui", "invoice.no_elements", "en", "No elements added yet"],
         ["ui", "invoice.no_elements", "nl", "Nog geen elementen toegevoegd"],
@@ -547,24 +763,59 @@ class Database {
         ["ui", "invoice.element_updated", "de", "Element aktualisiert"],
 
         ["ui", "invoice.element_update_failed", "en", "Error updating element"],
-        ["ui", "invoice.element_update_failed", "nl", "Fout bij bijwerken element"],
-        ["ui", "invoice.element_update_failed", "de", "Fehler beim Aktualisieren des Elements"],
+        [
+          "ui",
+          "invoice.element_update_failed",
+          "nl",
+          "Fout bij bijwerken element",
+        ],
+        [
+          "ui",
+          "invoice.element_update_failed",
+          "de",
+          "Fehler beim Aktualisieren des Elements",
+        ],
 
         ["ui", "invoice.element_deleted", "en", "Element deleted"],
         ["ui", "invoice.element_deleted", "nl", "Element verwijderd"],
         ["ui", "invoice.element_deleted", "de", "Element gelöscht"],
 
         ["ui", "invoice.element_delete_failed", "en", "Error deleting element"],
-        ["ui", "invoice.element_delete_failed", "nl", "Fout bij verwijderen element"],
-        ["ui", "invoice.element_delete_failed", "de", "Fehler beim Löschen des Elements"],
+        [
+          "ui",
+          "invoice.element_delete_failed",
+          "nl",
+          "Fout bij verwijderen element",
+        ],
+        [
+          "ui",
+          "invoice.element_delete_failed",
+          "de",
+          "Fehler beim Löschen des Elements",
+        ],
 
         ["ui", "invoice.template_not_found", "en", "Template not found"],
         ["ui", "invoice.template_not_found", "nl", "Template niet gevonden"],
         ["ui", "invoice.template_not_found", "de", "Vorlage nicht gefunden"],
 
-        ["ui", "invoice.add_at_least_one_line", "en", "Add at least one invoice line"],
-        ["ui", "invoice.add_at_least_one_line", "nl", "Voeg minimaal één factuurregel toe"],
-        ["ui", "invoice.add_at_least_one_line", "de", "Fügen Sie mindestens eine Rechnungszeile hinzu"],
+        [
+          "ui",
+          "invoice.add_at_least_one_line",
+          "en",
+          "Add at least one invoice line",
+        ],
+        [
+          "ui",
+          "invoice.add_at_least_one_line",
+          "nl",
+          "Voeg minimaal één factuurregel toe",
+        ],
+        [
+          "ui",
+          "invoice.add_at_least_one_line",
+          "de",
+          "Fügen Sie mindestens eine Rechnungszeile hinzu",
+        ],
 
         ["ui", "invoice.updated", "en", "Invoice updated"],
         ["ui", "invoice.updated", "nl", "Factuur bijgewerkt"],
@@ -574,33 +825,103 @@ class Database {
         ["ui", "invoice.saved", "nl", "Factuur succesvol opgeslagen"],
         ["ui", "invoice.saved", "de", "Rechnung gespeichert"],
 
-        ["ui", "invoice.templates_load_error_option", "en", "Error loading templates"],
-        ["ui", "invoice.templates_load_error_option", "nl", "Fout bij laden templates"],
-        ["ui", "invoice.templates_load_error_option", "de", "Fehler beim Laden der Vorlagen"],
+        [
+          "ui",
+          "invoice.templates_load_error_option",
+          "en",
+          "Error loading templates",
+        ],
+        [
+          "ui",
+          "invoice.templates_load_error_option",
+          "nl",
+          "Fout bij laden templates",
+        ],
+        [
+          "ui",
+          "invoice.templates_load_error_option",
+          "de",
+          "Fehler beim Laden der Vorlagen",
+        ],
 
         ["ui", "invoice.none_found", "en", "No invoices found"],
         ["ui", "invoice.none_found", "nl", "Geen facturen gevonden"],
         ["ui", "invoice.none_found", "de", "Keine Rechnungen gefunden"],
 
-        ["ui", "invoice.template_duplicate_failed", "en", "Error duplicating template"],
-        ["ui", "invoice.template_duplicate_failed", "nl", "Fout bij dupliceren template"],
-        ["ui", "invoice.template_duplicate_failed", "de", "Fehler beim Duplizieren der Vorlage"],
+        [
+          "ui",
+          "invoice.template_duplicate_failed",
+          "en",
+          "Error duplicating template",
+        ],
+        [
+          "ui",
+          "invoice.template_duplicate_failed",
+          "nl",
+          "Fout bij dupliceren template",
+        ],
+        [
+          "ui",
+          "invoice.template_duplicate_failed",
+          "de",
+          "Fehler beim Duplizieren der Vorlage",
+        ],
 
         ["ui", "invoice.template_deleted", "en", "Template deleted"],
         ["ui", "invoice.template_deleted", "nl", "Template verwijderd"],
         ["ui", "invoice.template_deleted", "de", "Vorlage gelöscht"],
 
-        ["ui", "confirm_delete_template", "en", "Are you sure you want to delete this template?"],
-        ["ui", "confirm_delete_template", "nl", "Weet je zeker dat je dit template wilt verwijderen?"],
-        ["ui", "confirm_delete_template", "de", "Möchten Sie diese Vorlage wirklich löschen?"],
+        [
+          "ui",
+          "confirm_delete_template",
+          "en",
+          "Are you sure you want to delete this template?",
+        ],
+        [
+          "ui",
+          "confirm_delete_template",
+          "nl",
+          "Weet je zeker dat je dit template wilt verwijderen?",
+        ],
+        [
+          "ui",
+          "confirm_delete_template",
+          "de",
+          "Möchten Sie diese Vorlage wirklich löschen?",
+        ],
 
-        ["ui", "invoice.template_delete_failed", "en", "Error deleting template"],
-        ["ui", "invoice.template_delete_failed", "nl", "Fout bij verwijderen template"],
-        ["ui", "invoice.template_delete_failed", "de", "Fehler beim Löschen der Vorlage"],
+        [
+          "ui",
+          "invoice.template_delete_failed",
+          "en",
+          "Error deleting template",
+        ],
+        [
+          "ui",
+          "invoice.template_delete_failed",
+          "nl",
+          "Fout bij verwijderen template",
+        ],
+        [
+          "ui",
+          "invoice.template_delete_failed",
+          "de",
+          "Fehler beim Löschen der Vorlage",
+        ],
 
         ["ui", "invoice.template_id_missing", "en", "Template ID not found"],
-        ["ui", "invoice.template_id_missing", "nl", "Template ID niet gevonden"],
-        ["ui", "invoice.template_id_missing", "de", "Vorlagen-ID nicht gefunden"],
+        [
+          "ui",
+          "invoice.template_id_missing",
+          "nl",
+          "Template ID niet gevonden",
+        ],
+        [
+          "ui",
+          "invoice.template_id_missing",
+          "de",
+          "Vorlagen-ID nicht gefunden",
+        ],
 
         ["ui", "invoice.pdf_generating", "en", "Generating PDF..."],
         ["ui", "invoice.pdf_generating", "nl", "PDF wordt gegenereerd..."],
@@ -608,39 +929,144 @@ class Database {
 
         ["ui", "invoice.preview_failed", "en", "Error generating preview"],
         ["ui", "invoice.preview_failed", "nl", "Fout bij genereren preview"],
-        ["ui", "invoice.preview_failed", "de", "Fehler beim Erstellen der Vorschau"],
+        [
+          "ui",
+          "invoice.preview_failed",
+          "de",
+          "Fehler beim Erstellen der Vorschau",
+        ],
 
         ["ui", "invoice.prepare_failed", "en", "Error preparing invoice"],
         ["ui", "invoice.prepare_failed", "nl", "Fout bij voorbereiden factuur"],
-        ["ui", "invoice.prepare_failed", "de", "Fehler bei der Vorbereitung der Rechnung"],
+        [
+          "ui",
+          "invoice.prepare_failed",
+          "de",
+          "Fehler bei der Vorbereitung der Rechnung",
+        ],
 
-        ["ui", "invoice.load_for_edit_failed", "en", "Error loading invoice for editing"],
-        ["ui", "invoice.load_for_edit_failed", "nl", "Fout bij laden factuur voor bewerken"],
-        ["ui", "invoice.load_for_edit_failed", "de", "Fehler beim Laden der Rechnung zum Bearbeiten"],
+        [
+          "ui",
+          "invoice.load_for_edit_failed",
+          "en",
+          "Error loading invoice for editing",
+        ],
+        [
+          "ui",
+          "invoice.load_for_edit_failed",
+          "nl",
+          "Fout bij laden factuur voor bewerken",
+        ],
+        [
+          "ui",
+          "invoice.load_for_edit_failed",
+          "de",
+          "Fehler beim Laden der Rechnung zum Bearbeiten",
+        ],
 
-        ["ui", "invoice.no_submission_history", "en", "No submission history found"],
-        ["ui", "invoice.no_submission_history", "nl", "Geen submission history gevonden"],
-        ["ui", "invoice.no_submission_history", "de", "Keine Übermittlungshistorie gefunden"],
+        [
+          "ui",
+          "invoice.no_submission_history",
+          "en",
+          "No submission history found",
+        ],
+        [
+          "ui",
+          "invoice.no_submission_history",
+          "nl",
+          "Geen submission history gevonden",
+        ],
+        [
+          "ui",
+          "invoice.no_submission_history",
+          "de",
+          "Keine Übermittlungshistorie gefunden",
+        ],
 
-        ["ui", "invoice.submission_history_load_failed", "en", "Error loading submission history"],
-        ["ui", "invoice.submission_history_load_failed", "nl", "Fout bij laden submission history"],
-        ["ui", "invoice.submission_history_load_failed", "de", "Fehler beim Laden der Übermittlungshistorie"],
+        [
+          "ui",
+          "invoice.submission_history_load_failed",
+          "en",
+          "Error loading submission history",
+        ],
+        [
+          "ui",
+          "invoice.submission_history_load_failed",
+          "nl",
+          "Fout bij laden submission history",
+        ],
+        [
+          "ui",
+          "invoice.submission_history_load_failed",
+          "de",
+          "Fehler beim Laden der Übermittlungshistorie",
+        ],
 
         ["ui", "invoice.save_failed", "en", "Error saving invoice"],
         ["ui", "invoice.save_failed", "nl", "Fout bij opslaan factuur"],
-        ["ui", "invoice.save_failed", "de", "Fehler beim Speichern der Rechnung"],
+        [
+          "ui",
+          "invoice.save_failed",
+          "de",
+          "Fehler beim Speichern der Rechnung",
+        ],
 
-        ["ui", "invoice.customer_filled_from_template", "en", "Customer filled from template"],
-        ["ui", "invoice.customer_filled_from_template", "nl", "Klantgegevens ingevuld vanuit template"],
-        ["ui", "invoice.customer_filled_from_template", "de", "Kundendaten aus Vorlage übernommen"],
+        [
+          "ui",
+          "invoice.customer_filled_from_template",
+          "en",
+          "Customer filled from template",
+        ],
+        [
+          "ui",
+          "invoice.customer_filled_from_template",
+          "nl",
+          "Klantgegevens ingevuld vanuit template",
+        ],
+        [
+          "ui",
+          "invoice.customer_filled_from_template",
+          "de",
+          "Kundendaten aus Vorlage übernommen",
+        ],
 
-        ["ui", "invoice.customer_missing_in_template", "en", "No customer data found in template"],
-        ["ui", "invoice.customer_missing_in_template", "nl", "Geen klantgegevens gevonden in template"],
-        ["ui", "invoice.customer_missing_in_template", "de", "Keine Kundendaten in der Vorlage gefunden"],
+        [
+          "ui",
+          "invoice.customer_missing_in_template",
+          "en",
+          "No customer data found in template",
+        ],
+        [
+          "ui",
+          "invoice.customer_missing_in_template",
+          "nl",
+          "Geen klantgegevens gevonden in template",
+        ],
+        [
+          "ui",
+          "invoice.customer_missing_in_template",
+          "de",
+          "Keine Kundendaten in der Vorlage gefunden",
+        ],
 
-        ["ui", "invoice.template_data_load_failed", "en", "Error loading template data"],
-        ["ui", "invoice.template_data_load_failed", "nl", "Fout bij laden template gegevens"],
-        ["ui", "invoice.template_data_load_failed", "de", "Fehler beim Laden der Vorlagendaten"],
+        [
+          "ui",
+          "invoice.template_data_load_failed",
+          "en",
+          "Error loading template data",
+        ],
+        [
+          "ui",
+          "invoice.template_data_load_failed",
+          "nl",
+          "Fout bij laden template gegevens",
+        ],
+        [
+          "ui",
+          "invoice.template_data_load_failed",
+          "de",
+          "Fehler beim Laden der Vorlagendaten",
+        ],
 
         ["ui", "invoice.pdf_generated", "en", "PDF generated"],
         ["ui", "invoice.pdf_generated", "nl", "PDF succesvol gegenereerd"],
@@ -648,7 +1074,12 @@ class Database {
 
         ["ui", "invoice.pdf_generate_failed", "en", "Error generating PDF"],
         ["ui", "invoice.pdf_generate_failed", "nl", "Fout bij genereren PDF"],
-        ["ui", "invoice.pdf_generate_failed", "de", "Fehler bei der PDF-Erstellung"],
+        [
+          "ui",
+          "invoice.pdf_generate_failed",
+          "de",
+          "Fehler bei der PDF-Erstellung",
+        ],
 
         ["ui", "invoice.load_failed", "en", "Error loading invoice"],
         ["ui", "invoice.load_failed", "nl", "Fout bij laden factuur"],
@@ -660,27 +1091,97 @@ class Database {
 
         ["ui", "invoice.download_pdf_failed", "en", "Error downloading PDF"],
         ["ui", "invoice.download_pdf_failed", "nl", "Fout bij downloaden PDF"],
-        ["ui", "invoice.download_pdf_failed", "de", "Fehler beim Herunterladen der PDF"],
+        [
+          "ui",
+          "invoice.download_pdf_failed",
+          "de",
+          "Fehler beim Herunterladen der PDF",
+        ],
 
-        ["ui", "invoice.original_pdf_downloading", "en", "Downloading original PDF..."],
-        ["ui", "invoice.original_pdf_downloading", "nl", "Originele PDF wordt gedownload..."],
-        ["ui", "invoice.original_pdf_downloading", "de", "Original-PDF wird heruntergeladen..."],
+        [
+          "ui",
+          "invoice.original_pdf_downloading",
+          "en",
+          "Downloading original PDF...",
+        ],
+        [
+          "ui",
+          "invoice.original_pdf_downloading",
+          "nl",
+          "Originele PDF wordt gedownload...",
+        ],
+        [
+          "ui",
+          "invoice.original_pdf_downloading",
+          "de",
+          "Original-PDF wird heruntergeladen...",
+        ],
 
-        ["ui", "invoice.original_pdf_downloaded", "en", "Original PDF downloaded"],
-        ["ui", "invoice.original_pdf_downloaded", "nl", "Originele PDF gedownload"],
-        ["ui", "invoice.original_pdf_downloaded", "de", "Original-PDF heruntergeladen"],
+        [
+          "ui",
+          "invoice.original_pdf_downloaded",
+          "en",
+          "Original PDF downloaded",
+        ],
+        [
+          "ui",
+          "invoice.original_pdf_downloaded",
+          "nl",
+          "Originele PDF gedownload",
+        ],
+        [
+          "ui",
+          "invoice.original_pdf_downloaded",
+          "de",
+          "Original-PDF heruntergeladen",
+        ],
 
-        ["ui", "invoice.download_original_pdf_failed", "en", "Error downloading original PDF"],
-        ["ui", "invoice.download_original_pdf_failed", "nl", "Fout bij downloaden originele PDF"],
-        ["ui", "invoice.download_original_pdf_failed", "de", "Fehler beim Herunterladen der Original-PDF"],
+        [
+          "ui",
+          "invoice.download_original_pdf_failed",
+          "en",
+          "Error downloading original PDF",
+        ],
+        [
+          "ui",
+          "invoice.download_original_pdf_failed",
+          "nl",
+          "Fout bij downloaden originele PDF",
+        ],
+        [
+          "ui",
+          "invoice.download_original_pdf_failed",
+          "de",
+          "Fehler beim Herunterladen der Original-PDF",
+        ],
 
-        ["ui", "invoice.invoice_data_load_failed", "en", "Error loading invoice data"],
-        ["ui", "invoice.invoice_data_load_failed", "nl", "Fout bij laden factuurgegevens"],
-        ["ui", "invoice.invoice_data_load_failed", "de", "Fehler beim Laden der Rechnungsdaten"],
+        [
+          "ui",
+          "invoice.invoice_data_load_failed",
+          "en",
+          "Error loading invoice data",
+        ],
+        [
+          "ui",
+          "invoice.invoice_data_load_failed",
+          "nl",
+          "Fout bij laden factuurgegevens",
+        ],
+        [
+          "ui",
+          "invoice.invoice_data_load_failed",
+          "de",
+          "Fehler beim Laden der Rechnungsdaten",
+        ],
 
         ["ui", "invoice.email_required", "en", "Email address is required"],
         ["ui", "invoice.email_required", "nl", "Email adres is verplicht"],
-        ["ui", "invoice.email_required", "de", "E-Mail-Adresse ist erforderlich"],
+        [
+          "ui",
+          "invoice.email_required",
+          "de",
+          "E-Mail-Adresse ist erforderlich",
+        ],
 
         ["ui", "invoice.email_sent", "en", "Invoice email sent"],
         ["ui", "invoice.email_sent", "nl", "Factuur succesvol verzonden"],
@@ -688,31 +1189,86 @@ class Database {
 
         ["ui", "invoice.email_send_failed", "en", "Error sending email"],
         ["ui", "invoice.email_send_failed", "nl", "Fout bij verzenden email"],
-        ["ui", "invoice.email_send_failed", "de", "Fehler beim Senden der E-Mail"],
+        [
+          "ui",
+          "invoice.email_send_failed",
+          "de",
+          "Fehler beim Senden der E-Mail",
+        ],
 
-        ["ui", "confirm_delete_invoice", "en", "Are you sure you want to delete this invoice?"],
-        ["ui", "confirm_delete_invoice", "nl", "Weet je zeker dat je deze factuur wilt verwijderen?"],
-        ["ui", "confirm_delete_invoice", "de", "Möchten Sie diese Rechnung wirklich löschen?"],
+        [
+          "ui",
+          "confirm_delete_invoice",
+          "en",
+          "Are you sure you want to delete this invoice?",
+        ],
+        [
+          "ui",
+          "confirm_delete_invoice",
+          "nl",
+          "Weet je zeker dat je deze factuur wilt verwijderen?",
+        ],
+        [
+          "ui",
+          "confirm_delete_invoice",
+          "de",
+          "Möchten Sie diese Rechnung wirklich löschen?",
+        ],
 
         ["ui", "invoice.deleted", "en", "Invoice deleted"],
         ["ui", "invoice.deleted", "nl", "Factuur verwijderd"],
         ["ui", "invoice.deleted", "de", "Rechnung gelöscht"],
 
         ["ui", "invoice.invoice_delete_failed", "en", "Error deleting invoice"],
-        ["ui", "invoice.invoice_delete_failed", "nl", "Fout bij verwijderen factuur"],
-        ["ui", "invoice.invoice_delete_failed", "de", "Fehler beim Löschen der Rechnung"],
+        [
+          "ui",
+          "invoice.invoice_delete_failed",
+          "nl",
+          "Fout bij verwijderen factuur",
+        ],
+        [
+          "ui",
+          "invoice.invoice_delete_failed",
+          "de",
+          "Fehler beim Löschen der Rechnung",
+        ],
 
         ["ui", "invoice.none_selected", "en", "No invoices selected"],
         ["ui", "invoice.none_selected", "nl", "Geen facturen geselecteerd"],
         ["ui", "invoice.none_selected", "de", "Keine Rechnungen ausgewählt"],
 
-        ["ui", "invoice.confirm_delete_selected", "en", "Are you sure you want to delete {count} selected invoices?"],
-        ["ui", "invoice.confirm_delete_selected", "nl", "Weet je zeker dat je {count} geselecteerde facturen wilt verwijderen?"],
-        ["ui", "invoice.confirm_delete_selected", "de", "Möchten Sie {count} ausgewählte Rechnungen wirklich löschen?"],
+        [
+          "ui",
+          "invoice.confirm_delete_selected",
+          "en",
+          "Are you sure you want to delete {count} selected invoices?",
+        ],
+        [
+          "ui",
+          "invoice.confirm_delete_selected",
+          "nl",
+          "Weet je zeker dat je {count} geselecteerde facturen wilt verwijderen?",
+        ],
+        [
+          "ui",
+          "invoice.confirm_delete_selected",
+          "de",
+          "Möchten Sie {count} ausgewählte Rechnungen wirklich löschen?",
+        ],
 
         ["ui", "invoice.selected_deleted", "en", "Selected invoices deleted"],
-        ["ui", "invoice.selected_deleted", "nl", "Geselecteerde facturen verwijderd"],
-        ["ui", "invoice.selected_deleted", "de", "Ausgewählte Rechnungen gelöscht"],
+        [
+          "ui",
+          "invoice.selected_deleted",
+          "nl",
+          "Geselecteerde facturen verwijderd",
+        ],
+        [
+          "ui",
+          "invoice.selected_deleted",
+          "de",
+          "Ausgewählte Rechnungen gelöscht",
+        ],
 
         ["ui", "invoice.deleted_short", "en", "deleted"],
         ["ui", "invoice.deleted_short", "nl", "verwijderd"],
@@ -726,33 +1282,123 @@ class Database {
         ["ui", "invoice.check_logs", "nl", "Controleer log voor details"],
         ["ui", "invoice.check_logs", "de", "Prüfen Sie das Log für Details"],
 
-        ["ui", "invoice.none_found_before_date", "en", "No invoices found before {date}"],
-        ["ui", "invoice.none_found_before_date", "nl", "Geen facturen gevonden voor {date}"],
-        ["ui", "invoice.none_found_before_date", "de", "Keine Rechnungen vor {date} gefunden"],
+        [
+          "ui",
+          "invoice.none_found_before_date",
+          "en",
+          "No invoices found before {date}",
+        ],
+        [
+          "ui",
+          "invoice.none_found_before_date",
+          "nl",
+          "Geen facturen gevonden voor {date}",
+        ],
+        [
+          "ui",
+          "invoice.none_found_before_date",
+          "de",
+          "Keine Rechnungen vor {date} gefunden",
+        ],
 
-        ["ui", "invoice.confirm_delete_before_date", "en", "Delete all {count} invoices before {date}?"],
-        ["ui", "invoice.confirm_delete_before_date", "nl", "Alle {count} facturen voor {date} verwijderen?"],
-        ["ui", "invoice.confirm_delete_before_date", "de", "Alle {count} Rechnungen vor {date} löschen?"],
+        [
+          "ui",
+          "invoice.confirm_delete_before_date",
+          "en",
+          "Delete all {count} invoices before {date}?",
+        ],
+        [
+          "ui",
+          "invoice.confirm_delete_before_date",
+          "nl",
+          "Alle {count} facturen voor {date} verwijderen?",
+        ],
+        [
+          "ui",
+          "invoice.confirm_delete_before_date",
+          "de",
+          "Alle {count} Rechnungen vor {date} löschen?",
+        ],
 
-        ["ui", "invoice.deleted_before_date", "en", "Deleted {count} old invoices before {date}"],
-        ["ui", "invoice.deleted_before_date", "nl", "{count} oude facturen verwijderd voor {date}"],
-        ["ui", "invoice.deleted_before_date", "de", "{count} alte Rechnungen vor {date} gelöscht"],
+        [
+          "ui",
+          "invoice.deleted_before_date",
+          "en",
+          "Deleted {count} old invoices before {date}",
+        ],
+        [
+          "ui",
+          "invoice.deleted_before_date",
+          "nl",
+          "{count} oude facturen verwijderd voor {date}",
+        ],
+        [
+          "ui",
+          "invoice.deleted_before_date",
+          "de",
+          "{count} alte Rechnungen vor {date} gelöscht",
+        ],
 
-        ["ui", "invoice.clear_all_warning", "en", "WARNING: This will delete ALL {count} invoices! Are you absolutely sure?"],
-        ["ui", "invoice.clear_all_warning", "nl", "WAARSCHUWING: Dit verwijdert ALLE {count} facturen! Weet je dit ABSOLUUT zeker?"],
-        ["ui", "invoice.clear_all_warning", "de", "WARNUNG: Dadurch werden ALLE {count} Rechnungen gelöscht! Sind Sie absolut sicher?"],
+        [
+          "ui",
+          "invoice.clear_all_warning",
+          "en",
+          "WARNING: This will delete ALL {count} invoices! Are you absolutely sure?",
+        ],
+        [
+          "ui",
+          "invoice.clear_all_warning",
+          "nl",
+          "WAARSCHUWING: Dit verwijdert ALLE {count} facturen! Weet je dit ABSOLUUT zeker?",
+        ],
+        [
+          "ui",
+          "invoice.clear_all_warning",
+          "de",
+          "WARNUNG: Dadurch werden ALLE {count} Rechnungen gelöscht! Sind Sie absolut sicher?",
+        ],
 
-        ["ui", "invoice.clear_all_final_confirm", "en", "This cannot be undone. Last chance to cancel."],
-        ["ui", "invoice.clear_all_final_confirm", "nl", "Dit kan NIET ongedaan gemaakt worden! Laatste kans om te annuleren."],
-        ["ui", "invoice.clear_all_final_confirm", "de", "Dies kann NICHT rückgängig gemacht werden! Letzte Chance zum Abbrechen."],
+        [
+          "ui",
+          "invoice.clear_all_final_confirm",
+          "en",
+          "This cannot be undone. Last chance to cancel.",
+        ],
+        [
+          "ui",
+          "invoice.clear_all_final_confirm",
+          "nl",
+          "Dit kan NIET ongedaan gemaakt worden! Laatste kans om te annuleren.",
+        ],
+        [
+          "ui",
+          "invoice.clear_all_final_confirm",
+          "de",
+          "Dies kann NICHT rückgängig gemacht werden! Letzte Chance zum Abbrechen.",
+        ],
 
         ["ui", "invoice.all_deleted", "en", "All {count} invoices deleted"],
         ["ui", "invoice.all_deleted", "nl", "Alle {count} facturen verwijderd"],
         ["ui", "invoice.all_deleted", "de", "Alle {count} Rechnungen gelöscht"],
 
-        ["ui", "invoice.import_settings_load_failed", "en", "Error loading import settings"],
-        ["ui", "invoice.import_settings_load_failed", "nl", "Fout bij laden import instellingen"],
-        ["ui", "invoice.import_settings_load_failed", "de", "Fehler beim Laden der Importeinstellungen"],
+        [
+          "ui",
+          "invoice.import_settings_load_failed",
+          "en",
+          "Error loading import settings",
+        ],
+        [
+          "ui",
+          "invoice.import_settings_load_failed",
+          "nl",
+          "Fout bij laden import instellingen",
+        ],
+        [
+          "ui",
+          "invoice.import_settings_load_failed",
+          "de",
+          "Fehler beim Laden der Importeinstellungen",
+        ],
 
         ["ui", "invoice.import_template_new", "en", "New Import Template"],
         ["ui", "invoice.import_template_new", "nl", "Nieuw Import Template"],
@@ -766,17 +1412,47 @@ class Database {
         ["ui", "invoice.template_name", "nl", "Template Naam"],
         ["ui", "invoice.template_name", "de", "Vorlagenname"],
 
-        ["ui", "invoice.template_name_placeholder", "en", "e.g., Mainfreight Invoices"],
-        ["ui", "invoice.template_name_placeholder", "nl", "bijv. Mainfreight Facturen"],
-        ["ui", "invoice.template_name_placeholder", "de", "z.B. Mainfreight Rechnungen"],
+        [
+          "ui",
+          "invoice.template_name_placeholder",
+          "en",
+          "e.g., Mainfreight Invoices",
+        ],
+        [
+          "ui",
+          "invoice.template_name_placeholder",
+          "nl",
+          "bijv. Mainfreight Facturen",
+        ],
+        [
+          "ui",
+          "invoice.template_name_placeholder",
+          "de",
+          "z.B. Mainfreight Rechnungen",
+        ],
 
         ["ui", "invoice.description", "en", "Description"],
         ["ui", "invoice.description", "nl", "Beschrijving"],
         ["ui", "invoice.description", "de", "Beschreibung"],
 
-        ["ui", "invoice.description_placeholder", "en", "Optional description for this import template"],
-        ["ui", "invoice.description_placeholder", "nl", "Optionele beschrijving van dit import template"],
-        ["ui", "invoice.description_placeholder", "de", "Optionale Beschreibung für diese Importvorlage"],
+        [
+          "ui",
+          "invoice.description_placeholder",
+          "en",
+          "Optional description for this import template",
+        ],
+        [
+          "ui",
+          "invoice.description_placeholder",
+          "nl",
+          "Optionele beschrijving van dit import template",
+        ],
+        [
+          "ui",
+          "invoice.description_placeholder",
+          "de",
+          "Optionale Beschreibung für diese Importvorlage",
+        ],
 
         ["ui", "invoice.parser_type", "en", "Parser Type"],
         ["ui", "invoice.parser_type", "nl", "Parser Type"],
@@ -786,29 +1462,119 @@ class Database {
         ["ui", "invoice.select_parser_type", "nl", "Selecteer parser type"],
         ["ui", "invoice.select_parser_type", "de", "Parser-Typ auswählen"],
 
-        ["ui", "invoice.import_template_required", "en", "Name and parser type are required"],
-        ["ui", "invoice.import_template_required", "nl", "Naam en parser type zijn verplicht"],
-        ["ui", "invoice.import_template_required", "de", "Name und Parser-Typ sind erforderlich"],
+        [
+          "ui",
+          "invoice.import_template_required",
+          "en",
+          "Name and parser type are required",
+        ],
+        [
+          "ui",
+          "invoice.import_template_required",
+          "nl",
+          "Naam en parser type zijn verplicht",
+        ],
+        [
+          "ui",
+          "invoice.import_template_required",
+          "de",
+          "Name und Parser-Typ sind erforderlich",
+        ],
 
-        ["ui", "invoice.import_template_created", "en", "Import template created"],
-        ["ui", "invoice.import_template_created", "nl", "Import template aangemaakt"],
-        ["ui", "invoice.import_template_created", "de", "Importvorlage erstellt"],
+        [
+          "ui",
+          "invoice.import_template_created",
+          "en",
+          "Import template created",
+        ],
+        [
+          "ui",
+          "invoice.import_template_created",
+          "nl",
+          "Import template aangemaakt",
+        ],
+        [
+          "ui",
+          "invoice.import_template_created",
+          "de",
+          "Importvorlage erstellt",
+        ],
 
-        ["ui", "invoice.import_template_save_failed", "en", "Error saving import template"],
-        ["ui", "invoice.import_template_save_failed", "nl", "Fout bij opslaan template"],
-        ["ui", "invoice.import_template_save_failed", "de", "Fehler beim Speichern der Importvorlage"],
+        [
+          "ui",
+          "invoice.import_template_save_failed",
+          "en",
+          "Error saving import template",
+        ],
+        [
+          "ui",
+          "invoice.import_template_save_failed",
+          "nl",
+          "Fout bij opslaan template",
+        ],
+        [
+          "ui",
+          "invoice.import_template_save_failed",
+          "de",
+          "Fehler beim Speichern der Importvorlage",
+        ],
 
-        ["ui", "invoice.import_template_delete_confirm", "en", "Delete this import template?"],
-        ["ui", "invoice.import_template_delete_confirm", "nl", "Dit import template verwijderen?"],
-        ["ui", "invoice.import_template_delete_confirm", "de", "Diese Importvorlage löschen?"],
+        [
+          "ui",
+          "invoice.import_template_delete_confirm",
+          "en",
+          "Delete this import template?",
+        ],
+        [
+          "ui",
+          "invoice.import_template_delete_confirm",
+          "nl",
+          "Dit import template verwijderen?",
+        ],
+        [
+          "ui",
+          "invoice.import_template_delete_confirm",
+          "de",
+          "Diese Importvorlage löschen?",
+        ],
 
-        ["ui", "invoice.feature_not_available", "en", "Feature not available yet"],
-        ["ui", "invoice.feature_not_available", "nl", "Functionaliteit nog niet beschikbaar"],
-        ["ui", "invoice.feature_not_available", "de", "Funktion noch nicht verfügbar"],
+        [
+          "ui",
+          "invoice.feature_not_available",
+          "en",
+          "Feature not available yet",
+        ],
+        [
+          "ui",
+          "invoice.feature_not_available",
+          "nl",
+          "Functionaliteit nog niet beschikbaar",
+        ],
+        [
+          "ui",
+          "invoice.feature_not_available",
+          "de",
+          "Funktion noch nicht verfügbar",
+        ],
 
-        ["ui", "invoice.import_template_delete_failed", "en", "Error deleting import template"],
-        ["ui", "invoice.import_template_delete_failed", "nl", "Fout bij verwijderen template"],
-        ["ui", "invoice.import_template_delete_failed", "de", "Fehler beim Löschen der Importvorlage"],
+        [
+          "ui",
+          "invoice.import_template_delete_failed",
+          "en",
+          "Error deleting import template",
+        ],
+        [
+          "ui",
+          "invoice.import_template_delete_failed",
+          "nl",
+          "Fout bij verwijderen template",
+        ],
+        [
+          "ui",
+          "invoice.import_template_delete_failed",
+          "de",
+          "Fehler beim Löschen der Importvorlage",
+        ],
 
         ["ui", "admin.menu_management", "en", "Menu Management"],
         ["ui", "admin.menu_management", "nl", "Menubeheer"],
@@ -834,9 +1600,24 @@ class Database {
         ["ui", "loaded_translations", "nl", "Vertalingen geladen"],
         ["ui", "loaded_translations", "de", "Übersetzungen geladen"],
 
-        ["ui", "error_loading_translations", "en", "Error loading translations"],
-        ["ui", "error_loading_translations", "nl", "Fout bij laden van vertalingen"],
-        ["ui", "error_loading_translations", "de", "Fehler beim Laden der Übersetzungen"],
+        [
+          "ui",
+          "error_loading_translations",
+          "en",
+          "Error loading translations",
+        ],
+        [
+          "ui",
+          "error_loading_translations",
+          "nl",
+          "Fout bij laden van vertalingen",
+        ],
+        [
+          "ui",
+          "error_loading_translations",
+          "de",
+          "Fehler beim Laden der Übersetzungen",
+        ],
 
         ["ui", "translations_saved", "en", "Translations saved"],
         ["ui", "translations_saved", "nl", "Vertalingen opgeslagen"],
@@ -851,27 +1632,82 @@ class Database {
         ["ui", "exported_template", "de", "Vorlage exportiert"],
 
         ["ui", "error_exporting_template", "en", "Error exporting template"],
-        ["ui", "error_exporting_template", "nl", "Fout bij exporteren van template"],
-        ["ui", "error_exporting_template", "de", "Fehler beim Exportieren der Vorlage"],
+        [
+          "ui",
+          "error_exporting_template",
+          "nl",
+          "Fout bij exporteren van template",
+        ],
+        [
+          "ui",
+          "error_exporting_template",
+          "de",
+          "Fehler beim Exportieren der Vorlage",
+        ],
 
-        ["ui", "translations.subtitle", "en", "Manage UI copy across locales with live preview."],
-        ["ui", "translations.subtitle", "nl", "Beheer UI-teksten per taal met live preview."],
-        ["ui", "translations.subtitle", "de", "Verwalte UI-Texte pro Sprache mit Live-Vorschau."],
+        [
+          "ui",
+          "translations.subtitle",
+          "en",
+          "Manage UI copy across locales with live preview.",
+        ],
+        [
+          "ui",
+          "translations.subtitle",
+          "nl",
+          "Beheer UI-teksten per taal met live preview.",
+        ],
+        [
+          "ui",
+          "translations.subtitle",
+          "de",
+          "Verwalte UI-Texte pro Sprache mit Live-Vorschau.",
+        ],
         ["ui", "translations.live_preview", "en", "Live preview ready"],
         ["ui", "translations.live_preview", "nl", "Live preview klaar"],
         ["ui", "translations.live_preview", "de", "Live-Vorschau bereit"],
         ["ui", "translations.bulk_edit", "en", "Bulk edit friendly"],
         ["ui", "translations.bulk_edit", "nl", "Geschikt voor bulkbewerking"],
         ["ui", "translations.bulk_edit", "de", "Für Bulk-Bearbeitung geeignet"],
-        ["ui", "translations.toolbar_hint", "en", "Import/export or bulk edit below."],
-        ["ui", "translations.toolbar_hint", "nl", "Importeer/exporteer of bewerk hieronder."],
-        ["ui", "translations.toolbar_hint", "de", "Import/Export oder Bulk-Edit unten."],
+        [
+          "ui",
+          "translations.toolbar_hint",
+          "en",
+          "Import/export or bulk edit below.",
+        ],
+        [
+          "ui",
+          "translations.toolbar_hint",
+          "nl",
+          "Importeer/exporteer of bewerk hieronder.",
+        ],
+        [
+          "ui",
+          "translations.toolbar_hint",
+          "de",
+          "Import/Export oder Bulk-Edit unten.",
+        ],
         ["ui", "translations.filter", "en", "Filter"],
         ["ui", "translations.filter", "nl", "Filter"],
         ["ui", "translations.filter", "de", "Filter"],
-        ["ui", "translations.filter_placeholder", "en", "Filter by key or text"],
-        ["ui", "translations.filter_placeholder", "nl", "Filter op sleutel of tekst"],
-        ["ui", "translations.filter_placeholder", "de", "Nach Schlüssel oder Text filtern"],
+        [
+          "ui",
+          "translations.filter_placeholder",
+          "en",
+          "Filter by key or text",
+        ],
+        [
+          "ui",
+          "translations.filter_placeholder",
+          "nl",
+          "Filter op sleutel of tekst",
+        ],
+        [
+          "ui",
+          "translations.filter_placeholder",
+          "de",
+          "Nach Schlüssel oder Text filtern",
+        ],
         ["ui", "translations.workspace", "en", "Workspace"],
         ["ui", "translations.workspace", "nl", "Werkruimte"],
         ["ui", "translations.workspace", "de", "Arbeitsbereich"],
@@ -896,9 +1732,24 @@ class Database {
         ["ui", "translations.auto_translated", "en", "Auto-translated"],
         ["ui", "translations.auto_translated", "nl", "Automatisch vertaald"],
         ["ui", "translations.auto_translated", "de", "Automatisch übersetzt"],
-        ["ui", "translations.auto_translate_hint", "en", "Fill empty texts using the selected provider."],
-        ["ui", "translations.auto_translate_hint", "nl", "Vul lege teksten aan met de gekozen provider."],
-        ["ui", "translations.auto_translate_hint", "de", "Leere Texte mit dem gewählten Provider füllen."],
+        [
+          "ui",
+          "translations.auto_translate_hint",
+          "en",
+          "Fill empty texts using the selected provider.",
+        ],
+        [
+          "ui",
+          "translations.auto_translate_hint",
+          "nl",
+          "Vul lege teksten aan met de gekozen provider.",
+        ],
+        [
+          "ui",
+          "translations.auto_translate_hint",
+          "de",
+          "Leere Texte mit dem gewählten Provider füllen.",
+        ],
 
         // Top navigation menu labels (namespace: menu)
         ["menu", "dashboard", "en", "Dashboard"],
@@ -953,12 +1804,42 @@ class Database {
         ["ui", "confirm_delete", "en", "Confirm Delete"],
         ["ui", "confirm_delete", "nl", "Verwijderen bevestigen"],
         ["ui", "confirm_delete", "de", "Löschen bestätigen"],
-        ["ui", "delete_timesheet_confirm", "en", "Are you sure you want to delete this timesheet entry?"],
-        ["ui", "delete_timesheet_confirm", "nl", "Weet je zeker dat je deze urenregel wilt verwijderen?"],
-        ["ui", "delete_timesheet_confirm", "de", "Möchten Sie diesen Stundeneintrag wirklich löschen?"],
-        ["ui", "this_action_cannot_be_undone", "en", "This action cannot be undone."],
-        ["ui", "this_action_cannot_be_undone", "nl", "Deze actie kan niet ongedaan worden gemaakt."],
-        ["ui", "this_action_cannot_be_undone", "de", "Diese Aktion kann nicht rückgängig gemacht werden."],
+        [
+          "ui",
+          "delete_timesheet_confirm",
+          "en",
+          "Are you sure you want to delete this timesheet entry?",
+        ],
+        [
+          "ui",
+          "delete_timesheet_confirm",
+          "nl",
+          "Weet je zeker dat je deze urenregel wilt verwijderen?",
+        ],
+        [
+          "ui",
+          "delete_timesheet_confirm",
+          "de",
+          "Möchten Sie diesen Stundeneintrag wirklich löschen?",
+        ],
+        [
+          "ui",
+          "this_action_cannot_be_undone",
+          "en",
+          "This action cannot be undone.",
+        ],
+        [
+          "ui",
+          "this_action_cannot_be_undone",
+          "nl",
+          "Deze actie kan niet ongedaan worden gemaakt.",
+        ],
+        [
+          "ui",
+          "this_action_cannot_be_undone",
+          "de",
+          "Diese Aktion kann nicht rückgängig gemacht werden.",
+        ],
         ["ui", "cancel", "en", "Cancel"],
         ["ui", "cancel", "nl", "Annuleren"],
         ["ui", "cancel", "de", "Abbrechen"],
@@ -1097,36 +1978,126 @@ class Database {
         ["ui", "leave.status_pending", "en", "Pending"],
         ["ui", "leave.status_pending", "nl", "In afwachting"],
         ["ui", "leave.status_pending", "de", "Ausstehend"],
-        ["ui", "leave.balance_hint", "en", "Available for requests. Requests are deducted immediately."],
-        ["ui", "leave.balance_hint", "nl", "Beschikbaar voor aanvragen. Aanvragen worden direct verrekend."],
-        ["ui", "leave.balance_hint", "de", "Verfügbar für Anträge. Anträge werden sofort abgezogen."],
-        ["ui", "leave.validation_required", "en", "Please fill all required fields and use a valid hours value."],
-        ["ui", "leave.validation_required", "nl", "Vul alle verplichte velden in en gebruik een geldige urenwaarde."],
-        ["ui", "leave.validation_required", "de", "Bitte füllen Sie alle Pflichtfelder aus und verwenden Sie einen gültigen Stundenwert."],
+        [
+          "ui",
+          "leave.balance_hint",
+          "en",
+          "Available for requests. Requests are deducted immediately.",
+        ],
+        [
+          "ui",
+          "leave.balance_hint",
+          "nl",
+          "Beschikbaar voor aanvragen. Aanvragen worden direct verrekend.",
+        ],
+        [
+          "ui",
+          "leave.balance_hint",
+          "de",
+          "Verfügbar für Anträge. Anträge werden sofort abgezogen.",
+        ],
+        [
+          "ui",
+          "leave.validation_required",
+          "en",
+          "Please fill all required fields and use a valid hours value.",
+        ],
+        [
+          "ui",
+          "leave.validation_required",
+          "nl",
+          "Vul alle verplichte velden in en gebruik een geldige urenwaarde.",
+        ],
+        [
+          "ui",
+          "leave.validation_required",
+          "de",
+          "Bitte füllen Sie alle Pflichtfelder aus und verwenden Sie einen gültigen Stundenwert.",
+        ],
         ["ui", "leave.updating", "en", "Updating request..."],
         ["ui", "leave.updating", "nl", "Aanvraag wordt bijgewerkt..."],
         ["ui", "leave.updating", "de", "Antrag wird aktualisiert..."],
-        ["ui", "leave.updated_success", "en", "Request updated and balance adjusted."],
-        ["ui", "leave.updated_success", "nl", "Aanvraag bijgewerkt en saldo aangepast."],
-        ["ui", "leave.updated_success", "de", "Antrag aktualisiert und Saldo angepasst."],
+        [
+          "ui",
+          "leave.updated_success",
+          "en",
+          "Request updated and balance adjusted.",
+        ],
+        [
+          "ui",
+          "leave.updated_success",
+          "nl",
+          "Aanvraag bijgewerkt en saldo aangepast.",
+        ],
+        [
+          "ui",
+          "leave.updated_success",
+          "de",
+          "Antrag aktualisiert und Saldo angepasst.",
+        ],
         ["ui", "leave.submitting", "en", "Submitting request..."],
         ["ui", "leave.submitting", "nl", "Aanvraag wordt verzonden..."],
         ["ui", "leave.submitting", "de", "Antrag wird eingereicht..."],
-        ["ui", "leave.submitted", "en", "Request submitted and balance updated."],
-        ["ui", "leave.submitted", "nl", "Aanvraag verzonden en saldo bijgewerkt."],
-        ["ui", "leave.submitted", "de", "Antrag eingereicht und Saldo aktualisiert."],
-        ["ui", "leave.withdraw_confirm", "en", "Are you sure you want to withdraw this leave request? The hours will be refunded."],
-        ["ui", "leave.withdraw_confirm", "nl", "Weet je zeker dat je deze verlofaanvraag wilt intrekken? De uren worden teruggestort."],
-        ["ui", "leave.withdraw_confirm", "de", "Sind Sie sicher, dass Sie diesen Urlaubsantrag zurückziehen möchten? Die Stunden werden zurückerstattet."],
+        [
+          "ui",
+          "leave.submitted",
+          "en",
+          "Request submitted and balance updated.",
+        ],
+        [
+          "ui",
+          "leave.submitted",
+          "nl",
+          "Aanvraag verzonden en saldo bijgewerkt.",
+        ],
+        [
+          "ui",
+          "leave.submitted",
+          "de",
+          "Antrag eingereicht und Saldo aktualisiert.",
+        ],
+        [
+          "ui",
+          "leave.withdraw_confirm",
+          "en",
+          "Are you sure you want to withdraw this leave request? The hours will be refunded.",
+        ],
+        [
+          "ui",
+          "leave.withdraw_confirm",
+          "nl",
+          "Weet je zeker dat je deze verlofaanvraag wilt intrekken? De uren worden teruggestort.",
+        ],
+        [
+          "ui",
+          "leave.withdraw_confirm",
+          "de",
+          "Sind Sie sicher, dass Sie diesen Urlaubsantrag zurückziehen möchten? Die Stunden werden zurückerstattet.",
+        ],
         ["ui", "leave.withdraw_error", "en", "Error while withdrawing"],
         ["ui", "leave.withdraw_error", "nl", "Fout bij intrekken"],
         ["ui", "leave.withdraw_error", "de", "Fehler beim Zurückziehen"],
         ["ui", "leave.employee", "en", "Employee"],
         ["ui", "leave.employee", "nl", "Medewerker"],
         ["ui", "leave.employee", "de", "Mitarbeiter"],
-        ["ui", "leave.calendar_empty", "en", "No approved leave requests found"],
-        ["ui", "leave.calendar_empty", "nl", "Geen goedgekeurde verlofaanvragen gevonden"],
-        ["ui", "leave.calendar_empty", "de", "Keine genehmigten Urlaubsanträge gefunden"],
+        [
+          "ui",
+          "leave.calendar_empty",
+          "en",
+          "No approved leave requests found",
+        ],
+        [
+          "ui",
+          "leave.calendar_empty",
+          "nl",
+          "Geen goedgekeurde verlofaanvragen gevonden",
+        ],
+        [
+          "ui",
+          "leave.calendar_empty",
+          "de",
+          "Keine genehmigten Urlaubsanträge gefunden",
+        ],
         ["ui", "leave.calendar_loading", "en", "Loading calendar..."],
         ["ui", "leave.calendar_loading", "nl", "Kalender laden..."],
         ["ui", "leave.calendar_loading", "de", "Kalender wird geladen..."],
@@ -1134,12 +2105,32 @@ class Database {
         ["ui", "revenue.title", "en", "Revenue"],
         ["ui", "revenue.title", "nl", "Omzet"],
         ["ui", "revenue.title", "de", "Umsatz"],
-        ["ui", "revenue.subtitle", "en", "Overview by week / month / quarter based on invoice totals."],
-        ["ui", "revenue.subtitle", "nl", "Overzicht per week / maand / kwartaal op basis van factuur totaalbedragen."],
-        ["ui", "revenue.subtitle", "de", "Übersicht pro Woche / Monat / Quartal basierend auf Rechnungsbeträgen."],
+        [
+          "ui",
+          "revenue.subtitle",
+          "en",
+          "Overview by week / month / quarter based on invoice totals.",
+        ],
+        [
+          "ui",
+          "revenue.subtitle",
+          "nl",
+          "Overzicht per week / maand / kwartaal op basis van factuur totaalbedragen.",
+        ],
+        [
+          "ui",
+          "revenue.subtitle",
+          "de",
+          "Übersicht pro Woche / Monat / Quartal basierend auf Rechnungsbeträgen.",
+        ],
         ["ui", "revenue.error_loading", "en", "Error loading revenue data"],
         ["ui", "revenue.error_loading", "nl", "Fout bij laden omzetgegevens"],
-        ["ui", "revenue.error_loading", "de", "Fehler beim Laden der Umsatzdaten"],
+        [
+          "ui",
+          "revenue.error_loading",
+          "de",
+          "Fehler beim Laden der Umsatzdaten",
+        ],
         ["ui", "revenue.all_customers", "en", "All customers"],
         ["ui", "revenue.all_customers", "nl", "Alle klanten"],
         ["ui", "revenue.all_customers", "de", "Alle Kunden"],
@@ -1175,9 +2166,24 @@ class Database {
         ["ui", "invoices.import_pdf", "en", "Import PDF"],
         ["ui", "invoices.import_pdf", "nl", "Importeer PDF"],
         ["ui", "invoices.import_pdf", "de", "PDF importieren"],
-        ["ui", "invoices.search_placeholder", "en", "Search by invoice number or customer..."],
-        ["ui", "invoices.search_placeholder", "nl", "Zoek op factuurnummer of klant..."],
-        ["ui", "invoices.search_placeholder", "de", "Nach Rechnungsnummer oder Kunde suchen..."],
+        [
+          "ui",
+          "invoices.search_placeholder",
+          "en",
+          "Search by invoice number or customer...",
+        ],
+        [
+          "ui",
+          "invoices.search_placeholder",
+          "nl",
+          "Zoek op factuurnummer of klant...",
+        ],
+        [
+          "ui",
+          "invoices.search_placeholder",
+          "de",
+          "Nach Rechnungsnummer oder Kunde suchen...",
+        ],
         ["ui", "invoices.all_statuses", "en", "All statuses"],
         ["ui", "invoices.all_statuses", "nl", "Alle statussen"],
         ["ui", "invoices.all_statuses", "de", "Alle Status"],
@@ -1216,23 +2222,13 @@ class Database {
         ["ui", "invoices.status", "de", "Status"],
       ];
       uiDefaults.forEach((u) => {
-        this.db.get(
-          `SELECT COUNT(*) AS cnt FROM translations WHERE namespace = ? AND key = ? AND locale = ?`,
-          [u[0], u[1], u[2]],
-          (err, row) => {
-            if (!err && row && row.cnt === 0) {
-              this.db.run(
-                `INSERT INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)`,
-                u,
-                (err2) => {
-                  if (err2)
-                    console.error(
-                      "Error inserting ui translation",
-                      err2.message
-                    );
-                }
-              );
-            }
+        // Use INSERT OR IGNORE to avoid UNIQUE constraint errors
+        this.db.run(
+          `INSERT OR IGNORE INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)`,
+          u,
+          (err) => {
+            if (err && !err.message.includes("UNIQUE constraint failed"))
+              console.error("Error inserting ui translation", err.message);
           }
         );
       });
@@ -1346,23 +2342,13 @@ class Database {
       ];
 
       fieldDefaults.forEach((f) => {
-        this.db.get(
-          `SELECT COUNT(*) AS cnt FROM translations WHERE namespace = ? AND key = ? AND locale = ?`,
-          [f[0], f[1], f[2]],
-          (err, row) => {
-            if (!err && row && row.cnt === 0) {
-              this.db.run(
-                `INSERT INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)`,
-                f,
-                (err2) => {
-                  if (err2)
-                    console.error(
-                      "Error inserting field translation",
-                      err2.message
-                    );
-                }
-              );
-            }
+        // Use INSERT OR IGNORE to avoid UNIQUE constraint errors
+        this.db.run(
+          `INSERT OR IGNORE INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)`,
+          f,
+          (err) => {
+            if (err && !err.message.includes("UNIQUE constraint failed"))
+              console.error("Error inserting field translation", err.message);
           }
         );
       });
@@ -1629,7 +2615,12 @@ class Database {
                           ["menu", "admin-submissions", "de", "Einreichungen"],
                           ["menu", "admin-hours-report", "en", "Hours Report"],
                           ["menu", "admin-hours-report", "nl", "Uren rapport"],
-                          ["menu", "admin-hours-report", "de", "Stundenrapport"],
+                          [
+                            "menu",
+                            "admin-hours-report",
+                            "de",
+                            "Stundenrapport",
+                          ],
                           ["menu", "admin-leave", "en", "Leave Management"],
                           ["menu", "admin-leave", "nl", "Verlofsysteem"],
                           ["menu", "admin-leave", "de", "Urlaubsverwaltung"],
@@ -1667,19 +2658,23 @@ class Database {
             );
 
             // Ensure menu translations exist for all locales (non-destructive)
-            this.db.all(`SELECT page_key, label FROM ui_menu`, [], (err2, rows) => {
-              if (err2 || !rows) return;
-              const locales = ["en", "nl", "de"];
-              const stmt = this.db.prepare(
-                `INSERT OR IGNORE INTO translations (namespace, key, locale, text) VALUES ('menu', ?, ?, ?)`
-              );
-              rows.forEach((r) => {
-                locales.forEach((loc) => {
-                  stmt.run(r.page_key, loc, r.label);
+            this.db.all(
+              `SELECT page_key, label FROM ui_menu`,
+              [],
+              (err2, rows) => {
+                if (err2 || !rows) return;
+                const locales = ["en", "nl", "de"];
+                const stmt = this.db.prepare(
+                  `INSERT OR IGNORE INTO translations (namespace, key, locale, text) VALUES ('menu', ?, ?, ?)`
+                );
+                rows.forEach((r) => {
+                  locales.forEach((loc) => {
+                    stmt.run(r.page_key, loc, r.label);
+                  });
                 });
-              });
-              stmt.finalize();
-            });
+                stmt.finalize();
+              }
+            );
           }
         }
       );

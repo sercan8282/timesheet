@@ -13,8 +13,14 @@
   function adminTr(key, fallback) {
     try {
       // Try UI namespace first, fallback to admin namespace
-      const tUi = window.app && typeof window.app.t === "function" ? window.app.t("ui", key) : null;
-      const tAdmin = window.app && typeof window.app.t === "function" ? window.app.t("admin", key) : null;
+      const tUi =
+        window.app && typeof window.app.t === "function"
+          ? window.app.t("ui", key)
+          : null;
+      const tAdmin =
+        window.app && typeof window.app.t === "function"
+          ? window.app.t("admin", key)
+          : null;
       return tUi || tAdmin || fallback;
     } catch (e) {
       return fallback;
@@ -156,10 +162,14 @@
                 .map(
                   (it, idx) => `
                 <tr class="menu-row" data-index="${idx}">
-                  <td><span class="badge-soft text-uppercase">${idx + 1}</span></td>
+                  <td><span class="badge-soft text-uppercase">${
+                    idx + 1
+                  }</span></td>
                   <td>
                     <div class="text-muted small">${it.page_key}</div>
-                    <input type="hidden" class="page-key" value="${it.page_key}" />
+                    <input type="hidden" class="page-key" value="${
+                      it.page_key
+                    }" />
                   </td>
                   <td>
                     <input class="form-control form-control-sm label" value="${
@@ -260,10 +270,16 @@
             const key = inp.getAttribute("data-key");
             inp.value = map[key] || "";
           });
-          showToast(adminTr("loaded_translations", "Loaded translations"), "success");
+          showToast(
+            adminTr("loaded_translations", "Loaded translations"),
+            "success"
+          );
         } catch (err) {
           console.error("Error loading translations", err);
-          showToast(adminTr("error_loading_translations", "Error loading translations"), "danger");
+          showToast(
+            adminTr("error_loading_translations", "Error loading translations"),
+            "danger"
+          );
         } finally {
           loadBtn.disabled = false;
         }
@@ -283,7 +299,10 @@
         }));
         try {
           await api.updateTranslations(items);
-          showToast(adminTr("translations_saved", "Translations saved"), "success");
+          showToast(
+            adminTr("translations_saved", "Translations saved"),
+            "success"
+          );
           // ensure locale is selectable in the locales select if newly added via save
           ensureLocaleInSelect(localeSelect, locale);
           // Reload translations to refresh cache
@@ -335,7 +354,10 @@
         showToast(adminTr("exported_template", "Exported template"), "success");
       } catch (err) {
         console.error("Export template error", err);
-        showToast(adminTr("error_exporting_template", "Error exporting template"), "danger");
+        showToast(
+          adminTr("error_exporting_template", "Error exporting template"),
+          "danger"
+        );
       }
     };
   }
@@ -349,7 +371,8 @@
       const up = el.querySelector(".move-up");
       const down = el.querySelector(".move-down");
       if (up) up.disabled = idx === 0;
-      if (down) down.disabled = idx === list.querySelectorAll(".menu-row").length - 1;
+      if (down)
+        down.disabled = idx === list.querySelectorAll(".menu-row").length - 1;
     });
   }
 
@@ -514,7 +537,11 @@
       ).toLowerCase();
       document.querySelectorAll("#translationsTableBody tr").forEach((tr) => {
         const keyElement = tr.querySelector(".trans-key");
-        const key = (keyElement.textContent || keyElement.value || "").toLowerCase();
+        const key = (
+          keyElement.textContent ||
+          keyElement.value ||
+          ""
+        ).toLowerCase();
         const text = (
           tr.querySelector(".trans-text").value || ""
         ).toLowerCase();
@@ -550,10 +577,16 @@
           a.click();
           a.remove();
           URL.revokeObjectURL(url);
-          showToast(adminTr("exported_template", "Exported template"), "success");
+          showToast(
+            adminTr("exported_template", "Exported template"),
+            "success"
+          );
         } catch (err) {
           console.error("Export template error", err);
-          showToast(adminTr("error_exporting_template", "Error exporting template"), "danger");
+          showToast(
+            adminTr("error_exporting_template", "Error exporting template"),
+            "danger"
+          );
         }
       };
 
@@ -661,7 +694,10 @@
     await loadTranslationsForSelected();
 
     try {
-      if (window.app && typeof window.app.applyTranslationsToDom === "function") {
+      if (
+        window.app &&
+        typeof window.app.applyTranslationsToDom === "function"
+      ) {
         window.app.applyTranslationsToDom();
       }
     } catch (err) {
@@ -679,15 +715,22 @@
       const items = await api.getTranslations(locale, ns);
       renderTranslationsTable(items || []);
       const badge = document.getElementById("translationsStatusBadge");
-      if (badge) badge.textContent = `${ns.toUpperCase()} · ${locale.toUpperCase()}`;
+      if (badge)
+        badge.textContent = `${ns.toUpperCase()} · ${locale.toUpperCase()}`;
       try {
-        if (window.app && typeof window.app.applyTranslationsToDom === "function") {
+        if (
+          window.app &&
+          typeof window.app.applyTranslationsToDom === "function"
+        ) {
           window.app.applyTranslationsToDom();
         }
       } catch (err) {
         // ignore
       }
-      showToast(adminTr("loaded_translations", "Loaded translations"), "success");
+      showToast(
+        adminTr("loaded_translations", "Loaded translations"),
+        "success"
+      );
     } catch (err) {
       console.error("Error loading translations", err);
       wrapper.innerHTML = `<div class="alert alert-danger">Error loading translations: ${err.message}</div>`;
@@ -754,11 +797,15 @@
 
   async function autoTranslateMissing() {
     const target = document.getElementById("translationsLocale").value;
-    const source = document.getElementById("translationsSourceLocale").value || "en";
-    const provider = document.getElementById("translationsProvider").value || "deepl";
+    const source =
+      document.getElementById("translationsSourceLocale").value || "en";
+    const provider =
+      document.getElementById("translationsProvider").value || "deepl";
     const namespace = document.getElementById("translationsNamespace").value;
     const btn = document.getElementById("autoTranslateBtn");
-    const rows = Array.from(document.querySelectorAll("#translationsTableBody tr"));
+    const rows = Array.from(
+      document.querySelectorAll("#translationsTableBody tr")
+    );
     const pending = rows.filter((tr) => {
       const key = tr.querySelector(".trans-key")?.value?.trim();
       const text = tr.querySelector(".trans-text")?.value?.trim();
@@ -782,7 +829,10 @@
         sourceMap[r.key] = r.text;
       });
     } catch (err) {
-      console.warn("Could not load source translations; falling back to key", err);
+      console.warn(
+        "Could not load source translations; falling back to key",
+        err
+      );
     }
 
     for (const tr of pending) {
@@ -806,10 +856,16 @@
 
     btn.innerHTML = original;
     btn.disabled = false;
-    showToast(adminTr("translations.auto_translated", "Auto-translated"), "success");
+    showToast(
+      adminTr("translations.auto_translated", "Auto-translated"),
+      "success"
+    );
 
     try {
-      if (window.app && typeof window.app.applyTranslationsToDom === "function") {
+      if (
+        window.app &&
+        typeof window.app.applyTranslationsToDom === "function"
+      ) {
         window.app.applyTranslationsToDom();
       }
     } catch (err) {
@@ -2136,14 +2192,23 @@
             </div>
             <div class="modal-body">
               <div id="resetMfaAlert"></div>
-              <p class="text-muted">${adminTr("mfa.reset_confirm", "Confirm with your own MFA code to reset this user's MFA")}</p>
+              <p class="text-muted">${adminTr(
+                "mfa.reset_confirm",
+                "Confirm with your own MFA code to reset this user's MFA"
+              )}</p>
               <div class="mb-3">
-                <label class="form-label">${adminTr("mfa.admin_code", "Admin MFA code")}</label>
+                <label class="form-label">${adminTr(
+                  "mfa.admin_code",
+                  "Admin MFA code"
+                )}</label>
                 <input type="text" class="form-control text-center" id="resetMfaToken" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${adminTr("cancel", "Cancel")}</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${adminTr(
+                "cancel",
+                "Cancel"
+              )}</button>
               <button type="button" class="btn btn-danger" onclick="submitResetMfa()">
                 <i class="bi bi-shield-lock"></i> Reset MFA
               </button>
@@ -2279,15 +2344,19 @@
     const token = document.getElementById("resetMfaToken").value.trim();
 
     if (!token || token.length !== 6) {
-      alertDiv.innerHTML =
-        `<div class="alert alert-warning">${adminTr("mfa.invalid_code", "Enter a valid 6-digit code")}</div>`;
+      alertDiv.innerHTML = `<div class="alert alert-warning">${adminTr(
+        "mfa.invalid_code",
+        "Enter a valid 6-digit code"
+      )}</div>`;
       return;
     }
 
     try {
       await api.resetUserMfa(resetMfaUserId, token);
-      alertDiv.innerHTML =
-        `<div class="alert alert-success">${adminTr("mfa.reset_success", "MFA reset. User must setup MFA again at next login.")}</div>`;
+      alertDiv.innerHTML = `<div class="alert alert-success">${adminTr(
+        "mfa.reset_success",
+        "MFA reset. User must setup MFA again at next login."
+      )}</div>`;
       setTimeout(() => {
         const modal = bootstrap.Modal.getInstance(
           document.getElementById("resetMfaModal")
@@ -3093,8 +3162,12 @@
       const requests = await api.getLeaveRequestsAdmin();
 
       if (!requests || requests.length === 0) {
-        document.getElementById("leaveRequestsWrapper").innerHTML =
-          `<div class="alert alert-info m-3">${adminTr("leave.no_requests", "No leave requests")}</div>`;
+        document.getElementById(
+          "leaveRequestsWrapper"
+        ).innerHTML = `<div class="alert alert-info m-3">${adminTr(
+          "leave.no_requests",
+          "No leave requests"
+        )}</div>`;
       } else {
         const badge = (status) => {
           switch (status) {
@@ -3242,9 +3315,16 @@
     if (!wrapper) return;
 
     if (!vehicles || vehicles.length === 0) {
-      wrapper.innerHTML = `<div class="p-3 text-muted">${adminTr("fleet.no_vehicles", "No vehicles")}</div>`;
-      document.getElementById("fleetDetailWrapper").innerHTML =
-        `<div class="alert alert-info mt-2">${adminTr("fleet.add_first", "Add a vehicle first.")}</div>`;
+      wrapper.innerHTML = `<div class="p-3 text-muted">${adminTr(
+        "fleet.no_vehicles",
+        "No vehicles"
+      )}</div>`;
+      document.getElementById(
+        "fleetDetailWrapper"
+      ).innerHTML = `<div class="alert alert-info mt-2">${adminTr(
+        "fleet.add_first",
+        "Add a vehicle first."
+      )}</div>`;
       return;
     }
 
@@ -3310,8 +3390,10 @@
   function renderVehicleDetail(vehicle, maintenance) {
     const detail = document.getElementById("fleetDetailWrapper");
     if (!vehicle) {
-      detail.innerHTML =
-        `<div class="alert alert-info">${adminTr("fleet.select_vehicle", "Select a vehicle")}</div>`;
+      detail.innerHTML = `<div class="alert alert-info">${adminTr(
+        "fleet.select_vehicle",
+        "Select a vehicle"
+      )}</div>`;
       return;
     }
 
@@ -3335,7 +3417,10 @@
       `
           )
           .join("")
-      : `<tr><td colspan="4" class="text-center text-muted">${adminTr("fleet.no_maintenance", "No maintenance records")}</td></tr>`;
+      : `<tr><td colspan="4" class="text-center text-muted">${adminTr(
+          "fleet.no_maintenance",
+          "No maintenance records"
+        )}</td></tr>`;
 
     detail.innerHTML = `
     <div class="card">
@@ -3447,7 +3532,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="submitAddVehicle()">${adminTr("save", "Save")}</button>
+            <button type="button" class="btn btn-primary" onclick="submitAddVehicle()">${adminTr(
+              "save",
+              "Save"
+            )}</button>
           </div>
         </div>
       </div>
@@ -3557,7 +3645,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="submitEditVehicle(${id})">${adminTr("save", "Save")}</button>
+            <button type="button" class="btn btn-primary" onclick="submitEditVehicle(${id})">${adminTr(
+      "save",
+      "Save"
+    )}</button>
           </div>
         </div>
       </div>
@@ -3638,7 +3729,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="submitMaintenance(${vehicleId})">${adminTr("save", "Save")}</button>
+            <button type="button" class="btn btn-primary" onclick="submitMaintenance(${vehicleId})">${adminTr(
+      "save",
+      "Save"
+    )}</button>
           </div>
         </div>
       </div>
@@ -3725,7 +3819,10 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-            <button type="button" class="btn btn-primary" onclick="submitEditMaintenance(${maintenanceId}, ${vehicleId})">${adminTr("save", "Save")}</button>
+            <button type="button" class="btn btn-primary" onclick="submitEditMaintenance(${maintenanceId}, ${vehicleId})">${adminTr(
+      "save",
+      "Save"
+    )}</button>
           </div>
         </div>
       </div>
@@ -3778,15 +3875,27 @@
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header bg-danger text-white">
-            <h5 class="modal-title">${adminTr("fleet.delete_maintenance", "Delete maintenance")}</h5>
+            <h5 class="modal-title">${adminTr(
+              "fleet.delete_maintenance",
+              "Delete maintenance"
+            )}</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <p>${adminTr("confirm_delete", "Are you sure you want to delete? This cannot be undone.")}</p>
+            <p>${adminTr(
+              "confirm_delete",
+              "Are you sure you want to delete? This cannot be undone."
+            )}</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${adminTr("cancel", "Cancel")}</button>
-            <button type="button" class="btn btn-danger" onclick="confirmDeleteMaintenance(${maintenanceId})">${adminTr("delete", "Delete")}</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${adminTr(
+              "cancel",
+              "Cancel"
+            )}</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteMaintenance(${maintenanceId})">${adminTr(
+      "delete",
+      "Delete"
+    )}</button>
           </div>
         </div>
       </div>
@@ -3951,13 +4060,21 @@
   function renderPlanningList(entries) {
     const wrapper = document.getElementById("planningList");
     if (!entries || entries.length === 0) {
-      wrapper.innerHTML =
-        `<div class="alert alert-info">${adminTr("planning.no_planning", "No planning for this week")}</div>`;
+      wrapper.innerHTML = `<div class="alert alert-info">${adminTr(
+        "planning.no_planning",
+        "No planning for this week"
+      )}</div>`;
       return;
     }
 
     const dayName = (d) =>
-      ({ 1: adminTr("day.mon", "Mon"), 2: adminTr("day.tue", "Tue"), 3: adminTr("day.wed", "Wed"), 4: adminTr("day.thu", "Thu"), 5: adminTr("day.fri", "Fri") }[d] || d);
+      ({
+        1: adminTr("day.mon", "Mon"),
+        2: adminTr("day.tue", "Tue"),
+        3: adminTr("day.wed", "Wed"),
+        4: adminTr("day.thu", "Thu"),
+        5: adminTr("day.fri", "Fri"),
+      }[d] || d);
 
     // Sort by day then ritnumber ascending
     const sorted = [...entries].sort((a, b) => {

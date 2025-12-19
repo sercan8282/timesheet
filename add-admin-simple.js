@@ -1,5 +1,5 @@
 // Add admin menu items directly to database
-const db = require('./config/database');
+const db = require("./config/database");
 
 function addAdminItems() {
   const adminItems = [
@@ -19,18 +19,21 @@ function addAdminItems() {
   // Run inside setTimeout to allow database to initialize
   setTimeout(async () => {
     try {
-      const maxRow = await db.get('SELECT MAX(sort_order) as max_order FROM ui_menu');
-      const startOrder = (maxRow && maxRow.max_order !== null) ? maxRow.max_order + 1 : 7;
+      const maxRow = await db.get(
+        "SELECT MAX(sort_order) as max_order FROM ui_menu"
+      );
+      const startOrder =
+        maxRow && maxRow.max_order !== null ? maxRow.max_order + 1 : 7;
 
       for (let i = 0; i < adminItems.length; i++) {
         const item = adminItems[i];
         await db.run(
-          'INSERT OR REPLACE INTO ui_menu (page_key, label, sort_order, visible) VALUES (?, ?, ?, ?)',
+          "INSERT OR REPLACE INTO ui_menu (page_key, label, sort_order, visible) VALUES (?, ?, ?, ?)",
           [item.k, item.l, startOrder + i, 1]
         );
       }
 
-      console.log('✓ Added admin menu items');
+      console.log("✓ Added admin menu items");
 
       // Add translations
       const adminMenuLabels = [
@@ -71,15 +74,15 @@ function addAdminItems() {
 
       for (const item of adminMenuLabels) {
         await db.run(
-          'INSERT OR REPLACE INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)',
+          "INSERT OR REPLACE INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)",
           [item[0], item[1], item[2], item[3]]
         );
       }
 
-      console.log('✓ Added translations for admin items');
+      console.log("✓ Added translations for admin items");
       process.exit(0);
     } catch (err) {
-      console.error('Error:', err);
+      console.error("Error:", err);
       process.exit(1);
     }
   }, 3000);

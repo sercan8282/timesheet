@@ -282,8 +282,16 @@ async function loadLeaveRequests() {
 
     tbody.innerHTML = leaveRequests
       .map((req) => {
-        const vacationLabel = translate("ui", "leave.type_vacation", "Vacation");
-        const overtimeLabel = translate("ui", "leave.type_overtime", "Overtime");
+        const vacationLabel = translate(
+          "ui",
+          "leave.type_vacation",
+          "Vacation"
+        );
+        const overtimeLabel = translate(
+          "ui",
+          "leave.type_overtime",
+          "Overtime"
+        );
         const statusBadge =
           req.status === "approved"
             ? "badge bg-success"
@@ -312,7 +320,9 @@ async function loadLeaveRequests() {
           <tr>
             <td>${dateTimeDisplay}</td>
             <td>${Number(req.hours_requested).toFixed(2)} ${hoursUnit}</td>
-            <td>${req.balance_type === "vacation" ? vacationLabel : overtimeLabel}</td>
+            <td>${
+              req.balance_type === "vacation" ? vacationLabel : overtimeLabel
+            }</td>
             <td><span class="${statusBadge}">${statusLabel}${approver}</span></td>
             <td>${req.reason || req.admin_note || "-"}</td>
             <td>
@@ -352,8 +362,11 @@ async function editLeaveRequest(id) {
   // Change submit button to update mode
   const alertDiv = document.getElementById("leaveFormAlert");
   alertDiv.innerHTML = `<div class="alert alert-info">
-    <strong>${t('ui', 'edit')}:</strong> ${t('ui', 'leave_edit_hint')}
-    <button class="btn btn-sm btn-secondary ms-2" onclick="cancelEdit()">${t('ui', 'cancel')}</button>
+    <strong>${t("ui", "edit")}:</strong> ${t("ui", "leave_edit_hint")}
+    <button class="btn btn-sm btn-secondary ms-2" onclick="cancelEdit()">${t(
+      "ui",
+      "cancel"
+    )}</button>
   </div>`;
 
   // Replace submit button
@@ -361,7 +374,10 @@ async function editLeaveRequest(id) {
     'button[onclick="submitLeaveRequestForm()"]'
   );
   submitBtn.setAttribute("onclick", `updateLeaveRequest(${id})`);
-  submitBtn.innerHTML = `<i class="bi bi-check-circle"></i> ${t('ui', 'update')}`;
+  submitBtn.innerHTML = `<i class="bi bi-check-circle"></i> ${t(
+    "ui",
+    "update"
+  )}`;
 
   // Scroll to form
   document.querySelector(".card-header").scrollIntoView({ behavior: "smooth" });

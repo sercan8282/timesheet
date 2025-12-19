@@ -26,8 +26,14 @@ function renderWeeklySummary() {
                                             <td colspan="4" class="text-center">
                                                 <div class="spinner-border spinner-border-sm" role="status">
                                                   <span class="visually-hidden" data-i18n="ui:loading">Loading...</span>
-                                                                            <a class="page-link" href="#" onclick="loadWeeklySummary(${currentPage - 1}); return false;"><span data-i18n="ui:previous">Previous</span></a>
-                                                                            <a class="page-link" href="#" onclick="loadWeeklySummary(${currentPage + 1}); return false;"><span data-i18n="ui:next">Next</span></a>
+                                                                            <a class="page-link" href="#" onclick="loadWeeklySummary(${
+                                                                              currentPage -
+                                                                              1
+                                                                            }); return false;"><span data-i18n="ui:previous">Previous</span></a>
+                                                                            <a class="page-link" href="#" onclick="loadWeeklySummary(${
+                                                                              currentPage +
+                                                                              1
+                                                                            }); return false;"><span data-i18n="ui:next">Next</span></a>
                                                 </div>
                                             </td>
                                         </tr>

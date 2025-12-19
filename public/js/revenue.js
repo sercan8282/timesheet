@@ -70,7 +70,10 @@ function initRevenue() {
       );
     } catch (err) {
       console.error("Error loading invoices for revenue:", err);
-      const errorMsg = window.app && window.app.t ? window.app.t("ui", "revenue.error_loading") : "Error loading revenue data";
+      const errorMsg =
+        window.app && window.app.t
+          ? window.app.t("ui", "revenue.error_loading")
+          : "Error loading revenue data";
       showToast(errorMsg || "Error loading revenue data", "error");
     }
   };

@@ -89,7 +89,7 @@ async function initDashboard() {
 
       // Populate dropdown
       dropdown.innerHTML =
-        `<option value="">${t('ui', 'dashboard.select_company')}</option>` +
+        `<option value="">${t("ui", "dashboard.select_company")}</option>` +
         userCompanies
           .map(
             (c) =>
@@ -264,70 +264,103 @@ function renderTimesheetRows() {
       return `
             <div class="timesheet-row row g-1 mb-2 align-items-end">
                 <div class="col-auto" style="width: 60px;">
-                    <label class="form-label small mb-1">${t('field', 'week')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "week"
+                    )}</label>
                     <input type="text" class="form-control form-control-sm" value="${weekNumber}" readonly>
                 </div>
                 <div class="col-auto" style="width: 90px;">
-                    <label class="form-label small mb-1">${t('field', 'ritnumber')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "ritnumber"
+                    )}</label>
                     <input type="text" class="form-control form-control-sm" value="${
                       ts.ritnumber || ""
                     }" 
                            onchange="updateTimesheet(${index}, 'ritnumber', this.value)">
                 </div>
                 <div class="col-auto" style="width: 140px;">
-                    <label class="form-label small mb-1">${t('field', 'name')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "name"
+                    )}</label>
                     <input type="text" class="form-control form-control-sm" value="${
                       user.fullName
                     }" readonly>
                 </div>
                 <div class="col-auto" style="width: 130px;">
-                    <label class="form-label small mb-1">${t('field', 'date')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "date"
+                    )}</label>
                     <input type="date" class="form-control form-control-sm" value="${
                       ts.date
                     }" 
                            onchange="updateTimesheet(${index}, 'date', this.value)">
                 </div>
                 <div class="col-auto" style="width: 85px;">
-                    <label class="form-label small mb-1">${t('field', 'start')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "start"
+                    )}</label>
                     <input type="time" class="form-control form-control-sm" value="${
                       ts.startTime
                     }" 
                            onchange="updateTimesheet(${index}, 'startTime', this.value)">
                 </div>
                 <div class="col-auto" style="width: 85px;">
-                    <label class="form-label small mb-1">${t('field', 'end')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "end"
+                    )}</label>
                     <input type="time" class="form-control form-control-sm" value="${
                       ts.endTime
                     }" 
                            onchange="updateTimesheet(${index}, 'endTime', this.value)">
                 </div>
                 <div class="col-auto" style="width: 80px;">
-                    <label class="form-label small mb-1">${t('field', 'start_km')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "start_km"
+                    )}</label>
                     <input type="number" class="form-control form-control-sm" value="${
                       ts.startKm
                     }" step="0.1"
                            onchange="updateTimesheet(${index}, 'startKm', parseFloat(this.value))">
                 </div>
                 <div class="col-auto" style="width: 80px;">
-                    <label class="form-label small mb-1">${t('field', 'end_km')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "end_km"
+                    )}</label>
                     <input type="number" class="form-control form-control-sm" value="${
                       ts.endKm
                     }" step="0.1"
                            onchange="updateTimesheet(${index}, 'endKm', parseFloat(this.value))">
                 </div>
                 <div class="col-auto" style="width: 85px;">
-                    <label class="form-label small mb-1">${t('field', 'pause')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "pause"
+                    )}</label>
                     <input type="time" class="form-control form-control-sm" value="${
                       ts.pauseTime
                     }" 
                            onchange="updateTimesheet(${index}, 'pauseTime', this.value)">
                 </div>
                 <div class="col-auto" style="width: 70px;">
-                    <label class="form-label small mb-1">${t('field', 'hours')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "hours"
+                    )}</label>
                     <input type="text" class="form-control form-control-sm" value="${totalHours}" readonly>
                 </div>
                 <div class="col-auto" style="width: 70px;">
-                    <label class="form-label small mb-1">${t('field', 'km')}</label>
+                    <label class="form-label small mb-1">${t(
+                      "field",
+                      "km"
+                    )}</label>
                     <input type="text" class="form-control form-control-sm" value="${totalKm}" readonly>
                 </div>
                 <div class="col-auto">
