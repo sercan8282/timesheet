@@ -166,48 +166,78 @@ Het nieuwe update-script lost dit automatisch op door:
 - Te **wachten tot PM2 status "online" is** (max 30 seconden)
 - Te **wachten tot health endpoint reageert** (max 30 seconden)
 - **Gedetailleerde logs** te tonen bij failures
+- **Pre-flight checks** uit te voeren (port availability, database permissions, .env)
 
 Als het nog steeds faalt, diagnoseer het zo:
 ```bash
 # 1) Check PM2 status en logs
 pm2 status timesheet
 pm2 logs timesheet --lines 200
+pm2 info timesheet
 
-# 2) Controleer of PM2 in PATH staat
-which pm2 || echo "pm2 niet gevonden in PATH"
-echo "$PATH"
-
-# 3) Check de .env file
-head -n 20 .env
-
-# 4) Test handmatig starten
+# 2) Test direct starten (buiten PM2) om exacte fout te zien
 cd /var/www/timesheet  # pas aan naar jouw pad
 NODE_ENV=production PORT=3000 node server.js
 # Als dit faalt, zie je de exacte foutmelding
+# Druk Ctrl+C om te stoppen
+
+# 3) Check environment en dependencies
+node --version  # moet v16+ zijn
+npm --version
+which pm2
+echo $PATH
+
+# 4) Check .env file
+head -n 20 .env
+# Controleer of PORT, NODE_ENV, JWT_SECRET zijn ingesteld
 
 # 5) Check database permissions
 ls -la database.sqlite
 # Owner moet dezelfde user zijn als PM2 (bijv. www-data of je eigen user)
+# Fix permissions indien nodig:
+sudo chown $(whoami):$(whoami) database.sqlite
+chmod 644 database.sqlite
+
+# 6) Check port availability
+ss -ltn | grep 3000 || netstat -ltn | grep 3000
+# Als port bezet is:
+sudo fuser -k 3000/tcp
+
+# 7) Check Nginx configuratie
+sudo nginx -t
+sudo systemctl status nginx
+sudo tail -n 100 /var/log/nginx/error.log
 ```
 
 Handmatige fix als automated script faalt:
 ```bash
-# Stop alles en start schoon
-pm2 delete timesheet
+# Volledige reset van PM2
+pm2 delete all
 pm2 kill
-rm -f ~/.pm2/dump.pm2
+rm -rf ~/.pm2
+pm2 ping  # start PM2 daemon opnieuw
 
 # Laad nvm (indien gebruikt)
 [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"
 
+# Zorg dat dependencies up-to-date zijn
+cd /var/www/timesheet
+npm ci
+
+# Test database init
+npm run init-db
+
 # Start fresh
 pm2 start npm --name timesheet -- start
-pm2 save
-
-# Wacht en check
 sleep 10
 pm2 status timesheet
+
+# Test health endpoint
 curl http://localhost:3000/api/health
+curl https://urenregistratie.site/api/health
+
+# Save als het werkt
+pm2 save
 ```
 
 ## Menu-item "System Update" toevoegen (eenmalig)
