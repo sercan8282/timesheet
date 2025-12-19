@@ -21,6 +21,11 @@ const db = require("./config/database");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust the reverse proxy (e.g., Nginx) for X-Forwarded-* headers
+// This is required for correct client IP detection and for express-rate-limit v7
+// When running behind a single proxy like Nginx on the same host, use 1 hop.
+app.set("trust proxy", 1);
+
 // PDF Preview route - FIRST, BEFORE ALL MIDDLEWARE
 app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
   console.log("PDF Preview route HIT! Template ID:", req.params.id);
