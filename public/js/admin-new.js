@@ -2838,7 +2838,7 @@
     }
 
     container.innerHTML = `
-    <div class="table-responsive">
+    <div class="table-responsive d-none d-md-block">
       <table class="table table-striped table-hover">
         <thead class="table-dark">
           <tr>
@@ -2918,7 +2918,121 @@
         </tbody>
       </table>
     </div>
+
+    <div class="d-md-none">
+      <table class="table table-striped table-hover table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 20px;"></th>
+            <th>User</th>
+            <th>Company</th>
+            <th>Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${submissions
+            .map((submission) => {
+              let weekStr = "-";
+              if (submission.week_numbers) {
+                const weeks = submission.week_numbers
+                  .split(",")
+                  .map((w) => `W${w.trim()}`);
+                weekStr = weeks.join(", ");
+              }
+
+              let submittedStr = "-";
+              if (submission.submission_date) {
+                submittedStr = new Date(
+                  submission.submission_date
+                ).toLocaleDateString("nl-NL");
+              }
+
+              return `
+            <tr class="submission-row" data-submission-id="${submission.id}">
+              <td class="text-center" style="cursor: pointer; padding: 0.4rem 0.3rem;">
+                <i class="bi bi-chevron-down toggle-details" onclick="toggleSubmissionDetails(${submission.id})" style="font-size: 0.8rem;"></i>
+              </td>
+              <td><small><strong>${submission.full_name || submission.username || "-"}</strong></small></td>
+              <td><small>${submission.company_name || "-"}</small></td>
+              <td><small><strong>${
+                submission.total_hours
+                  ? parseFloat(submission.total_hours).toFixed(2)
+                  : "0.00"
+              }</strong></small></td>
+            </tr>
+            <tr class="submission-details-row d-none" id="details-submission-${submission.id}">
+              <td colspan="4" style="padding: 0;">
+                <div class="p-3 bg-light border-top">
+                  <h6 class="mb-3">${submission.full_name || submission.username || "-"}</h6>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">ID</label>
+                      <p class="small">${submission.id}</p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Weeknummers</label>
+                      <p class="small">${weekStr}</p>
+                    </div>
+                  </div>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Status</label>
+                      <p class="small">
+                        <span class="badge ${getSubmissionStatusBadge(submission.status)}">
+                          ${submission.status || "pending"}
+                        </span>
+                      </p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Submitted</label>
+                      <p class="small">${submittedStr}</p>
+                    </div>
+                  </div>
+                  <div class="d-grid gap-2">
+                    <button class="btn btn-info btn-sm" onclick="viewSubmissionDetails(${submission.id})">
+                      <i class="bi bi-eye"></i> View Details
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="editSubmissionHours(${submission.id})">
+                      <i class="bi bi-pencil"></i> Edit Hours
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="emailSubmission(${submission.id})">
+                      <i class="bi bi-envelope"></i> Send Email
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteSubmission(${submission.id})">
+                      <i class="bi bi-trash"></i> Delete
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            `;
+            })
+            .join("")}
+        </tbody>
+      </table>
+    </div>
   `;
+
+    // Attach event listeners for toggle details
+    const detailsRows = container.querySelectorAll('.submission-row');
+    detailsRows.forEach(row => {
+      row.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-details')) return;
+        const submissionId = this.getAttribute('data-submission-id');
+        toggleSubmissionDetails(submissionId);
+      });
+    });
+  }
+
+  function toggleSubmissionDetails(submissionId) {
+    const detailsRow = document.getElementById(`details-submission-${submissionId}`);
+    const icon = document.querySelector(`[data-submission-id="${submissionId}"] .toggle-details`);
+    
+    if (detailsRow && icon) {
+      detailsRow.classList.toggle('d-none');
+      icon.classList.toggle('bi-chevron-down');
+      icon.classList.toggle('bi-chevron-up');
+    }
   }
 
   function formatDateRange(startDate, endDate) {
@@ -4285,7 +4399,7 @@
     })();
 
     wrapper.innerHTML = `
-    <div class="table-responsive">
+    <div class="table-responsive d-none d-md-block">
       <table class="table table-striped table-hover">
         <thead class="table-dark">
           <tr>
@@ -4304,7 +4418,116 @@
         <tbody>${rows}</tbody>
       </table>
     </div>
+
+    <div class="d-md-none">
+      <table class="table table-striped table-hover table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th style="width: 20px;"></th>
+            <th>Rit</th>
+            <th>Dag</th>
+            <th>Chauffeur</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted
+            .map(
+              (e) => `
+            <tr class="planning-row" data-planning-id="${e.id}">
+              <td class="text-center" style="cursor: pointer; padding: 0.4rem 0.3rem;">
+                <i class="bi bi-chevron-down toggle-details" onclick="togglePlanningDetails(${e.id})" style="font-size: 0.8rem;"></i>
+              </td>
+              <td><small><strong>${e.route_number || "-"}</strong></small></td>
+              <td><small>${dayName(e.day_of_week)}</small></td>
+              <td><small>${e.driver_name || "-"}</small></td>
+            </tr>
+            <tr class="planning-details-row d-none" id="details-planning-${e.id}">
+              <td colspan="4" style="padding: 0;">
+                <div class="p-3 bg-light border-top">
+                  <h6 class="mb-3">Rit ${e.route_number || "-"} - ${dayName(e.day_of_week)}</h6>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Week</label>
+                      <p class="small">${e.week_number}</p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Chauffeur</label>
+                      <p class="small">${e.driver_name || "-"}</p>
+                    </div>
+                  </div>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">ADR</label>
+                      <p class="small">${e.adr ? "Ja" : "Nee"}</p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Truck Type</label>
+                      <p class="small">${
+                        e.mega_kast === "mega_and_kast"
+                          ? "Mega+Kast"
+                          : e.mega_kast === "nvt"
+                          ? "N.v.t."
+                          : "Mega"
+                      }</p>
+                    </div>
+                  </div>
+                  <div class="row mb-3">
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Kenteken</label>
+                      <p class="small">${e.license_plate || "-"}</p>
+                    </div>
+                    <div class="col-6">
+                      <label class="form-label text-muted small">Telefoon</label>
+                      <p class="small">${e.phone_number || "-"}</p>
+                    </div>
+                  </div>
+                  ${e.notes ? `
+                  <div class="row mb-3">
+                    <div class="col-12">
+                      <label class="form-label text-muted small">Notities</label>
+                      <p class="small">${e.notes}</p>
+                    </div>
+                  </div>
+                  ` : ''}
+                  <div class="d-grid gap-2 d-sm-flex gap-2">
+                    <button class="btn btn-warning btn-sm flex-grow-1" onclick="showEditPlanningModal(${e.id})">
+                      <i class="bi bi-pencil"></i> Edit
+                    </button>
+                    <button class="btn btn-danger btn-sm flex-grow-1" onclick="deletePlanningEntry(${e.id})">
+                      <i class="bi bi-trash"></i> Delete
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
   `;
+
+    // Attach event listeners for toggle details
+    const detailsRows = wrapper.querySelectorAll('.planning-row');
+    detailsRows.forEach(row => {
+      row.addEventListener('click', function(e) {
+        if (e.target.closest('.toggle-details')) return;
+        const planningId = this.getAttribute('data-planning-id');
+        togglePlanningDetails(planningId);
+      });
+    });
+  }
+
+  function togglePlanningDetails(planningId) {
+    const detailsRow = document.getElementById(`details-planning-${planningId}`);
+    const icon = document.querySelector(`[data-planning-id="${planningId}"] .toggle-details`);
+    
+    if (detailsRow && icon) {
+      detailsRow.classList.toggle('d-none');
+      icon.classList.toggle('bi-chevron-down');
+      icon.classList.toggle('bi-chevron-up');
+    }
   }
 
   async function updatePlanningDriver(entryId, companyId, newDriverId) {
@@ -5268,6 +5491,8 @@
   window.submitEditCompany = submitEditCompany;
   window.toggleUserDetails = toggleUserDetails;
   window.toggleCompanyDetails = toggleCompanyDetails;
+  window.toggleSubmissionDetails = toggleSubmissionDetails;
+  window.togglePlanningDetails = togglePlanningDetails;
   window.toggleAddFillInCompany = toggleAddFillInCompany;
   window.toggleEditFillInCompany = toggleEditFillInCompany;
   window.viewSubmissionDetails = viewSubmissionDetails;
