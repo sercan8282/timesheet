@@ -105,17 +105,44 @@ pm2 restart timesheet
 
 ## Veelvoorkomende problemen
 
-- **502 Bad Gateway**: App herstart of npm-installatie loopt; wacht 1–5 min en controleer daarna health en logs. Herstart zo nodig:
+- **502 Bad Gateway na update**: Dit gebeurt wanneer Nginx probeert te verbinden terwijl de app nog aan het opstarten is. Het nieuwe update-script wacht nu tot de app volledig online is. Als je nog steeds 502 ziet:
 
 ```bash
-pm2 restart timesheet
+# Check PM2 status en logs
+pm2 status timesheet
+pm2 logs timesheet --lines 100
+
+# Check of app luistert op poort 3000
+ss -ltn | grep 3000 || netstat -ltn | grep 3000
+
+# Check Nginx upstream configuratie
+sudo nginx -t
+sudo tail -n 100 /var/log/nginx/error.log
+
+# Handmatig herstarten met wachttijd
+pm2 delete timesheet
+pm2 start npm --name timesheet -- start
+sleep 10
+curl http://localhost:3000/api/health
 ```
 
-- **Poortconflict (EADDRINUSE)**: Meerdere app-instances. Los op met één instance:
+- **App crasht direct na start**: Check de logs voor specifieke errors:
 
 ```bash
-pm2 stop timesheet || true
-pm2 delete timesheet || true
+pm2 logs timesheet --lines 200
+# Kijk naar:
+# - Poortconflicten (EADDRINUSE)
+# - Database errors (SQLITE_CANTOPEN, SQLITE_CORRUPT)
+# - Missing environment variables (.env errors)
+# - Node version mismatches
+```
+
+- **Poortconflict (EADDRINUSE)**: Meerdere app-instances draaien. Los op met één instance:
+
+```bash
+# Find en kill alle node processen op poort 3000
+sudo fuser -k 3000/tcp || sudo lsof -ti:3000 | xargs kill -9
+pm2 delete timesheet
 pm2 start npm --name timesheet -- start
 pm2 save
 ```
@@ -134,44 +161,54 @@ pm2 ping
 
 ### PM2 blijft op "stopped" staan (na System Update)
 
-Dit heeft meestal één van deze oorzaken:
-- **Startfout in de app**: `npm start` crasht door verkeerde `.env`, poortconflict of DB-probleem.
-- **PM2 PATH/user mismatch**: De update draait onder een omgeving waar `pm2` niet in `PATH` staat of onder een andere user dan waar PM2 actief is.
-- **Meerdere PM2 lijsten/processen**: PM2 draait onder verschillende users of er zijn oude processen die conflicten geven.
+Het nieuwe update-script lost dit automatisch op door:
+- Altijd een **fresh start** te doen (delete + start in plaats van restart)
+- Te **wachten tot PM2 status "online" is** (max 30 seconden)
+- Te **wachten tot health endpoint reageert** (max 30 seconden)
+- **Gedetailleerde logs** te tonen bij failures
 
-Zo diagnoseer je het snel:
+Als het nog steeds faalt, diagnoseer het zo:
 ```bash
+# 1) Check PM2 status en logs
 pm2 status timesheet
 pm2 logs timesheet --lines 200
+
+# 2) Controleer of PM2 in PATH staat
 which pm2 || echo "pm2 niet gevonden in PATH"
-echo "$PATH"; echo "PM2_HOME=${PM2_HOME:-unset}"; whoami
-curl -sf http://localhost:3000/api/health || echo "Health endpoint faalt"
+echo "$PATH"
+
+# 3) Check de .env file
+head -n 20 .env
+
+# 4) Test handmatig starten
+cd /var/www/timesheet  # pas aan naar jouw pad
+NODE_ENV=production PORT=3000 node server.js
+# Als dit faalt, zie je de exacte foutmelding
+
+# 5) Check database permissions
+ls -la database.sqlite
+# Owner moet dezelfde user zijn als PM2 (bijv. www-data of je eigen user)
 ```
 
-Zo los je het op:
+Handmatige fix als automated script faalt:
 ```bash
-# 1) Zorg dat er maar één instance is en start schoon
-pm2 stop timesheet || true
-pm2 delete timesheet || true
+# Stop alles en start schoon
+pm2 delete timesheet
+pm2 kill
+rm -f ~/.pm2/dump.pm2
+
+# Laad nvm (indien gebruikt)
+[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"
+
+# Start fresh
 pm2 start npm --name timesheet -- start
 pm2 save
+
+# Wacht en check
+sleep 10
 pm2 status timesheet
-
-# 2) Als pm2 niet gevonden wordt, laad nvm (indien gebruikt) en probeer opnieuw
-[ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh" && hash pm2 2>/dev/null && echo "nvm geladen"
-pm2 start npm --name timesheet -- start || echo "PM2 start faalde"
-pm2 save
-
-# 3) Controleer de app-logs en pas .env aan
-pm2 logs timesheet --lines 200
-sed -n '1,120p' .env || true
-
-# 4) Check poort en Nginx upstream
-ss -ltn | grep 3000 || echo "Niets luistert op 3000"
-sudo nginx -t; sudo tail -n 100 /var/log/nginx/error.log
+curl http://localhost:3000/api/health
 ```
-
-Tip: zet een vaste PM2-config met `ecosystem.config.js` (zie hieronder) en beheer PM2 onder één user (dezelfde als production). Dit voorkomt PATH/user issues.
 
 ## Menu-item "System Update" toevoegen (eenmalig)
 
