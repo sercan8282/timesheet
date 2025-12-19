@@ -98,12 +98,66 @@ if command -v pm2 >/dev/null 2>&1; then
     "$PM2_BIN" stop "$APP_NAME" >/dev/null 2>&1 || true
     "$PM2_BIN" delete "$APP_NAME" >/dev/null 2>&1 || true
     
-    log "Starting fresh PM2 process"
-    if "$PM2_BIN" start npm --name "$APP_NAME" -- start; then
-      "$PM2_BIN" save
-      log "PM2 started successfully"
+    # Pre-flight checks before starting
+    log "Pre-flight checks:"
+    log "  Node version: $(node --version 2>/dev/null || echo 'NOT FOUND')"
+    log "  npm version: $(npm --version 2>/dev/null || echo 'NOT FOUND')"
+    log "  Current user: $(whoami)"
+    log "  Project dir: $PROJECT_DIR"
+    
+    # Check if .env exists
+    if [ ! -f "$PROJECT_DIR/.env" ]; then
+      log "WARNING: .env file not found - app may fail to start"
     else
-      log "ERROR: PM2 start failed"
+      log "  .env file: exists"
+      # Check critical env vars without exposing values
+      if grep -q "^PORT=" "$PROJECT_DIR/.env" 2>/dev/null; then
+        log "  PORT variable: set"
+      else
+        log "WARNING: PORT not set in .env"
+      fi
+    fi
+    
+    # Check database
+    if [ -f "$PROJECT_DIR/database.sqlite" ]; then
+      log "  Database: exists ($(du -h "$PROJECT_DIR/database.sqlite" | cut -f1))"
+      # Check if writable
+      if [ -w "$PROJECT_DIR/database.sqlite" ]; then
+        log "  Database permissions: writable ✓"
+      else
+        log "ERROR: Database is not writable by current user"
+        exit 1
+      fi
+    else
+      log "WARNING: database.sqlite not found - will be created on first run"
+    fi
+    
+    # Check if port 3000 is already in use
+    if command -v ss >/dev/null 2>&1; then
+      if ss -ltn | grep -q ":3000 "; then
+        log "WARNING: Port 3000 already in use - killing existing process"
+        fuser -k 3000/tcp 2>/dev/null || lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+        sleep 2
+      fi
+    fi
+    
+    log "Starting fresh PM2 process"
+    # Capture PM2 start output for debugging
+    PM2_START_OUTPUT=$("$PM2_BIN" start npm --name "$APP_NAME" -- start 2>&1)
+    PM2_START_EXIT=$?
+    
+    if [ $PM2_START_EXIT -eq 0 ]; then
+      "$PM2_BIN" save
+      log "PM2 start command succeeded"
+    else
+      log "ERROR: PM2 start failed with exit code $PM2_START_EXIT"
+      log "PM2 output: $PM2_START_OUTPUT"
+      log "Attempting direct diagnostic start..."
+      
+      # Try starting directly to see actual error
+      log "Testing direct node start (will kill after 5 seconds):"
+      timeout 5 node "$PROJECT_DIR/server.js" 2>&1 | head -n 50 || true
+      
       exit 1
     fi
     
@@ -112,17 +166,33 @@ if command -v pm2 >/dev/null 2>&1; then
     RETRY_COUNT=0
     MAX_RETRIES=30
     while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-      PM2_STATUS=$("$PM2_BIN" jlist | grep -o '"pm2_env":{"status":"[^"]*"' | grep -o 'status":"[^"]*"' | cut -d'"' -f3 || echo "unknown")
+      # More robust status check
+      PM2_STATUS=$("$PM2_BIN" jlist 2>/dev/null | grep -A5 "\"name\":\"$APP_NAME\"" | grep -o '"status":"[^"]*"' | cut -d'"' -f4 || echo "unknown")
+      
       if [ "$PM2_STATUS" = "online" ]; then
         log "PM2 status: online ✓"
         break
       elif [ "$PM2_STATUS" = "errored" ] || [ "$PM2_STATUS" = "stopped" ]; then
         log "ERROR: PM2 status is $PM2_STATUS"
         log "Checking PM2 logs for errors:"
-        "$PM2_BIN" logs "$APP_NAME" --lines 50 --nostream || true
+        "$PM2_BIN" logs "$APP_NAME" --lines 100 --nostream 2>&1 || true
+        log "Checking PM2 info:"
+        "$PM2_BIN" info "$APP_NAME" 2>&1 || true
         exit 1
       fi
       RETRY_COUNT=$((RETRY_COUNT + 1))
+      log "PM2 status: $PM2_STATUS (attempt $RETRY_COUNT/$MAX_RETRIES)"
+      sleep 1
+    done
+    
+    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+      log "ERROR: App did not reach online status after ${MAX_RETRIES}s"
+      log "PM2 logs:"
+      "$PM2_BIN" logs "$APP_NAME" --lines 100 --nostream 2>&1 || true
+      log "PM2 info:"
+      "$PM2_BIN" info "$APP_NAME" 2>&1 || true
+      exit 1
+    fi
       log "PM2 status: $PM2_STATUS (attempt $RETRY_COUNT/$MAX_RETRIES)"
       sleep 1
     done
