@@ -20,24 +20,24 @@ function renderDashboard() {
                         <div class="card-body">
                             <div id="timesheetAlert"></div>
                             <div id="timesheetRows"></div>
-                            <button type="button" class="btn btn-success mb-3" onclick="addTimesheetRow()">
+                              <button type="button" class="btn btn-success mb-3 w-100 w-sm-auto" onclick="addTimesheetRow()">
                               <i class="bi bi-plus-circle"></i> <span data-i18n="ui:add_row">Add Row</span>
                             </button>
                             <hr>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <button type="button" class="btn btn-primary" onclick="saveTimesheets()">
+                              <div class="d-grid gap-2 d-sm-flex flex-sm-wrap">
+                                  <button type="button" class="btn btn-primary btn-mobile-full" onclick="saveTimesheets()">
                                   <i class="bi bi-save"></i> <span data-i18n="ui:save_all">Save All</span>
                                 </button>
-                                <button type="button" class="btn btn-info" onclick="submitTimesheetsOnly()">
+                                  <button type="button" class="btn btn-info btn-mobile-full" onclick="submitTimesheetsOnly()">
                                   <i class="bi bi-check-circle"></i> <span data-i18n="ui:submit">Submit</span>
                                 </button>
-                                <button type="button" class="btn btn-danger" onclick="previewPDF()">
+                                  <button type="button" class="btn btn-danger btn-mobile-full" onclick="previewPDF()">
                                   <i class="bi bi-file-pdf"></i> <span data-i18n="ui:preview_pdf">Preview PDF</span>
                                 </button>
-                                <button type="button" class="btn btn-success" onclick="previewXLSX()">
+                                  <button type="button" class="btn btn-success btn-mobile-full" onclick="previewXLSX()">
                                   <i class="bi bi-file-earmark-excel"></i> <span data-i18n="ui:preview_excel">Preview Excel</span>
                                 </button>
-                                <button type="button" class="btn btn-primary" onclick="submitTimesheets()">
+                                  <button type="button" class="btn btn-primary btn-mobile-full" onclick="submitTimesheets()">
                                   <i class="bi bi-send"></i> <span data-i18n="ui:submit_send_email">Submit & Send Email</span>
                                 </button>
                             </div>
@@ -262,15 +262,16 @@ function renderTimesheetRows() {
       const totalKm = (ts.endKm - ts.startKm).toFixed(2);
 
       return `
-            <div class="timesheet-row row g-1 mb-2 align-items-end">
-                <div class="col-auto" style="width: 60px;">
+              <div class="timesheet-row row g-2 mb-3 p-2 border rounded">
+                  <!-- Week & Ritnumber -->
+                  <div class="col-6 col-sm-4 col-md-auto" style="min-width: 60px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "week"
                     )}</label>
                     <input type="text" class="form-control form-control-sm" value="${weekNumber}" readonly>
                 </div>
-                <div class="col-auto" style="width: 90px;">
+                  <div class="col-6 col-sm-4 col-md-auto" style="min-width: 90px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "ritnumber"
@@ -280,7 +281,9 @@ function renderTimesheetRows() {
                     }" 
                            onchange="updateTimesheet(${index}, 'ritnumber', this.value)">
                 </div>
-                <div class="col-auto" style="width: 140px;">
+                
+                  <!-- Name (full width on mobile) -->
+                  <div class="col-12 col-sm-4 col-md-auto" style="min-width: 140px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "name"
@@ -289,7 +292,9 @@ function renderTimesheetRows() {
                       user.fullName
                     }" readonly>
                 </div>
-                <div class="col-auto" style="width: 130px;">
+                
+                  <!-- Date (full width on mobile) -->
+                  <div class="col-12 col-md-auto" style="min-width: 130px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "date"
@@ -299,7 +304,9 @@ function renderTimesheetRows() {
                     }" 
                            onchange="updateTimesheet(${index}, 'date', this.value)">
                 </div>
-                <div class="col-auto" style="width: 85px;">
+                
+                  <!-- Start & End time -->
+                  <div class="col-6 col-sm-4 col-md-auto" style="min-width: 85px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "start"
@@ -309,7 +316,7 @@ function renderTimesheetRows() {
                     }" 
                            onchange="updateTimesheet(${index}, 'startTime', this.value)">
                 </div>
-                <div class="col-auto" style="width: 85px;">
+                  <div class="col-6 col-sm-4 col-md-auto" style="min-width: 85px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "end"
@@ -319,7 +326,9 @@ function renderTimesheetRows() {
                     }" 
                            onchange="updateTimesheet(${index}, 'endTime', this.value)">
                 </div>
-                <div class="col-auto" style="width: 80px;">
+                
+                  <!-- KM start & end -->
+                  <div class="col-6 col-sm-4 col-md-auto" style="min-width: 80px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "start_km"
@@ -329,7 +338,7 @@ function renderTimesheetRows() {
                     }" step="0.1"
                            onchange="updateTimesheet(${index}, 'startKm', parseFloat(this.value))">
                 </div>
-                <div class="col-auto" style="width: 80px;">
+                  <div class="col-6 col-sm-4 col-md-auto" style="min-width: 80px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "end_km"
@@ -339,7 +348,9 @@ function renderTimesheetRows() {
                     }" step="0.1"
                            onchange="updateTimesheet(${index}, 'endKm', parseFloat(this.value))">
                 </div>
-                <div class="col-auto" style="width: 85px;">
+                
+                  <!-- Pause -->
+                  <div class="col-6 col-sm-4 col-md-auto" style="min-width: 85px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "pause"
@@ -349,22 +360,26 @@ function renderTimesheetRows() {
                     }" 
                            onchange="updateTimesheet(${index}, 'pauseTime', this.value)">
                 </div>
-                <div class="col-auto" style="width: 70px;">
+                
+                  <!-- Hours & KM (readonly) -->
+                  <div class="col-6 col-sm-4 col-md-auto" style="min-width: 70px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "hours"
                     )}</label>
                     <input type="text" class="form-control form-control-sm" value="${totalHours}" readonly>
                 </div>
-                <div class="col-auto" style="width: 70px;">
+                  <div class="col-6 col-sm-4 col-md-auto" style="min-width: 70px;">
                     <label class="form-label small mb-1">${t(
                       "field",
                       "km"
                     )}</label>
                     <input type="text" class="form-control form-control-sm" value="${totalKm}" readonly>
                 </div>
-                <div class="col-auto">
-                    <button class="btn btn-sm btn-danger" onclick="removeTimesheetRow(${index})" style="margin-top: 2px;">
+                
+                  <!-- Delete button (full width on mobile) -->
+                  <div class="col-12 col-sm-auto d-flex align-items-end">
+                      <button class="btn btn-sm btn-danger w-100 w-sm-auto" onclick="removeTimesheetRow(${index})">
                         <i class="bi bi-trash"></i>
                     </button>
                 </div>
