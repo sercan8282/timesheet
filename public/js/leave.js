@@ -6,7 +6,11 @@ function translate(namespace, key, fallback = `${namespace}:${key}`) {
   if (window.app && window.app.translations) {
     const translationKey = `${namespace}:${key}`;
     const translation = window.app.translations[translationKey];
-    if (translation !== undefined && translation !== null && translation !== key) {
+    if (
+      translation !== undefined &&
+      translation !== null &&
+      translation !== key
+    ) {
       return translation;
     }
   }
@@ -367,10 +371,15 @@ async function editLeaveRequest(id) {
   // Change submit button to update mode
   const alertDiv = document.getElementById("leaveFormAlert");
   alertDiv.innerHTML = `<div class="alert alert-info">
-    <strong>${t("ui", "edit")}:</strong> ${t("ui", "leave_edit_hint")}
-    <button class="btn btn-sm btn-secondary ms-2" onclick="cancelEdit()">${t(
+    <strong>${translate("ui", "edit", "Edit")}:</strong> ${translate(
       "ui",
-      "cancel"
+      "leave_edit_hint",
+      'Adjust the data and click "Update"'
+    )}
+    <button class="btn btn-sm btn-secondary ms-2" onclick="cancelEdit()">${translate(
+      "ui",
+      "cancel",
+      "Cancel"
     )}</button>
   </div>`;
 

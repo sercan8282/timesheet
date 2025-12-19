@@ -9,6 +9,14 @@
   let allCompanies = [];
   let currentSubmissions = [];
 
+  // Leave management state
+  let allLeaveBalances = [];
+  let filteredLeaveBalances = [];
+  let leaveBalancesPage = 1;
+  let allLeaveRequests = [];
+  let filteredLeaveRequests = [];
+  let leaveRequestsPage = 1;
+
   // Translation helper with safe fallback
   function adminTr(key, fallback) {
     try {

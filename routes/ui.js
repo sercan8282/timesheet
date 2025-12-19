@@ -14,9 +14,14 @@ router.get("/menu", async (_req, res) => {
       _req.query && _req.query.locale
         ? String(_req.query.locale).trim().toLowerCase()
         : null;
-    const rows = await db.all(
+    let rows = await db.all(
       `SELECT page_key, label, sort_order, visible FROM ui_menu ORDER BY sort_order ASC`
     );
+
+    // Hide system-update for non-admin users
+    if (_req.user?.role !== "admin") {
+      rows = rows.filter((r) => r.page_key !== "system-update");
+    }
 
     if (!locale) {
       return res.json(rows);
