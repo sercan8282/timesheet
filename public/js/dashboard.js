@@ -6,11 +6,11 @@ let selectedCompanyId = null; // Track selected company for multi-company users
 function renderDashboard() {
   return `
         <div class="container mt-4">
-            <div class="row">
+                      <div class="col start-col">
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0"><i class="bi bi-calendar-week"></i> <span data-i18n="ui:dashboard.timesheet_entry">Timesheet Entry</span></h5>
+                      <div class="col end-col">
                             <div id="companySelector" style="display: none;">
                                 <select class="form-select form-select-sm" id="selectedCompanyDropdown" onchange="handleCompanyChange()" style="max-width: 250px;">
                                     <option value=""><span data-i18n="ui:dashboard.select_company">Select company...</span></option>
@@ -264,78 +264,54 @@ function renderTimesheetRows() {
       return `
               <div class="timesheet-row card mb-3">
                   <div class="card-body p-2">
-                    <!-- Row 1: Week & Ritnumber -->
-                    <div class="row g-2 mb-2">
-                      <div class="col-6 col-md-3">
+                    <!-- Inline row: all fields on one line for desktop; stacks on mobile -->
+                    <div class="row g-2 mb-2 row-cols-1 row-cols-lg-auto align-items-end flex-lg-nowrap row-inline-lg align-items-center">
+                      <div class="col week-col">
                         <label class="form-label small mb-1">${t("field", "week")}</label>
                         <input type="text" class="form-control form-control-sm" value="${weekNumber}" readonly>
                       </div>
-                      <div class="col-6 col-md-3">
+                      <div class="col">
                         <label class="form-label small mb-1">${t("field", "ritnumber")}</label>
                         <input type="text" class="form-control form-control-sm" value="${ts.ritnumber || ""}" onchange="updateTimesheet(${index}, 'ritnumber', this.value)">
                       </div>
-                    </div>
-                    
-                    <!-- Row 2: Name (full width) -->
-                    <div class="row g-2 mb-2">
-                      <div class="col-12">
+                      <div class="col name-col">
                         <label class="form-label small mb-1">${t("field", "name")}</label>
                         <input type="text" class="form-control form-control-sm" value="${user.fullName}" readonly>
                       </div>
-                    </div>
-                    
-                    <!-- Row 3: Date (full width) -->
-                    <div class="row g-2 mb-2">
-                      <div class="col-12">
+                      <div class="col date-col">
                         <label class="form-label small mb-1">${t("field", "date")}</label>
                         <input type="date" class="form-control form-control-sm" value="${ts.date}" onchange="updateTimesheet(${index}, 'date', this.value)">
                       </div>
-                    </div>
-                    
-                    <!-- Row 4: Start & End time -->
-                    <div class="row g-2 mb-2">
-                      <div class="col-6">
+                      <div class="col">
                         <label class="form-label small mb-1">${t("field", "start")}</label>
                         <input type="time" class="form-control form-control-sm" value="${ts.startTime}" onchange="updateTimesheet(${index}, 'startTime', this.value)">
                       </div>
-                      <div class="col-6">
+                      <div class="col">
                         <label class="form-label small mb-1">${t("field", "end")}</label>
-                        <input type="time" class="form-control form-control-sm" value="${ts.endTime}" onchange="updateTimesheet(${index}, 'endTime', this.value)">
+                          <input type="time" class="form-control form-control-sm" value="${ts.endTime}" onchange="updateTimesheet(${index}, 'endTime', this.value)">
                       </div>
-                    </div>
-                    
-                    <!-- Row 5: Start KM & End KM -->
-                    <div class="row g-2 mb-2">
-                      <div class="col-6">
+                      <div class="col">
                         <label class="form-label small mb-1">${t("field", "start_km")}</label>
                         <input type="number" class="form-control form-control-sm" value="${ts.startKm}" step="0.1" onchange="updateTimesheet(${index}, 'startKm', parseFloat(this.value))">
                       </div>
-                      <div class="col-6">
+                      <div class="col">
                         <label class="form-label small mb-1">${t("field", "end_km")}</label>
                         <input type="number" class="form-control form-control-sm" value="${ts.endKm}" step="0.1" onchange="updateTimesheet(${index}, 'endKm', parseFloat(this.value))">
                       </div>
-                    </div>
-                    
-                    <!-- Row 6: Pause, Hours & KM -->
-                    <div class="row g-2 mb-2">
-                      <div class="col-6 col-md-4">
+                      <div class="col pause-col">
                         <label class="form-label small mb-1">${t("field", "pause")}</label>
                         <input type="time" class="form-control form-control-sm" value="${ts.pauseTime}" onchange="updateTimesheet(${index}, 'pauseTime', this.value)">
                       </div>
-                      <div class="col-6 col-md-4">
+                      <div class="col">
                         <label class="form-label small mb-1">${t("field", "hours")}</label>
                         <input type="text" class="form-control form-control-sm" value="${totalHours}" readonly>
                       </div>
-                      <div class="col-6 col-md-4">
+                      <div class="col km-col">
                         <label class="form-label small mb-1">${t("field", "km")}</label>
                         <input type="text" class="form-control form-control-sm" value="${totalKm}" readonly>
                       </div>
-                    </div>
-                    
-                    <!-- Row 7: Delete button -->
-                    <div class="row g-2">
-                      <div class="col-12">
-                        <button class="btn btn-sm btn-danger w-100" onclick="removeTimesheetRow(${index})">
+                      <div class="col-12 col-lg-auto delete-col d-flex align-items-end">
+                        <button class="btn btn-outline-danger btn-sm px-2" onclick="removeTimesheetRow(${index})" title="Delete">
                           <i class="bi bi-trash"></i>
                         </button>
                       </div>

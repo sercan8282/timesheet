@@ -400,23 +400,77 @@ html[lang="en-GB"] input[type="time"] {
 }
 
 .timesheet-row .card-body {
-  padding: 1rem !important;
+  padding: 0.75rem !important;
 }
 
 .timesheet-row .form-label {
   font-weight: 600;
   color: #333;
-  margin-bottom: 0.5rem !important;
+  margin-bottom: 0.35rem !important;
+  font-size: 0.85rem;
 }
 
 .timesheet-row .form-control-sm {
-  font-size: 0.95rem;
-  height: 36px;
+  font-size: 0.9rem;
+  height: 32px;
+  padding: 0.3rem 0.45rem;
 }
 
 .timesheet-row input[readonly] {
   background-color: #f8f9fa;
   font-weight: 500;
+}
+
+.row-inline-lg {
+  overflow-x: visible;
+  column-gap: 0.3rem;
+  row-gap: 0.3rem;
+}
+
+.name-col {
+  display: none !important;
+}
+
+@media (min-width: 992px) {
+  .row-inline-lg > .col {
+    min-width: 72px;
+    max-width: 98px;
+  }
+  .row-inline-lg .week-col {
+    min-width: 60px;
+    max-width: 78px;
+  }
+  .row-inline-lg .name-col {
+    display: none !important;
+  }
+  .row-inline-lg .date-col {
+    min-width: 118px;
+    max-width: 140px;
+  }
+  .row-inline-lg .start-col,
+  .row-inline-lg .end-col,
+  .row-inline-lg .pause-col {
+    min-width: 96px;
+    max-width: 122px;
+  }
+  .row-inline-lg .km-col {
+    min-width: 70px;
+    max-width: 88px;
+  }
+  .row-inline-lg .delete-col {
+    min-width: 38px;
+    max-width: 44px;
+    padding-top: 1.35rem;
+    padding-bottom: 0;
+  }
+  .row-inline-lg .delete-col .btn {
+    height: 32px;
+    padding: 0.25rem 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0;
+  }
 }
 
 /* Mobile-specific adjustments */
@@ -474,5 +528,85 @@ html[lang="en-GB"] input[type="time"] {
   
   .card-header .d-flex .d-flex .btn {
     width: 100%;
+  }
+}
+
+/* Admin users table responsive */
+.table-responsive .table-sm {
+  font-size: 0.875rem;
+}
+
+@media (max-width: 767px) {
+  .table-responsive .table th,
+  .table-responsive .table td {
+    padding: 0.4rem 0.3rem;
+  }
+  
+  .table-responsive .btn-group-vertical {
+    display: flex;
+    flex-direction: row !important;
+    gap: 2px;
+  }
+  
+  .table-responsive .btn-group-vertical .btn {
+    flex: 1;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .table-responsive .btn-group-vertical .btn i {
+    margin-right: 0;
+  }
+}
+
+/* User details row styles */
+.user-details-row {
+  transition: max-height 0.3s ease-out;
+}
+
+.user-details-row.d-none {
+  display: none !important;
+}
+
+.user-details-row:not(.d-none) {
+  animation: slideDown 0.3s ease-out;
+}
+
+@media (min-width: 768px) {
+  .user-details-row,
+  .company-details-row {
+    display: none !important;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toggle-details {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.user-details-row:not(.d-none) ~ .user-row .toggle-details,
+.user-row:has(+ .user-details-row:not(.d-none)) .toggle-details {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 767px) {
+  .table-responsive {
+    font-size: 0.85rem;
+  }
+  
+  .user-details-row .d-grid {
+    grid-template-columns: 1fr;
   }
 }
