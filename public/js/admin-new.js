@@ -4209,13 +4209,27 @@
           <button class="btn btn-outline-secondary" id="planningGenerateCompanyBtn" title="Voeg alle chauffeurs toe"><i class="bi bi-person-plus"></i></button>
         </div>
       </div>
-      <div class="btn-group">
+      <div class="btn-group d-none d-md-flex">
         <button class="btn btn-primary" id="planningAddBtn"><i class="bi bi-plus-circle"></i> Nieuwe planning</button>
         <button class="btn btn-outline-secondary" id="planningGenerateBtn"><i class="bi bi-magic"></i> Genereer week</button>
         <button class="btn btn-outline-info" id="planningGenerateVehiclesBtn"><i class="bi bi-truck"></i> Gen. per voertuig</button>
         <button class="btn btn-outline-warning" id="planningClearBtn"><i class="bi bi-trash"></i> Wis week</button>
         <button class="btn btn-outline-success" id="planningPdfBtn"><i class="bi bi-file-earmark-pdf"></i> Export PDF</button>
         <button class="btn btn-outline-info" id="planningEmailBtn"><i class="bi bi-envelope"></i> E-mail PDF</button>
+      </div>
+      <div class="d-md-none w-100">
+        <div class="d-grid gap-1">
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-primary" id="planningAddBtnMobile"><i class="bi bi-plus-circle"></i></button>
+            <button class="btn btn-outline-secondary" id="planningGenerateBtnMobile" title="Genereer week"><i class="bi bi-magic"></i></button>
+            <button class="btn btn-outline-info" id="planningGenerateVehiclesBtnMobile" title="Gen. per voertuig"><i class="bi bi-truck"></i></button>
+          </div>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-warning" id="planningClearBtnMobile" title="Wis week"><i class="bi bi-trash"></i></button>
+            <button class="btn btn-outline-success" id="planningPdfBtnMobile" title="Export PDF"><i class="bi bi-file-earmark-pdf"></i></button>
+            <button class="btn btn-outline-info" id="planningEmailBtnMobile" title="E-mail PDF"><i class="bi bi-envelope"></i></button>
+          </div>
+        </div>
       </div>
     </div>
     <div id="planningList">
@@ -4235,16 +4249,32 @@
       );
       await loadPlanningManagement();
     };
-    document.getElementById("planningAddBtn").onclick = () =>
-      showAddPlanningModal();
-    document.getElementById("planningGenerateBtn").onclick = () =>
-      generatePlanning();
-    document.getElementById("planningClearBtn").onclick = () =>
-      clearPlanningWeek();
-    document.getElementById("planningPdfBtn").onclick = () =>
-      exportPlanningPDF();
-    document.getElementById("planningEmailBtn").onclick = () =>
-      emailPlanningPDF();
+    
+    // Desktop buttons
+    const addBtn = document.getElementById("planningAddBtn");
+    const generateBtn = document.getElementById("planningGenerateBtn");
+    const clearBtn = document.getElementById("planningClearBtn");
+    const pdfBtn = document.getElementById("planningPdfBtn");
+    const emailBtn = document.getElementById("planningEmailBtn");
+    
+    if (addBtn) addBtn.onclick = () => showAddPlanningModal();
+    if (generateBtn) generateBtn.onclick = () => generatePlanning();
+    if (clearBtn) clearBtn.onclick = () => clearPlanningWeek();
+    if (pdfBtn) pdfBtn.onclick = () => exportPlanningPDF();
+    if (emailBtn) emailBtn.onclick = () => emailPlanningPDF();
+    
+    // Mobile buttons
+    const addBtnMobile = document.getElementById("planningAddBtnMobile");
+    const generateBtnMobile = document.getElementById("planningGenerateBtnMobile");
+    const clearBtnMobile = document.getElementById("planningClearBtnMobile");
+    const pdfBtnMobile = document.getElementById("planningPdfBtnMobile");
+    const emailBtnMobile = document.getElementById("planningEmailBtnMobile");
+    
+    if (addBtnMobile) addBtnMobile.onclick = () => showAddPlanningModal();
+    if (generateBtnMobile) generateBtnMobile.onclick = () => generatePlanning();
+    if (clearBtnMobile) clearBtnMobile.onclick = () => clearPlanningWeek();
+    if (pdfBtnMobile) pdfBtnMobile.onclick = () => exportPlanningPDF();
+    if (emailBtnMobile) emailBtnMobile.onclick = () => emailPlanningPDF();
 
     try {
       const companies = await api.getCompanies();
@@ -4296,6 +4326,13 @@
       );
       if (genVehiclesBtn) {
         genVehiclesBtn.onclick = showGeneratePlanningByVehiclesModal;
+      }
+      
+      const genVehiclesBtnMobile = document.getElementById(
+        "planningGenerateVehiclesBtnMobile"
+      );
+      if (genVehiclesBtnMobile) {
+        genVehiclesBtnMobile.onclick = showGeneratePlanningByVehiclesModal;
       }
     } catch (error) {
       document.getElementById(
