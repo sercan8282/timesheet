@@ -2,11 +2,16 @@ let leaveRequests = [];
 let leaveBalance = { vacation_hours: 0, overtime_hours: 0 };
 
 function translate(namespace, key, fallback = `${namespace}:${key}`) {
-  const value = t(namespace, key);
-  if (!value || value === `${namespace}:${key}`) {
-    return fallback;
+  // Try to get from window.app.translations first
+  if (window.app && window.app.translations) {
+    const translationKey = `${namespace}:${key}`;
+    const translation = window.app.translations[translationKey];
+    if (translation !== undefined && translation !== null && translation !== key) {
+      return translation;
+    }
   }
-  return value;
+  // Return fallback if provided, otherwise return the key
+  return fallback || key;
 }
 
 function getCurrentLocale() {
@@ -232,13 +237,13 @@ async function loadLeaveBalance() {
   try {
     const balance = await api.getLeaveBalance();
     leaveBalance = balance;
-    const hoursUnit = translate("ui", "leave.hours_unit", "u");
-    const vacationLabel = translate("ui", "leave.type_vacation", "Vacation");
-    const overtimeLabel = translate("ui", "leave.type_overtime", "Overtime");
+    const hoursUnit = translate("ui", "leave.hours_unit", "uur");
+    const vacationLabel = translate("ui", "leave.type_vacation", "Verlof");
+    const overtimeLabel = translate("ui", "leave.type_overtime", "Overuren");
     const balanceHint = translate(
       "ui",
       "leave.balance_hint",
-      "Available for requests. Requests are deducted immediately."
+      "Beschikbaar voor aanvragen. Aanvragen worden direct verrekend."
     );
     const locale = getCurrentLocale();
     card.innerHTML = `
