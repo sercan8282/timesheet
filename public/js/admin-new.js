@@ -1717,7 +1717,8 @@
     // Populate truck types and set current value
     populateUserTruckTypeOptions("editMegaKast", user.mega_kast || "only_mega");
 
-    loadCompaniesForModal("editCompany", "editFillInCompany");
+    // Load companies and set selected values
+    loadCompaniesForModal("editCompany", "editFillInCompany", user.company_id || null, user.fill_in_company_id || null);
 
     document.getElementById("editFillInCompanyContainer").style.display =
       user.can_fill_in ? "block" : "none";
