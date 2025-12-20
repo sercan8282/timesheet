@@ -1306,7 +1306,7 @@ router.get("/smtp-settings", async (req, res) => {
 });
 
 // Update SMTP settings (supports Basic and Microsoft 365 OAuth2)
-router.put(
+router.post(
   "/smtp-settings",
   [
     body("smtp_host").trim().notEmpty(),
