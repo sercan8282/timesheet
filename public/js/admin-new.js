@@ -22,10 +22,10 @@
     try {
       if (window.t) {
         // Prefer admin namespace, then fallback to ui
-        let res = window.t("admin", key);
-        if (res && typeof res === "string") return res;
-        res = window.t("ui", key);
-        if (res && typeof res === "string") return res;
+        let res = window.t("admin", key, fallback);
+        if (res && typeof res === "string" && res !== key) return res;
+        res = window.t("ui", key, fallback);
+        if (res && typeof res === "string" && res !== key) return res;
       }
     } catch (_) {}
     return fallback || key;
