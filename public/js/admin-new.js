@@ -1702,6 +1702,9 @@
     const user = allUsers.find((u) => u.id === userId);
     if (!user) return;
 
+    console.log('openEditUserModal - user data:', user);
+    console.log('openEditUserModal - user.note:', user.note);
+
     document.getElementById("editUserId").value = userId;
     document.getElementById("editUsername").value = user.username;
     document.getElementById("editFullName").value = user.full_name;
@@ -1716,6 +1719,8 @@
       : "0";
     document.getElementById("editNote").value = user.note || "";
 
+    console.log('editNote element value set to:', document.getElementById("editNote").value);
+
     // Populate truck types and set current value
     populateUserTruckTypeOptions("editMegaKast", user.mega_kast || "only_mega");
 
@@ -1724,15 +1729,17 @@
 
     document.getElementById("editFillInCompanyContainer").style.display =
       user.can_fill_in ? "block" : "none";
-    document.getElementById("editNote").value = user.note || "";
     document.getElementById("editUserAlert").innerHTML = "";
     new bootstrap.Modal(document.getElementById("editUserModal")).show();
   }
 
   async function submitEditUser() {
     const userId = document.getElementById("editUserId").value;
+    const noteValue = document.getElementById("editNote").value || null;
+    console.log('submitEditUser - noteValue:', noteValue);
+    
     try {
-      await api.updateUser(userId, {
+      const payload = {
         fullName: document.getElementById("editFullName").value,
         phone: document.getElementById("editPhone").value,
         ritnumber: document.getElementById("editRitnumber").value,
@@ -1743,8 +1750,11 @@
         canFillIn: document.getElementById("editCanFillIn").value === "1",
         fillInCompanyId:
           document.getElementById("editFillInCompany").value || null,
-        note: document.getElementById("editNote").value || null,
-      });
+        note: noteValue,
+      };
+      console.log('submitEditUser - payload:', payload);
+      
+      await api.updateUser(userId, payload);
       document.getElementById("editUserAlert").innerHTML =
         '<div class="alert alert-success">Saved!</div>';
       setTimeout(() => {
@@ -4697,7 +4707,12 @@
       }</td>
       <td class="license-cell">${e.license_plate || "-"}</td>
       <td class="phone-cell">${e.phone_number || "-"}</td>
-      <td>${e.notes || "-"}</td>
+      <td>${(() => {
+        const parts = [];
+        if (e.notes) parts.push(e.notes);
+        if (e.driver_note) parts.push(`(${e.driver_note})`);
+        return parts.length > 0 ? parts.join(' ') : '-';
+      })()}</td>
       <td class="text-end">
         <button class="btn btn-sm btn-warning me-1" onclick="showEditPlanningModal(${
           e.id
@@ -4825,14 +4840,19 @@
                       <p class="small">${e.phone_number || "-"}</p>
                     </div>
                   </div>
-                  ${e.notes ? `
+                  ${(() => {
+                    const parts = [];
+                    if (e.notes) parts.push(e.notes);
+                    if (e.driver_note) parts.push(`(${e.driver_note})`);
+                    return parts.length > 0 ? `
                   <div class="row mb-3">
                     <div class="col-12">
                       <label class="form-label text-muted small">Notities</label>
-                      <p class="small">${e.notes}</p>
+                      <p class="small">${parts.join(' ')}</p>
                     </div>
                   </div>
-                  ` : ''}
+                  ` : '';
+                  })()}
                   <div class="d-grid gap-2 d-sm-flex gap-2">
                     <button class="btn btn-warning btn-sm flex-grow-1" onclick="showEditPlanningModal(${e.id})">
                       <i class="bi bi-pencil"></i> Edit
@@ -4929,6 +4949,61 @@
       if (row) {
         row.querySelector(".adr-cell").textContent = driver.adr ? "Ja" : "Nee";
         row.querySelector(".phone-cell").textContent = driver.phone || "-";
+        
+        // Update notes cell with new driver note (keeping planning note from backend)
+        // Fetch fresh planning data to get current planning note
+        const planningEntry = await api.getPlanningWeek(currentPlanningWeek);
+        const entry = planningEntry.find(e => e.id === parseInt(entryId));
+        if (entry) {
+          const noteCell = row.querySelector('td:nth-last-child(2)'); // Notes column is second-to-last
+          if (noteCell) {
+            const parts = [];
+            if (entry.notes) parts.push(entry.notes);
+            if (driver.note) parts.push(`(${driver.note})`);
+            noteCell.textContent = parts.length > 0 ? parts.join(' ') : '-';
+          }
+          
+          // Update mobile card notes if present
+          const detailRow = document.getElementById(`details-planning-${entryId}`);
+          if (detailRow) {
+            const notesContainer = detailRow.querySelector('.small');
+            if (notesContainer && notesContainer.textContent) {
+              const parts = [];
+              if (entry.notes) parts.push(entry.notes);
+              if (driver.note) parts.push(`(${driver.note})`);
+              
+              // Find or create notes section in mobile card
+              const notesRow = Array.from(detailRow.querySelectorAll('.row')).find(r => 
+                r.textContent.includes('Notities')
+              );
+              
+              if (parts.length > 0) {
+                if (notesRow) {
+                  const noteText = notesRow.querySelector('.small');
+                  if (noteText) noteText.textContent = parts.join(' ');
+                } else {
+                  // Create notes section if it doesn't exist
+                  const actionsDiv = detailRow.querySelector('.d-grid');
+                  if (actionsDiv) {
+                    const notesHtml = `
+                      <div class="row mb-3">
+                        <div class="col-12">
+                          <label class="form-label text-muted small">Notities</label>
+                          <p class="small">${parts.join(' ')}</p>
+                        </div>
+                      </div>
+                    `;
+                    actionsDiv.insertAdjacentHTML('beforebegin', notesHtml);
+                  }
+                }
+              } else if (notesRow) {
+                // Remove notes section if no notes
+                notesRow.remove();
+              }
+            }
+          }
+        }
+        
         // Enrich truck from cached fleet (by license plate) if available
         try {
           const plateEl = row.querySelector('.license-cell');
