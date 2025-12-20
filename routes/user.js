@@ -669,10 +669,13 @@ router.put(
 
       await db.run("BEGIN TRANSACTION");
 
+      // If request was approved/rejected, reset to pending when modified
+      const shouldResetStatus = existingRequest.status !== 'pending';
+
       // Update request
       await db.run(
         `UPDATE leave_requests 
-         SET start_date = ?, end_date = ?, start_time = ?, end_time = ?, hours_requested = ?, reason = ?, updated_at = CURRENT_TIMESTAMP
+         SET start_date = ?, end_date = ?, start_time = ?, end_time = ?, hours_requested = ?, reason = ?, status = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ?`,
         [
           startDate,
@@ -681,6 +684,7 @@ router.put(
           endTime || null,
           hoursRequested,
           reason || null,
+          shouldResetStatus ? 'pending' : existingRequest.status,
           id,
         ]
       );
@@ -696,7 +700,12 @@ router.put(
       }
 
       await db.run("COMMIT");
-      res.json({ message: "Leave request updated" });
+      
+      const message = shouldResetStatus 
+        ? "Leave request updated and reset to pending approval"
+        : "Leave request updated";
+      
+      res.json({ message, statusChanged: shouldResetStatus });
     } catch (error) {
       console.error("Error updating leave request:", error);
       await db.run("ROLLBACK");
