@@ -2667,7 +2667,8 @@ const invoiceManager = {
                   })">
                     <i class="bi bi-file-earmark-pdf"></i> ${t(
                       "ui",
-                      "invoice.download_original_pdf"
+                      "invoice.download_original_pdf",
+                      "Download Original PDF"
                     )}
                   </button>
                   `
