@@ -3186,12 +3186,52 @@
   }
 
   async function deleteSubmission(submissionId) {
-    if (!confirm("Are you sure you want to delete this submission?")) return;
+    const modalHtml = `
+    <div class="modal fade" id="deleteSubmissionModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Delete Submission</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete this submission?</p>
+            <p class="text-muted small"><i class="bi bi-info-circle"></i> This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteSubmission(${submissionId})">
+              <i class="bi bi-trash"></i> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    `;
 
+    const oldModal = document.getElementById("deleteSubmissionModal");
+    if (oldModal) oldModal.remove();
+
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+    new bootstrap.Modal(document.getElementById("deleteSubmissionModal")).show();
+  }
+
+  async function confirmDeleteSubmission(submissionId) {
     try {
       await api.deleteSubmission(submissionId);
-      alert("Submission deleted successfully");
-      loadAdminSubmissions();
+      bootstrap.Modal.getInstance(document.getElementById("deleteSubmissionModal")).hide();
+      
+      // Show success alert
+      const successAlert = document.createElement("div");
+      successAlert.className = "alert alert-success alert-dismissible fade show";
+      successAlert.innerHTML = `
+        <strong>Success!</strong> Submission deleted successfully.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.getElementById("adminContent").insertAdjacentElement("afterbegin", successAlert);
+      
+      // Reload submissions after 1 second
+      setTimeout(() => loadAdminSubmissions(), 1000);
     } catch (error) {
       alert("Error deleting submission: " + error.message);
     }
@@ -5552,6 +5592,7 @@
   window.toggleEditFillInCompany = toggleEditFillInCompany;
   window.viewSubmissionDetails = viewSubmissionDetails;
   window.deleteSubmission = deleteSubmission;
+  window.confirmDeleteSubmission = confirmDeleteSubmission;
   window.editSubmissionHours = editSubmissionHours;
   window.emailSubmission = emailSubmission;
   window.sendEmailSubmission = sendEmailSubmission;
