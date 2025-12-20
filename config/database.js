@@ -33,6 +33,7 @@ class Database {
           mega_kast TEXT DEFAULT 'only_mega',
           ritnumber TEXT,
           is_blocked INTEGER DEFAULT 0,
+          note TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE SET NULL,
@@ -71,6 +72,10 @@ class Database {
                 ensure(
                   "is_blocked",
                   "ALTER TABLE users ADD COLUMN is_blocked INTEGER DEFAULT 0"
+                );
+                ensure(
+                  "note",
+                  "ALTER TABLE users ADD COLUMN note TEXT"
                 );
                 // MFA columns
                 ensure(

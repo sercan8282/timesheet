@@ -1681,6 +1681,7 @@
         canFillIn: document.getElementById("addCanFillIn").value === "1",
         fillInCompanyId:
           document.getElementById("addFillInCompany").value || null,
+        note: document.getElementById("addNote").value || null,
       });
       document.getElementById("addUserAlert").innerHTML =
         '<div class="alert alert-success">User created successfully!</div>';
@@ -1713,6 +1714,7 @@
     document.getElementById("editCanFillIn").value = user.can_fill_in
       ? "1"
       : "0";
+    document.getElementById("editNote").value = user.note || "";
 
     // Populate truck types and set current value
     populateUserTruckTypeOptions("editMegaKast", user.mega_kast || "only_mega");
@@ -1722,6 +1724,7 @@
 
     document.getElementById("editFillInCompanyContainer").style.display =
       user.can_fill_in ? "block" : "none";
+    document.getElementById("editNote").value = user.note || "";
     document.getElementById("editUserAlert").innerHTML = "";
     new bootstrap.Modal(document.getElementById("editUserModal")).show();
   }
@@ -1740,6 +1743,7 @@
         canFillIn: document.getElementById("editCanFillIn").value === "1",
         fillInCompanyId:
           document.getElementById("editFillInCompany").value || null,
+        note: document.getElementById("editNote").value || null,
       });
       document.getElementById("editUserAlert").innerHTML =
         '<div class="alert alert-success">Saved!</div>';
@@ -2101,6 +2105,10 @@
                   </div>
                 </div>
               </div>
+              <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <textarea class="form-control" id="addNote" rows="3" placeholder="Optional notes about this user"></textarea>
+              </div>
             </form>
           </div>
           <div class="modal-footer">
@@ -2209,6 +2217,10 @@
                     </select>
                   </div>
                 </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <textarea class="form-control" id="editNote" rows="3" placeholder="Optional notes"></textarea>
               </div>
             </form>
           </div>
