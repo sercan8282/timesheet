@@ -461,6 +461,12 @@ class API {
     });
   }
 
+  async deleteFleetVehicle(id) {
+    return this.request(`/admin/fleet/vehicles/${id}`, {
+      method: "DELETE",
+    });
+  }
+
   async addFleetMaintenance(id, data) {
     return this.request(`/admin/fleet/vehicles/${id}/maintenance`, {
       method: "POST",

@@ -3570,8 +3570,19 @@
               <button class="btn btn-success" id="addFleetBtn"><i class="bi bi-plus-circle"></i></button>
             </div>
           </div>
-          <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;" id="fleetListWrapper">
+          <div class="p-2 border-bottom">
+            <input type="search" class="form-control form-control-sm" id="fleetSearchInput" placeholder="Zoek op kenteken of bedrijf" autocomplete="off">
+          </div>
+          <div class="card-body p-0" style="max-height: 520px; overflow-y: auto;" id="fleetListWrapper">
             <div class="text-center py-4"><div class="spinner-border"></div></div>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <small id="fleetCount" class="text-muted"></small>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-secondary" id="fleetPrev">Vorige</button>
+              <span class="btn btn-outline-secondary disabled" id="fleetPageInfo" style="pointer-events:none;"></span>
+              <button class="btn btn-outline-secondary" id="fleetNext">Volgende</button>
+            </div>
           </div>
         </div>
       </div>
@@ -3590,7 +3601,29 @@
         api.getCompanies(),
       ]);
       window.companies = companies;
-      renderFleetList(vehicles);
+      fleetVehicles = vehicles || [];
+      fleetPage = 1;
+      fleetSearchTerm = "";
+      renderFleetList();
+
+      const searchInput = document.getElementById("fleetSearchInput");
+      searchInput.value = "";
+      searchInput.oninput = () => {
+        fleetSearchTerm = searchInput.value.trim().toLowerCase();
+        fleetPage = 1;
+        renderFleetList();
+      };
+
+      document.getElementById("fleetPrev").onclick = () => {
+        if (fleetPage > 1) {
+          fleetPage -= 1;
+          renderFleetList();
+        }
+      };
+      document.getElementById("fleetNext").onclick = () => {
+        fleetPage += 1;
+        renderFleetList();
+      };
     } catch (error) {
       document.getElementById(
         "fleetListWrapper"
@@ -3602,29 +3635,73 @@
   let fleetMaintenance = [];
   let selectedVehicleId = null;
   let fleetLoadingId = null;
+  let fleetPage = 1;
+  const fleetPageSize = 20;
+  let fleetSearchTerm = "";
 
-  function renderFleetList(vehicles) {
-    fleetVehicles = vehicles || [];
+  function renderFleetList() {
     const wrapper = document.getElementById("fleetListWrapper");
     if (!wrapper) return;
 
-    if (!vehicles || vehicles.length === 0) {
+    const filtered = (fleetVehicles || []).filter((v) => {
+      if (!fleetSearchTerm) return true;
+      const term = fleetSearchTerm;
+      return (
+        (v.license_plate && v.license_plate.toLowerCase().includes(term)) ||
+        (v.company_name && v.company_name.toLowerCase().includes(term)) ||
+        (v.truck_type && v.truck_type.toLowerCase().includes(term)) ||
+        (v.rit_number && String(v.rit_number).toLowerCase().includes(term))
+      );
+    });
+
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / fleetPageSize));
+    if (fleetPage > totalPages) fleetPage = totalPages;
+    if (fleetPage < 1) fleetPage = 1;
+    const start = (fleetPage - 1) * fleetPageSize;
+    const pageItems = filtered.slice(start, start + fleetPageSize);
+
+    const countEl = document.getElementById("fleetCount");
+    const pageInfoEl = document.getElementById("fleetPageInfo");
+    const prevBtn = document.getElementById("fleetPrev");
+    const nextBtn = document.getElementById("fleetNext");
+
+    if (countEl)
+      countEl.textContent = total
+        ? `${start + 1}-${Math.min(start + pageItems.length, total)} van ${total}`
+        : "Geen voertuigen";
+    if (pageInfoEl)
+      pageInfoEl.textContent = total
+        ? `${fleetPage} / ${totalPages}`
+        : "0 / 0";
+    if (prevBtn) prevBtn.disabled = fleetPage <= 1;
+    if (nextBtn) nextBtn.disabled = fleetPage >= totalPages;
+
+    if (!total) {
       wrapper.innerHTML = `<div class="p-3 text-muted">${adminTr(
         "fleet.no_vehicles",
         "No vehicles"
       )}</div>`;
-      document.getElementById(
-        "fleetDetailWrapper"
-      ).innerHTML = `<div class="alert alert-info mt-2">${adminTr(
-        "fleet.add_first",
-        "Add a vehicle first."
-      )}</div>`;
+      const detail = document.getElementById("fleetDetailWrapper");
+      if (detail)
+        detail.innerHTML = `<div class="alert alert-info mt-2">${adminTr(
+          "fleet.add_first",
+          "Add a vehicle first."
+        )}</div>`;
       return;
+    }
+
+    // Ensure selected remains within filtered set
+    if (
+      selectedVehicleId &&
+      !filtered.some((v) => v.id === selectedVehicleId)
+    ) {
+      selectedVehicleId = pageItems[0] ? pageItems[0].id : null;
     }
 
     wrapper.innerHTML = `
     <div class="list-group list-group-flush">
-      ${vehicles
+      ${pageItems
         .map(
           (v) => `
         <button type="button" class="list-group-item list-group-item-action ${
@@ -3652,8 +3729,8 @@
 
     if (selectedVehicleId) {
       selectVehicle(selectedVehicleId);
-    } else if (vehicles.length > 0) {
-      selectVehicle(vehicles[0].id);
+    } else if (pageItems.length > 0) {
+      selectVehicle(pageItems[0].id);
     }
   }
 
@@ -3670,7 +3747,7 @@
         // Only render if still the current selection
         fleetMaintenance = data.maintenance || []; // Store maintenance records
         renderVehicleDetail(data.vehicle, data.maintenance || []);
-        renderFleetList(fleetVehicles); // refresh active state
+        renderFleetList(); // refresh active state
       }
     } catch (error) {
       if (fleetLoadingId === id) {
@@ -3727,9 +3804,14 @@
     <div class="card">
       <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
         <h6 class="mb-0">${vehicle.license_plate}</h6>
-        <button class="btn btn-sm btn-warning" onclick="showEditVehicleModal(${
-          vehicle.id
-        })"><i class="bi bi-pencil"></i> Edit</button>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-warning" onclick="showEditVehicleModal(${
+            vehicle.id
+          })"><i class="bi bi-pencil"></i> Edit</button>
+          <button class="btn btn-danger" onclick="deleteVehicleRecord(${
+            vehicle.id
+          })"><i class="bi bi-trash"></i> Delete</button>
+        </div>
       </div>
       <div class="card-body">
         <div class="row mb-4">
@@ -4228,6 +4310,57 @@
       if (bsModal) bsModal.hide();
       await new Promise((resolve) => setTimeout(resolve, 100));
       await selectVehicle(vehicleId);
+    } catch (error) {
+      btn.disabled = false;
+      btn.textContent = adminTr("delete", "Delete");
+      alert(`Error: ${error.message}`);
+    }
+  }
+
+  // ========== DELETE VEHICLE ==========
+  function deleteVehicleRecord(vehicleId) {
+    const vehicle = fleetVehicles.find((v) => v.id === vehicleId);
+    if (!vehicle) return;
+
+    const modalHtml = `
+    <div class="modal fade" id="deleteVehicleModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">Voertuig verwijderen</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>Weet je zeker dat je het voertuig <strong>${vehicle.license_plate}</strong> wilt verwijderen?</p>
+            <p class="text-muted small">Dit kan niet ongedaan gemaakt worden.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteVehicle(${vehicleId})">Verwijderen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+    const oldModal = document.getElementById("deleteVehicleModal");
+    if (oldModal) oldModal.remove();
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+    new bootstrap.Modal(document.getElementById("deleteVehicleModal")).show();
+  }
+
+  async function confirmDeleteVehicle(vehicleId) {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = adminTr("deleting", "Deleting...");
+    try {
+      await api.deleteFleetVehicle(vehicleId);
+      selectedVehicleId = null; // ensure we don't re-select the deleted vehicle
+      const modal = document.getElementById("deleteVehicleModal");
+      const bsModal = bootstrap.Modal.getInstance(modal);
+      if (bsModal) bsModal.hide();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await loadFleetManagement();
     } catch (error) {
       btn.disabled = false;
       btn.textContent = adminTr("delete", "Delete");
@@ -5610,6 +5743,8 @@
   window.submitEditMaintenance = submitEditMaintenance;
   window.deleteMaintenanceRecord = deleteMaintenanceRecord;
   window.confirmDeleteMaintenance = confirmDeleteMaintenance;
+  window.deleteVehicleRecord = deleteVehicleRecord;
+  window.confirmDeleteVehicle = confirmDeleteVehicle;
   // Planning exports
   window.loadPlanningManagement = loadPlanningManagement;
   window.showAddPlanningModal = showAddPlanningModal;
