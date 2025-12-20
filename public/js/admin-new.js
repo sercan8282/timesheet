@@ -2428,7 +2428,7 @@
               </td>
               <td><small>${user.id}</small></td>
               <td><small>${user.username}</small></td>
-              <td><small>${user.full_name}</small></td>
+              <td><small>${user.full_name}${user.is_blocked ? ' <span class="badge bg-secondary">Blocked</span>' : ''}</small></td>
               <td><small>${user.company_name || "-"}</small></td>
               <td><span class="badge bg-info" style="font-size: 0.75rem;">${user.role || "user"}</span></td>
               <td><span class="badge ${user.adr ? 'bg-success' : 'bg-secondary'}" style="font-size: 0.75rem;">${user.adr ? 'Yes' : 'No'}</span></td>
@@ -2442,6 +2442,9 @@
                     <i class="bi bi-shield-lock"></i>
                   </button>
                   ${adminMfaEnabled ? `<button class="btn btn-outline-primary btn-sm px-2" onclick="openResetPasswordModal(${user.id}, '${user.username}')" title="Reset Password"><i class="bi bi-key"></i></button>` : ''}
+                  <button class="btn btn-outline-secondary btn-sm px-2" onclick="showBlockUserModal(${user.id}, ${user.is_blocked ? 'true' : 'false'})" title="${user.is_blocked ? 'Unblock' : 'Block'}">
+                    <i class="bi ${user.is_blocked ? 'bi-unlock' : 'bi-lock'}"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -2457,6 +2460,9 @@
                       <i class="bi bi-shield-lock"></i> Reset MFA
                     </button>
                     ${adminMfaEnabled ? `<button class="btn btn-outline-primary btn-sm px-2 flex-grow-1" onclick="openResetPasswordModal(${user.id}, '${user.username}')"><i class="bi bi-key"></i> Reset Wachtwoord</button>` : ''}
+                    <button class="btn btn-outline-secondary btn-sm px-2 flex-grow-1" onclick="showBlockUserModal(${user.id}, ${user.is_blocked ? 'true' : 'false'})">
+                      <i class="bi ${user.is_blocked ? 'bi-unlock' : 'bi-lock'}"></i> ${user.is_blocked ? 'Unblock' : 'Block'}
+                    </button>
                   </div>
                 </div>
               </td>
@@ -2491,6 +2497,70 @@
         }, 100);
       }
     }
+  }
+
+  let blockUserTargetId = null;
+  let blockUserTargetBlocked = false;
+
+  function showBlockUserModal(id, currentlyBlocked) {
+    blockUserTargetId = id;
+    blockUserTargetBlocked = currentlyBlocked;
+    const user = (allUsers || []).find((u) => u.id === id) || {};
+    const name = escapeHtml(user.full_name || user.username || "deze gebruiker");
+    const actionLabel = currentlyBlocked ? "Deblokkeren" : "Blokkeren";
+    const actionIcon = currentlyBlocked ? "bi-unlock" : "bi-lock";
+    const modalHtml = `
+    <div class="modal fade" id="blockUserModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header ${currentlyBlocked ? 'bg-success' : 'bg-danger'} text-white">
+            <h5 class="modal-title">${actionLabel} gebruiker</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>Weet je zeker dat je <strong>${name}</strong> wilt ${actionLabel.toLowerCase()}?</p>
+            <p class="text-muted small">Geblokkeerde gebruikers kunnen niet inloggen.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+            <button type="button" class="btn ${currentlyBlocked ? 'btn-success' : 'btn-danger'}" id="blockUserConfirmBtn">
+              <i class="bi ${actionIcon}"></i> ${actionLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    const old = document.getElementById("blockUserModal");
+    if (old) old.remove();
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+    const modalEl = document.getElementById("blockUserModal");
+    const bsModal = new bootstrap.Modal(modalEl);
+    modalEl.querySelector("#blockUserConfirmBtn").onclick = confirmBlockUser;
+    bsModal.show();
+  }
+
+  async function confirmBlockUser() {
+    const btn = event.target;
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = adminTr("saving", "Saving...");
+    try {
+      await api.toggleBlockUser(blockUserTargetId, !blockUserTargetBlocked);
+      const modal = document.getElementById("blockUserModal");
+      const bsModal = bootstrap.Modal.getInstance(modal);
+      if (bsModal) bsModal.hide();
+      await loadAdminUsers();
+    } catch (error) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+      alert(`Error: ${error.message}`);
+    }
+  }
+
+  // Backward compatibility if any old calls
+  function toggleBlockUser(id, currentlyBlocked) {
+    showBlockUserModal(id, currentlyBlocked);
   }
 
   // ========== MFA RESET (ADMIN) ==========
@@ -5719,6 +5789,8 @@
   window.openEditCompanyModal = openEditCompanyModal;
   window.submitEditCompany = submitEditCompany;
   window.toggleUserDetails = toggleUserDetails;
+  window.toggleBlockUser = toggleBlockUser;
+  window.showBlockUserModal = showBlockUserModal;
   window.toggleCompanyDetails = toggleCompanyDetails;
   window.toggleSubmissionDetails = toggleSubmissionDetails;
   window.togglePlanningDetails = togglePlanningDetails;
