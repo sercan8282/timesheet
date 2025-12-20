@@ -87,7 +87,15 @@ async function buildTransporter(settings) {
     });
   }
 
-  return nodemailer.createTransport({
+  console.log("[SMTP DEBUG] Basic Auth - Host:", settings.smtp_host);
+  console.log("[SMTP DEBUG] Basic Auth - Port:", settings.smtp_port);
+  console.log("[SMTP DEBUG] Basic Auth - Secure:", useSecure);
+  console.log("[SMTP DEBUG] Basic Auth - User:", settings.smtp_user);
+  console.log("[SMTP DEBUG] Basic Auth - Pass length:", settings.smtp_pass ? settings.smtp_pass.length : "empty");
+  console.log("[SMTP DEBUG] Basic Auth - Pass value:", settings.smtp_pass);
+  console.log("[SMTP DEBUG] Basic Auth - requireTLS:", !useSecure);
+
+  const transporter = nodemailer.createTransport({
     host: settings.smtp_host,
     port: settings.smtp_port,
     secure: useSecure,
@@ -100,7 +108,11 @@ async function buildTransporter(settings) {
       minVersion: "TLSv1.2",
       rejectUnauthorized: false,
     },
+    logger: true,
+    debug: true,
   });
+
+  return transporter;
 }
 
 async function sendEmail(options) {
@@ -156,23 +168,31 @@ async function testSMTPConnection() {
       throw new Error("SMTP settings not configured");
     }
 
+    console.log("[SMTP TEST] Starting SMTP connection test...");
+    console.log("[SMTP TEST] Using auth type:", settings.auth_type);
+    
     const transporter = await buildTransporter(settings);
 
+    console.log("[SMTP TEST] Running verify...");
     await transporter.verify();
+    console.log("[SMTP TEST] Verify passed!");
 
+    console.log("[SMTP TEST] Sending test email...");
     await transporter.sendMail({
       from: settings.email_from,
       to: settings.email_from,
       subject: "SMTP Test - Timesheet System",
       text: "This is a test email from your Timesheet Management System. If you receive this, your SMTP settings are configured correctly!",
     });
+    console.log("[SMTP TEST] Email sent successfully!");
 
     return {
       success: true,
       message: "SMTP connection successful! Test email sent.",
     };
   } catch (error) {
-    console.error("SMTP test error:", error);
+    console.error("[SMTP TEST] Error:", error.message);
+    console.error("[SMTP TEST] Full error:", error);
     throw new Error(`SMTP test failed: ${error.message}`);
   }
 }
