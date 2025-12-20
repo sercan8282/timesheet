@@ -609,4 +609,92 @@ html[lang="en-GB"] input[type="time"] {
   .user-details-row .d-grid {
     grid-template-columns: 1fr;
   }
+
+  /* Admin portal responsive menu */
+  .nav-tabs.flex-column {
+    border-bottom: none;
+  }
+
+  .nav-tabs.flex-column .nav-item {
+    width: 100%;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .nav-tabs.flex-column .nav-link {
+    border: none;
+    border-radius: 0;
+    text-align: left;
+    padding: 0.75rem;
+    margin-bottom: 0;
+  }
+
+  .nav-tabs.flex-column .nav-link.active {
+    border-left: 3px solid #0d6efd;
+    background-color: #f8f9fa;
+  }
+
+  .nav-tabs.flex-column .nav-link:not(.active) {
+    border-left: 3px solid transparent;
+  }
+
+  /* Two-column menu grid */
+  .admin-menu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    border: none;
+  }
+
+  .admin-menu-grid .nav-item {
+    width: 100%;
+    border: 1px solid #dee2e6;
+    margin: -1px -1px 0 0;
+  }
+
+  .admin-menu-grid .nav-link {
+    border: none;
+    border-radius: 0;
+    text-align: left;
+    padding: 0.75rem 0.75rem;
+    margin: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .admin-menu-grid .nav-link i {
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .admin-menu-grid .nav-link.active {
+    background-color: #0d6efd;
+    color: white;
+  }
+
+  .admin-menu-grid .nav-link:not(.active):hover {
+    background-color: #f8f9fa;
+  }
+
+  /* Fleet modal select styling - make selected text white */
+  #vehicleCompany,
+  #vehicleKm {
+    background-color: #0d6efd !important;
+    color: white !important;
+    border-color: #0d6efd !important;
+  }
+
+  #vehicleCompany option,
+  #vehicleKm option {
+    color: black;
+    background-color: white;
+  }
+
+  #vehicleCompany option:checked,
+  #vehicleKm option:checked {
+    background: linear-gradient(#0d6efd 0%, #0d6efd 100%), white;
+    color: white;
+  }
 }

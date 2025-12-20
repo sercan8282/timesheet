@@ -96,6 +96,14 @@
           container.innerHTML = '<div class="alert alert-info">Module not found</div>';
         }
     }
+
+    // Scroll to content after tab loads
+    setTimeout(() => {
+      const adminContent = document.getElementById("adminContent");
+      if (adminContent) {
+        adminContent.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 100);
   }
 
   // ===== Menu Management =====
@@ -1957,55 +1965,57 @@
               <h5 class="mb-0"><i class="bi bi-gear"></i> Admin Portal</h5>
             </div>
             <div class="card-body">
-              <ul class="nav nav-tabs mb-3" role="tablist">
-                <li class="nav-item">
-                  <a class="nav-link active" href="#" data-tab="users" onclick="switchAdminTab('users'); return false;">
-                    <i class="bi bi-people"></i> Users
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#" data-tab="companies" onclick="switchAdminTab('companies'); return false;">
-                    <i class="bi bi-building"></i> Companies
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#" data-tab="submissions" onclick="switchAdminTab('submissions'); return false;">
-                    <i class="bi bi-file-earmark-text"></i> Submissions
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#" data-tab="hours-report" onclick="switchAdminTab('hours-report'); return false;">
-                    <i class="bi bi-bar-chart"></i> Hours Report
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#" data-tab="leave" onclick="switchAdminTab('leave'); return false;">
-                    <i class="bi bi-airplane"></i> Leave
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#" data-tab="fleet" onclick="switchAdminTab('fleet'); return false;">
-                    <i class="bi bi-truck"></i> Fleet
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#" data-tab="planning" onclick="switchAdminTab('planning'); return false;">
-                    <i class="bi bi-calendar-week"></i> Planning
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#" data-tab="smtp" onclick="switchAdminTab('smtp'); return false;">
-                    <i class="bi bi-envelope"></i> SMTP
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="#" data-tab="branding" onclick="switchAdminTab('branding'); return false;">
-                    <i class="bi bi-palette"></i> Branding
-                  </a>
-                </li>
-                <!-- Menu tab intentionally hidden for now; functionality retained for future use -->
-                <!-- Translations tab intentionally hidden for now; functionality kept for future use -->
-              </ul>
+              <div class="admin-menu-wrapper mb-3">
+                <ul class="nav nav-tabs admin-menu-grid" role="tablist">
+                  <li class="nav-item">
+                    <a class="nav-link active" href="#" data-tab="users" onclick="switchAdminTab('users'); return false;">
+                      <i class="bi bi-people"></i> Users
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="companies" onclick="switchAdminTab('companies'); return false;">
+                      <i class="bi bi-building"></i> Companies
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="submissions" onclick="switchAdminTab('submissions'); return false;">
+                      <i class="bi bi-file-earmark-text"></i> Submissions
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="hours-report" onclick="switchAdminTab('hours-report'); return false;">
+                      <i class="bi bi-bar-chart"></i> Hours Report
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="leave" onclick="switchAdminTab('leave'); return false;">
+                      <i class="bi bi-airplane"></i> Leave
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="fleet" onclick="switchAdminTab('fleet'); return false;">
+                      <i class="bi bi-truck"></i> Fleet
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="planning" onclick="switchAdminTab('planning'); return false;">
+                      <i class="bi bi-calendar-week"></i> Planning
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="smtp" onclick="switchAdminTab('smtp'); return false;">
+                      <i class="bi bi-envelope"></i> SMTP
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="branding" onclick="switchAdminTab('branding'); return false;">
+                      <i class="bi bi-palette"></i> Branding
+                    </a>
+                  </li>
+                  <!-- Menu tab intentionally hidden for now; functionality retained for future use -->
+                  <!-- Translations tab intentionally hidden for now; functionality kept for future use -->
+                </ul>
+              </div>
               <div id="adminContent"></div>
             </div>
           </div>
@@ -3802,7 +3812,7 @@
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <strong>${v.license_plate}</strong>
-              <small class="d-block text-muted">KM: ${v.km ?? 0} | ${
+              <small class="d-block text-white">KM: ${v.km ?? 0} | ${
             v.company_name || adminTr("no_company", "No company")
           }</small>
             </div>
