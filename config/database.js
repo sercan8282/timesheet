@@ -1138,6 +1138,25 @@ class Database {
 
         [
           "ui",
+          "invoice.download_original_pdf",
+          "en",
+          "Download Original PDF",
+        ],
+        [
+          "ui",
+          "invoice.download_original_pdf",
+          "nl",
+          "Download Originele PDF",
+        ],
+        [
+          "ui",
+          "invoice.download_original_pdf",
+          "de",
+          "Original-PDF herunterladen",
+        ],
+
+        [
+          "ui",
           "invoice.download_original_pdf_failed",
           "en",
           "Error downloading original PDF",
