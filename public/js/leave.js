@@ -444,7 +444,7 @@ async function updateLeaveRequest(id) {
   )}</div>`;
 
   try {
-    await api.updateLeaveRequest(id, {
+    const response = await api.updateLeaveRequest(id, {
       startDate,
       endDate,
       startTime,
@@ -453,11 +453,12 @@ async function updateLeaveRequest(id) {
       balanceType,
       reason,
     });
-    alertDiv.innerHTML = `<div class="alert alert-success">${translate(
-      "ui",
-      "leave.updated_success",
-      "Request updated and balance adjusted."
-    )}</div>`;
+    
+    const successMessage = response.statusChanged 
+      ? translate("ui", "leave.updated_pending", "Request updated and reset to pending approval.")
+      : translate("ui", "leave.updated_success", "Request updated and balance adjusted.");
+    
+    alertDiv.innerHTML = `<div class="alert alert-success">${successMessage}</div>`;
     cancelEdit();
     await Promise.all([
       loadLeaveBalance(),
