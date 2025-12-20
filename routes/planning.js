@@ -22,6 +22,7 @@ router.get("/week/:weekNumber", async (req, res) => {
         u.phone AS driver_phone,
         u.adr AS driver_adr,
         u.mega_kast AS driver_mega_kast,
+        u.note AS driver_note,
         COALESCE(v.license_plate, fv.license_plate) AS license_plate,
         c.name AS company_name
       FROM planning_schedules ps
@@ -143,6 +144,7 @@ router.post(
           u.phone AS driver_phone,
           u.adr AS driver_adr,
           u.mega_kast AS driver_mega_kast,
+          u.note AS driver_note,
           v.license_plate,
           c.name AS company_name
         FROM planning_schedules ps
@@ -228,6 +230,7 @@ router.put("/:id", async (req, res) => {
         u.phone AS driver_phone,
         u.adr AS driver_adr,
         u.mega_kast AS driver_mega_kast,
+        u.note AS driver_note,
         v.license_plate,
         c.name AS company_name
       FROM planning_schedules ps

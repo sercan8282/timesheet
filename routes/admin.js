@@ -344,7 +344,7 @@ router.get("/users", async (req, res) => {
     const users = await db.all(
       `SELECT 
          u.id, u.username, u.full_name, u.role, u.is_blocked, u.created_at,
-         u.company_id, u.phone, u.ritnumber, u.adr, u.mega_kast,
+         u.company_id, u.phone, u.ritnumber, u.adr, u.mega_kast, u.note,
          u.can_fill_in, u.fill_in_company_id,
          u.mfa_enabled, u.mfa_skip_count,
          c.name AS company_name,
@@ -383,6 +383,7 @@ router.post(
     body("email").optional({ checkFalsy: true }).trim().isEmail(),
     body("ritnumber").optional().trim(),
     body("adr").optional().isBoolean(),
+    body("note").optional().trim(),
     // Allow arbitrary truck type strings that come from fleet management
     body("megaKast").optional().trim().isLength({ max: 100 }),
   ],
@@ -405,6 +406,7 @@ router.post(
         ritnumber,
         adr = false,
         megaKast = "only_mega",
+        note,
       } = req.body;
 
       // Check if username already exists (case-insensitive)
@@ -422,8 +424,8 @@ router.post(
 
       // Create user with role
       const result = await db.run(
-        `INSERT INTO users (username, password, full_name, role, company_id, phone, ritnumber, adr, mega_kast) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users (username, password, full_name, role, company_id, phone, ritnumber, adr, mega_kast, note) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           username,
           hashedPassword,
@@ -434,6 +436,7 @@ router.post(
           ritnumber || null,
           adr ? 1 : 0,
           megaKast,
+          note || null,
         ]
       );
 
@@ -453,6 +456,7 @@ router.post(
         phone,
         email,
         ritnumber,
+        note,
       });
     } catch (error) {
       console.error("Error creating user:", error);
@@ -474,6 +478,7 @@ router.put(
     body("email").optional().trim(),
     body("ritnumber").optional().trim(),
     body("adr").optional().isBoolean(),
+    body("note").optional().trim(),
     // Allow arbitrary truck type strings that come from fleet management
     body("megaKast").optional().trim().isLength({ max: 100 }),
     body("canFillIn").optional(),
@@ -500,6 +505,7 @@ router.put(
         megaKast,
         canFillIn,
         fillInCompanyId,
+        note,
       } = req.body;
 
       console.log(`Updating user ${id} with data:`, {
@@ -563,6 +569,11 @@ router.put(
       if (fillInCompanyId !== undefined) {
         updates.push("fill_in_company_id = ?");
         values.push(fillInCompanyId || null);
+      }
+
+      if (note !== undefined) {
+        updates.push("note = ?");
+        values.push(note || null);
       }
 
       if (password !== undefined) {
