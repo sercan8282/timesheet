@@ -72,6 +72,19 @@ npm run init-db
 pm2 stop timesheet || true
 pm2 delete timesheet || true
 pm2 start npm --name timesheet -- start
+
+# Wacht tot PM2 status "online" is (max 30s)
+for i in $(seq 1 30); do
+  pm2 status timesheet | grep -qi "online" && break
+  sleep 1
+done
+
+# Wacht tot health endpoint reageert (max 30s)
+for i in $(seq 1 30); do
+  curl -sf http://localhost:3000/api/health && break
+  sleep 1
+done
+
 pm2 save
 pm2 status
 ````

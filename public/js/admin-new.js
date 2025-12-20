@@ -4038,6 +4038,8 @@
         rit_number: document.getElementById("vehicleRit").value || null,
         truck_type: document.getElementById("vehicleTruckType").value || null,
       });
+      // Invalidate planning truck map cache on fleet change
+      invalidatePlanningFleetTruckMap();
       const modal = document.getElementById("addVehicleModal");
       const bsModal = bootstrap.Modal.getInstance(modal);
       if (bsModal) bsModal.hide();
@@ -4147,6 +4149,8 @@
         truck_type:
           document.getElementById("editVehicleTruckType").value || null,
       });
+      // Invalidate planning truck map cache on fleet change
+      invalidatePlanningFleetTruckMap();
       const modal = document.getElementById("editVehicleModal");
       const bsModal = bootstrap.Modal.getInstance(modal);
       if (bsModal) bsModal.hide();
@@ -4426,6 +4430,8 @@
     try {
       await api.deleteFleetVehicle(vehicleId);
       selectedVehicleId = null; // ensure we don't re-select the deleted vehicle
+      // Invalidate planning truck map cache on fleet change
+      invalidatePlanningFleetTruckMap();
       const modal = document.getElementById("deleteVehicleModal");
       const bsModal = bootstrap.Modal.getInstance(modal);
       if (bsModal) bsModal.hide();
@@ -4440,6 +4446,33 @@
 
   // ========== PLANNING MANAGEMENT ==========
   let currentPlanningWeek = null;
+
+  // Cached plate → truck_type map for planning enrichment
+  let planningFleetTruckMap = null;
+  let planningFleetTruckMapPromise = null;
+
+  async function getPlanningFleetTruckMap() {
+    if (planningFleetTruckMap) return planningFleetTruckMap;
+    if (planningFleetTruckMapPromise) return planningFleetTruckMapPromise;
+    planningFleetTruckMapPromise = (async () => {
+      const fleet = await api.getFleetVehicles();
+      const map = new Map();
+      (fleet || []).forEach((v) => {
+        if (v && v.license_plate) {
+          map.set(v.license_plate.trim().toLowerCase(), v.truck_type || "");
+        }
+      });
+      planningFleetTruckMap = map;
+      planningFleetTruckMapPromise = null;
+      return planningFleetTruckMap;
+    })();
+    return planningFleetTruckMapPromise;
+  }
+
+  function invalidatePlanningFleetTruckMap() {
+    planningFleetTruckMap = null;
+    planningFleetTruckMapPromise = null;
+  }
 
   function getISOWeekNumber(date = new Date()) {
     const tmp = new Date(
@@ -4817,16 +4850,10 @@
       });
     });
 
-    // After initial render, enrich Truck column from Fleet truck_type
+    // After initial render, enrich Truck column from Fleet truck_type using cache
     (async () => {
       try {
-        const fleet = await api.getFleetVehicles();
-        const mapByPlate = new Map();
-        (fleet || []).forEach(v => {
-          if (v && v.license_plate) {
-            mapByPlate.set(v.license_plate.trim().toLowerCase(), v.truck_type || "");
-          }
-        });
+        const mapByPlate = await getPlanningFleetTruckMap();
 
         // Desktop rows
         const rows = wrapper.querySelectorAll('tr[data-entry-id]');
@@ -4890,20 +4917,20 @@
       if (row) {
         row.querySelector(".adr-cell").textContent = driver.adr ? "Ja" : "Nee";
         row.querySelector(".phone-cell").textContent = driver.phone || "-";
-        // Enrich truck from fleet (by license plate) if available
+        // Enrich truck from cached fleet (by license plate) if available
         try {
           const plateEl = row.querySelector('.license-cell');
           const plate = (plateEl?.textContent || '').trim().toLowerCase();
           if (plate) {
-            const fleet = await api.getFleetVehicles();
-            const match = (fleet || []).find(v => (v.license_plate || '').trim().toLowerCase() === plate);
-            if (match && match.truck_type) {
+            const mapByPlate = await getPlanningFleetTruckMap();
+            const tt = mapByPlate.get(plate);
+            if (tt && tt.length) {
               const truckEl = row.querySelector('.truck-cell');
-              if (truckEl) truckEl.textContent = match.truck_type;
+              if (truckEl) truckEl.textContent = tt;
               // Update mobile details if present
               const detailRow = document.getElementById(`details-planning-${entryId}`);
               const truckTxt = detailRow?.querySelector('.truck-type-text');
-              if (truckTxt) truckTxt.textContent = match.truck_type;
+              if (truckTxt) truckTxt.textContent = tt;
             }
           }
         } catch (_) { /* ignore enrichment failure */ }
@@ -5206,7 +5233,8 @@
   }
 
   async function clearPlanningWeek() {
-    const companyId = document.getElementById("planningCompanyFilter")?.value;
+    const select = document.getElementById("planningCompanyFilter");
+    const companyId = select?.value;
     if (!companyId) {
       showToast(
         "Selecteer eerst een bedrijf om de planning te wissen",
@@ -5214,13 +5242,77 @@
       );
       return;
     }
-    if (!confirm("Planning voor dit bedrijf in deze week wissen?")) return;
+
+    const companyName = select.options[select.selectedIndex]?.text || "(onbekend)";
+    const modalHtml = `
+    <div class="modal fade" id="clearPlanningWeekModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">${adminTr("planning.clear_week_title", "Planning wissen voor week ")}${currentPlanningWeek}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div id="clearPlanningWeekAlert"></div>
+            <p>
+              ${adminTr(
+                "planning.clear_week_message",
+                "Weet je zeker dat je de planning wilt wissen voor"
+              )} <strong>${companyName}</strong> ${adminTr("planning.clear_week_in_week", "in week")} <strong>${currentPlanningWeek}</strong>?
+            </p>
+            <p class="text-muted small">
+              ${adminTr(
+                "planning.clear_week_note",
+                "Dit verwijdert alle planning-items voor deze week voor dit bedrijf. Deze actie kan niet ongedaan worden gemaakt."
+              )}
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${adminTr("cancel", "Annuleren")}</button>
+            <button type="button" class="btn btn-danger" id="confirmClearPlanningWeekBtn" onclick="confirmClearPlanningWeek()">${adminTr("delete", "Wissen")}</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    const oldModal = document.getElementById("clearPlanningWeekModal");
+    if (oldModal) oldModal.remove();
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById("clearPlanningWeekModal"));
+    modal.show();
+  }
+
+  async function confirmClearPlanningWeek() {
     try {
+      const select = document.getElementById("planningCompanyFilter");
+      const companyId = select?.value;
+      if (!companyId) {
+        showToast("Geen bedrijf geselecteerd", "warning");
+        return;
+      }
+      const btn = document.getElementById("confirmClearPlanningWeekBtn");
+      const alertDiv = document.getElementById("clearPlanningWeekAlert");
+      btn.disabled = true;
+      btn.textContent = adminTr("deleting", "Wissen...");
       await api.clearWeekPlanning(currentPlanningWeek, companyId);
+      const modalEl = document.getElementById("clearPlanningWeekModal");
+      const bsModal = bootstrap.Modal.getInstance(modalEl);
+      if (bsModal) bsModal.hide();
+      await new Promise((resolve) => setTimeout(resolve, 100));
       await loadPlanningManagement();
-      showToast("Planning gewist", "success");
+      showToast(adminTr("planning.cleared", "Planning gewist"), "success");
     } catch (error) {
-      showToast("Wissen mislukt: " + error.message, "danger");
+      const btn = document.getElementById("confirmClearPlanningWeekBtn");
+      const alertDiv = document.getElementById("clearPlanningWeekAlert");
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = adminTr("delete", "Wissen");
+      }
+      if (alertDiv) {
+        alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      } else {
+        showToast("Wissen mislukt: " + error.message, "danger");
+      }
     }
   }
 
@@ -6024,6 +6116,7 @@
   // Optional exports for direct usage
   window.generatePlanning = generatePlanning;
   window.clearPlanningWeek = clearPlanningWeek;
+  window.confirmClearPlanningWeek = confirmClearPlanningWeek;
   window.exportPlanningPDF = exportPlanningPDF;
 
   console.log(
