@@ -95,7 +95,7 @@ const invoiceManager = {
         </div>
 
         <!-- Invoice List -->
-        <div class="card">
+        <div class="card d-none d-lg-block">
           <div class="card-body">
             <div class="table-responsive">
               <table class="table table-hover">
@@ -117,6 +117,12 @@ const invoiceManager = {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <div class="d-lg-none">
+          <div class="accordion" id="invoiceAccordion">
+            ${this.renderInvoiceCards()}
           </div>
         </div>
       </div>
@@ -338,7 +344,7 @@ const invoiceManager = {
           <td>
             <input type="checkbox" class="invoice-checkbox" value="${
               invoice.id
-            }" onchange="invoiceManager.updateBulkActions()">
+            }" onchange="invoiceManager.handleInvoiceCheckboxChange(this)">
           </td>
           <td><strong>${invoice.invoice_number}</strong></td>
           <td>${invoice.customer_name || "-"}</td>
@@ -380,6 +386,89 @@ const invoiceManager = {
       .join("");
   },
 
+  renderInvoiceCards() {
+    if (this.invoices.length === 0) {
+      return `<div class="alert alert-light text-center text-muted mb-0">${t(
+        "ui",
+        "invoice.none_found",
+        "No invoices found"
+      )}</div>`;
+    }
+
+    return this.invoices
+      .map((invoice) => {
+        const statusBadge = this.getStatusBadge(invoice.status);
+        const collapseId = `invoice-collapse-${invoice.id}`;
+        const headingId = `invoice-heading-${invoice.id}`;
+        const total = parseFloat(invoice.total_amount || 0).toFixed(2);
+        const customer = invoice.customer_name || "-";
+        const invoiceDate = invoice.invoice_date || "-";
+
+        return `
+        <div class="accordion-item mb-2 shadow-sm invoice-accordion-item">
+          <h2 class="accordion-header" id="${headingId}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
+              <div class="w-100">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="fw-semibold">${invoice.invoice_number}</span>
+                  <span>${statusBadge}</span>
+                </div>
+                <div class="d-flex justify-content-between text-muted small mt-1">
+                  <span>${customer}</span>
+                  <span>€ ${total}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center text-muted small mt-1">
+                  <span>${invoiceDate}</span>
+                  <div class="form-check m-0">
+                    <input type="checkbox" class="form-check-input invoice-checkbox" value="${
+                      invoice.id
+                    }" onchange="invoiceManager.handleInvoiceCheckboxChange(this)">
+                  </div>
+                </div>
+              </div>
+            </button>
+          </h2>
+          <div id="${collapseId}" class="accordion-collapse collapse" aria-labelledby="${headingId}" data-bs-parent="#invoiceAccordion">
+            <div class="accordion-body">
+              <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                  <div class="fw-semibold">${customer}</div>
+                  <div class="text-muted small">${t(
+                    "ui",
+                    "invoices.number",
+                    "Factuurnummer"
+                  )}: ${invoice.invoice_number}</div>
+                </div>
+                <div class="text-end">
+                  <div class="fw-semibold">€ ${total}</div>
+                  <div class="text-muted small">${invoiceDate}</div>
+                </div>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                <button class="btn btn-outline-primary btn-sm flex-fill" onclick="invoiceManager.viewInvoice(${invoice.id})">
+                  <i class="bi bi-eye"></i> ${t("ui", "view", "Bekijk")}
+                </button>
+                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="invoiceManager.showEditInvoice(${invoice.id})">
+                  <i class="bi bi-pencil"></i> ${t("ui", "edit", "Bewerk")}
+                </button>
+                <button class="btn btn-outline-success btn-sm flex-fill" onclick="invoiceManager.downloadPDF(${invoice.id})">
+                  <i class="bi bi-file-pdf"></i> PDF
+                </button>
+                <button class="btn btn-outline-info btn-sm flex-fill" onclick="invoiceManager.showEmailModal(${invoice.id})">
+                  <i class="bi bi-envelope"></i> Email
+                </button>
+                <button class="btn btn-outline-danger btn-sm flex-fill" onclick="invoiceManager.deleteInvoice(${invoice.id})">
+                  <i class="bi bi-trash"></i> ${t("ui", "delete", "Verwijder")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      })
+      .join("");
+  },
+
   getStatusBadge(status) {
     const badges = {
       draft: '<span class="badge bg-secondary">Concept</span>',
@@ -406,6 +495,17 @@ const invoiceManager = {
       const matchesStatus = !statusFilter || status.includes(statusFilter);
 
       row.style.display = matchesSearch && matchesStatus ? "" : "none";
+    });
+
+    const cards = document.querySelectorAll(".invoice-accordion-item");
+    cards.forEach((card) => {
+      const text = card.textContent.toLowerCase();
+      const badge = card.querySelector(".badge");
+      const status = badge ? badge.textContent.toLowerCase() : "";
+      const matchesSearch = text.includes(searchTerm);
+      const matchesStatus = !statusFilter || status.includes(statusFilter);
+
+      card.style.display = matchesSearch && matchesStatus ? "" : "none";
     });
   },
 
@@ -2867,43 +2967,74 @@ Met vriendelijke groet</textarea>
     }
   },
 
+  handleInvoiceCheckboxChange(checkbox) {
+    if (!checkbox) return;
+    const isChecked = checkbox.checked;
+    const invoiceId = checkbox.value;
+    document
+      .querySelectorAll(`.invoice-checkbox[value="${invoiceId}"]`)
+      .forEach((cb) => {
+        if (cb !== checkbox) cb.checked = isChecked;
+      });
+    this.updateBulkActions();
+  },
+
   toggleSelectAll(checked) {
     const checkboxes = document.querySelectorAll(".invoice-checkbox");
     checkboxes.forEach((cb) => (cb.checked = checked));
+    const selectAllCheckbox = document.getElementById("select-all-invoices");
+    if (selectAllCheckbox) {
+      selectAllCheckbox.indeterminate = false;
+      selectAllCheckbox.checked = checked;
+    }
     this.updateBulkActions();
   },
 
   updateBulkActions() {
-    const checkboxes = document.querySelectorAll(".invoice-checkbox:checked");
-    const count = checkboxes.length;
+    const selected = document.querySelectorAll(".invoice-checkbox:checked");
+    const selectedIds = new Set(
+      Array.from(selected).map((cb) => cb.value)
+    );
+    const count = selectedIds.size;
     const bulkBar = document.getElementById("bulk-actions-bar");
     const countSpan = document.getElementById("selected-count");
 
-    if (count > 0) {
-      bulkBar.classList.remove("d-none");
-      countSpan.textContent = count;
-    } else {
-      bulkBar.classList.add("d-none");
+    if (bulkBar && countSpan) {
+      if (count > 0) {
+        bulkBar.classList.remove("d-none");
+        countSpan.textContent = count;
+      } else {
+        bulkBar.classList.add("d-none");
+      }
     }
 
     // Update select-all checkbox state
-    const allCheckboxes = document.querySelectorAll(".invoice-checkbox");
+    const allIds = new Set();
+    document
+      .querySelectorAll(".invoice-checkbox")
+      .forEach((cb) => allIds.add(cb.value));
     const selectAllCheckbox = document.getElementById("select-all-invoices");
     if (selectAllCheckbox) {
-      selectAllCheckbox.checked = count === allCheckboxes.length && count > 0;
+      selectAllCheckbox.indeterminate =
+        count > 0 && count < allIds.size && allIds.size > 0;
+      selectAllCheckbox.checked = count > 0 && count === allIds.size;
     }
   },
 
   clearSelection() {
     const checkboxes = document.querySelectorAll(".invoice-checkbox");
     checkboxes.forEach((cb) => (cb.checked = false));
-    document.getElementById("select-all-invoices").checked = false;
+    const selectAll = document.getElementById("select-all-invoices");
+    if (selectAll) {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+    }
     this.updateBulkActions();
   },
 
   async bulkDelete() {
     const checkboxes = document.querySelectorAll(".invoice-checkbox:checked");
-    const ids = Array.from(checkboxes).map((cb) => cb.value);
+    const ids = Array.from(new Set(Array.from(checkboxes).map((cb) => cb.value)));
 
     if (ids.length === 0) {
       showToast(t("ui", "invoice.none_selected"), "error");
@@ -2977,18 +3108,89 @@ Met vriendelijke groet</textarea>
       return;
     }
 
-    const confirmMessage = t("ui", "invoice.confirm_delete_before_date")
+    const confirmMessage = (t(
+      "ui",
+      "invoice.confirm_delete_before_date",
+      "Weet je zeker dat je {count} facturen van vóór {date} wilt verwijderen?"
+    ) || "Weet je zeker dat je {count} facturen wilt verwijderen?")
       .replace("{count}", oldInvoices.length)
       .replace("{date}", beforeDate);
-    if (!confirm(confirmMessage)) {
-      return;
+
+    const subText = t(
+      "ui",
+      "invoice.delete_before_date_subtext",
+      "Deze actie kan niet ongedaan worden gemaakt."
+    );
+
+    let container = document.getElementById("modal-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "modal-container";
+      document.body.appendChild(container);
     }
+
+    container.innerHTML = `
+      <div class="modal fade" id="deleteOldInvoicesModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-warning-subtle">
+              <h5 class="modal-title"><i class="bi bi-calendar-x"></i> ${t(
+                "ui",
+                "invoice.delete_before_date_title",
+                "Facturen vóór datum verwijderen"
+              )}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-2">${confirmMessage}</p>
+              <p class="text-muted small mb-0">${subText}</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
+                "ui",
+                "cancel",
+                "Annuleer"
+              )}</button>
+              <button type="button" class="btn btn-danger" id="confirmDeleteOldInvoicesBtn">
+                <i class="bi bi-trash"></i> ${t(
+                  "ui",
+                  "invoice.delete_before_date_action",
+                  "Verwijder"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    const modalEl = document.getElementById("deleteOldInvoicesModal");
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    const confirmBtn = document.getElementById("confirmDeleteOldInvoicesBtn");
+    if (confirmBtn) {
+      // Pass a shallow copy to avoid mutating the current list reference mid-delete
+      confirmBtn.onclick = () =>
+        this.confirmDeleteOldInvoices(beforeDate, [...oldInvoices], modal, confirmBtn);
+    }
+  },
+
+  async confirmDeleteOldInvoices(beforeDate, invoices, modal, confirmBtn) {
+    if (!confirmBtn) return;
+
+    confirmBtn.disabled = true;
+    const originalHtml = confirmBtn.innerHTML;
+    confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${t(
+      "ui",
+      "processing",
+      "Bezig..."
+    )}`;
 
     try {
       let successCount = 0;
       let errorCount = 0;
 
-      for (const invoice of oldInvoices) {
+      for (const invoice of invoices) {
         try {
           await api.deleteInvoice(invoice.id);
           successCount++;
@@ -3000,7 +3202,7 @@ Met vriendelijke groet</textarea>
 
       if (errorCount === 0) {
         showToast(
-          t("ui", "invoice.deleted_before_date")
+          t("ui", "invoice.deleted_before_date", "{count} facturen verwijderd voor {date}")
             .replace("{count}", successCount)
             .replace("{date}", beforeDate),
           "success"
@@ -3009,8 +3211,9 @@ Met vriendelijke groet</textarea>
         showToast(
           `${successCount} ${t(
             "ui",
-            "invoice.deleted_short"
-          )}, ${errorCount} ${t("ui", "invoice.failed_short")}`,
+            "invoice.deleted_short",
+            "verwijderd"
+          )}, ${errorCount} ${t("ui", "invoice.failed_short", "gefaald")}`,
           "warning"
         );
       }
@@ -3020,27 +3223,96 @@ Met vriendelijke groet</textarea>
     } catch (error) {
       console.error("Error deleting old invoices:", error);
       showToast(
-        `${t("ui", "invoice.delete_failed")}: ${error.message}`,
+        `${t("ui", "invoice.delete_failed", "Verwijderen mislukt")}: ${
+          error.message
+        }`,
         "error"
       );
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = originalHtml;
+      if (modal) {
+        modal.hide();
+      }
     }
   },
 
-  async clearAllInvoices() {
-    if (
-      !confirm(
-        t("ui", "invoice.clear_all_warning").replace(
-          "{count}",
-          this.invoices.length
-        )
-      )
-    ) {
+  clearAllInvoices() {
+    const count = this.invoices.length;
+    if (count === 0) {
+      showToast(t("ui", "invoice.none_found", "Geen facturen gevonden"), "info");
       return;
     }
 
-    if (!confirm(t("ui", "invoice.clear_all_final_confirm"))) {
-      return;
+    const message = (t("ui", "invoice.clear_all_warning", "Weet je zeker dat je alle {count} facturen wilt verwijderen? Dit kan niet ongedaan worden gemaakt.") || "")
+      .replace("{count}", count);
+    const subText = t(
+      "ui",
+      "invoice.clear_all_final_confirm",
+      "Klik op Verwijder alles om door te gaan."
+    );
+
+    let container = document.getElementById("modal-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "modal-container";
+      document.body.appendChild(container);
     }
+
+    container.innerHTML = `
+      <div class="modal fade" id="clearAllInvoicesModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+              <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> ${t(
+                "ui",
+                "invoice.clear_all_title",
+                "Alle facturen verwijderen"
+              )}</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p class="mb-2">${message}</p>
+              <p class="text-muted small mb-0">${subText}</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
+                "ui",
+                "cancel",
+                "Annuleer"
+              )}</button>
+              <button type="button" class="btn btn-danger" id="confirmClearAllInvoicesBtn">
+                <i class="bi bi-trash"></i> ${t(
+                  "ui",
+                  "invoice.clear_all_action",
+                  "Verwijder alles"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    const modalEl = document.getElementById("clearAllInvoicesModal");
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    const confirmBtn = document.getElementById("confirmClearAllInvoicesBtn");
+    if (confirmBtn) {
+      confirmBtn.onclick = () => this.confirmClearAllInvoices(modal, confirmBtn);
+    }
+  },
+
+  async confirmClearAllInvoices(modal, confirmBtn) {
+    if (!confirmBtn) return;
+
+    confirmBtn.disabled = true;
+    const originalHtml = confirmBtn.innerHTML;
+    confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${t(
+      "ui",
+      "processing",
+      "Bezig..."
+    )}`;
 
     try {
       let successCount = 0;
@@ -3058,15 +3330,19 @@ Met vriendelijke groet</textarea>
 
       if (errorCount === 0) {
         showToast(
-          t("ui", "invoice.all_deleted").replace("{count}", successCount),
+          t("ui", "invoice.all_deleted", "Alle {count} facturen verwijderd").replace(
+            "{count}",
+            successCount
+          ),
           "success"
         );
       } else {
         showToast(
           `${successCount} ${t(
             "ui",
-            "invoice.deleted_short"
-          )}, ${errorCount} ${t("ui", "invoice.failed_short")}`,
+            "invoice.deleted_short",
+            "verwijderd"
+          )}, ${errorCount} ${t("ui", "invoice.failed_short", "gefaald")}`,
           "warning"
         );
       }
@@ -3076,9 +3352,17 @@ Met vriendelijke groet</textarea>
     } catch (error) {
       console.error("Error clearing all invoices:", error);
       showToast(
-        `${t("ui", "invoice.delete_failed")}: ${error.message}`,
+        `${t("ui", "invoice.delete_failed", "Verwijderen mislukt")}: ${
+          error.message
+        }`,
         "error"
       );
+    } finally {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = originalHtml;
+      if (modal) {
+        modal.hide();
+      }
     }
   },
 

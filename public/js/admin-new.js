@@ -2428,7 +2428,7 @@
               </td>
               <td><small>${user.id}</small></td>
               <td><small>${user.username}</small></td>
-              <td><small>${user.full_name}</small></td>
+              <td><small>${user.full_name}${user.is_blocked ? ' <span class="badge bg-secondary">Blocked</span>' : ''}</small></td>
               <td><small>${user.company_name || "-"}</small></td>
               <td><span class="badge bg-info" style="font-size: 0.75rem;">${user.role || "user"}</span></td>
               <td><span class="badge ${user.adr ? 'bg-success' : 'bg-secondary'}" style="font-size: 0.75rem;">${user.adr ? 'Yes' : 'No'}</span></td>
@@ -2442,6 +2442,9 @@
                     <i class="bi bi-shield-lock"></i>
                   </button>
                   ${adminMfaEnabled ? `<button class="btn btn-outline-primary btn-sm px-2" onclick="openResetPasswordModal(${user.id}, '${user.username}')" title="Reset Password"><i class="bi bi-key"></i></button>` : ''}
+                  <button class="btn btn-outline-secondary btn-sm px-2" onclick="showBlockUserModal(${user.id}, ${user.is_blocked ? 'true' : 'false'})" title="${user.is_blocked ? 'Unblock' : 'Block'}">
+                    <i class="bi ${user.is_blocked ? 'bi-unlock' : 'bi-lock'}"></i>
+                  </button>
                 </div>
               </td>
             </tr>
@@ -2457,6 +2460,9 @@
                       <i class="bi bi-shield-lock"></i> Reset MFA
                     </button>
                     ${adminMfaEnabled ? `<button class="btn btn-outline-primary btn-sm px-2 flex-grow-1" onclick="openResetPasswordModal(${user.id}, '${user.username}')"><i class="bi bi-key"></i> Reset Wachtwoord</button>` : ''}
+                    <button class="btn btn-outline-secondary btn-sm px-2 flex-grow-1" onclick="showBlockUserModal(${user.id}, ${user.is_blocked ? 'true' : 'false'})">
+                      <i class="bi ${user.is_blocked ? 'bi-unlock' : 'bi-lock'}"></i> ${user.is_blocked ? 'Unblock' : 'Block'}
+                    </button>
                   </div>
                 </div>
               </td>
@@ -2491,6 +2497,70 @@
         }, 100);
       }
     }
+  }
+
+  let blockUserTargetId = null;
+  let blockUserTargetBlocked = false;
+
+  function showBlockUserModal(id, currentlyBlocked) {
+    blockUserTargetId = id;
+    blockUserTargetBlocked = currentlyBlocked;
+    const user = (allUsers || []).find((u) => u.id === id) || {};
+    const name = escapeHtml(user.full_name || user.username || "deze gebruiker");
+    const actionLabel = currentlyBlocked ? "Deblokkeren" : "Blokkeren";
+    const actionIcon = currentlyBlocked ? "bi-unlock" : "bi-lock";
+    const modalHtml = `
+    <div class="modal fade" id="blockUserModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header ${currentlyBlocked ? 'bg-success' : 'bg-danger'} text-white">
+            <h5 class="modal-title">${actionLabel} gebruiker</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>Weet je zeker dat je <strong>${name}</strong> wilt ${actionLabel.toLowerCase()}?</p>
+            <p class="text-muted small">Geblokkeerde gebruikers kunnen niet inloggen.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+            <button type="button" class="btn ${currentlyBlocked ? 'btn-success' : 'btn-danger'}" id="blockUserConfirmBtn">
+              <i class="bi ${actionIcon}"></i> ${actionLabel}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+    const old = document.getElementById("blockUserModal");
+    if (old) old.remove();
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+    const modalEl = document.getElementById("blockUserModal");
+    const bsModal = new bootstrap.Modal(modalEl);
+    modalEl.querySelector("#blockUserConfirmBtn").onclick = confirmBlockUser;
+    bsModal.show();
+  }
+
+  async function confirmBlockUser() {
+    const btn = event.target;
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = adminTr("saving", "Saving...");
+    try {
+      await api.toggleBlockUser(blockUserTargetId, !blockUserTargetBlocked);
+      const modal = document.getElementById("blockUserModal");
+      const bsModal = bootstrap.Modal.getInstance(modal);
+      if (bsModal) bsModal.hide();
+      await loadAdminUsers();
+    } catch (error) {
+      btn.disabled = false;
+      btn.textContent = originalText;
+      alert(`Error: ${error.message}`);
+    }
+  }
+
+  // Backward compatibility if any old calls
+  function toggleBlockUser(id, currentlyBlocked) {
+    showBlockUserModal(id, currentlyBlocked);
   }
 
   // ========== MFA RESET (ADMIN) ==========
@@ -3570,8 +3640,19 @@
               <button class="btn btn-success" id="addFleetBtn"><i class="bi bi-plus-circle"></i></button>
             </div>
           </div>
-          <div class="card-body p-0" style="max-height: 600px; overflow-y: auto;" id="fleetListWrapper">
+          <div class="p-2 border-bottom">
+            <input type="search" class="form-control form-control-sm" id="fleetSearchInput" placeholder="Zoek op kenteken of bedrijf" autocomplete="off">
+          </div>
+          <div class="card-body p-0" style="max-height: 520px; overflow-y: auto;" id="fleetListWrapper">
             <div class="text-center py-4"><div class="spinner-border"></div></div>
+          </div>
+          <div class="card-footer d-flex justify-content-between align-items-center">
+            <small id="fleetCount" class="text-muted"></small>
+            <div class="btn-group btn-group-sm">
+              <button class="btn btn-outline-secondary" id="fleetPrev">Vorige</button>
+              <span class="btn btn-outline-secondary disabled" id="fleetPageInfo" style="pointer-events:none;"></span>
+              <button class="btn btn-outline-secondary" id="fleetNext">Volgende</button>
+            </div>
           </div>
         </div>
       </div>
@@ -3590,7 +3671,29 @@
         api.getCompanies(),
       ]);
       window.companies = companies;
-      renderFleetList(vehicles);
+      fleetVehicles = vehicles || [];
+      fleetPage = 1;
+      fleetSearchTerm = "";
+      renderFleetList();
+
+      const searchInput = document.getElementById("fleetSearchInput");
+      searchInput.value = "";
+      searchInput.oninput = () => {
+        fleetSearchTerm = searchInput.value.trim().toLowerCase();
+        fleetPage = 1;
+        renderFleetList();
+      };
+
+      document.getElementById("fleetPrev").onclick = () => {
+        if (fleetPage > 1) {
+          fleetPage -= 1;
+          renderFleetList();
+        }
+      };
+      document.getElementById("fleetNext").onclick = () => {
+        fleetPage += 1;
+        renderFleetList();
+      };
     } catch (error) {
       document.getElementById(
         "fleetListWrapper"
@@ -3602,29 +3705,73 @@
   let fleetMaintenance = [];
   let selectedVehicleId = null;
   let fleetLoadingId = null;
+  let fleetPage = 1;
+  const fleetPageSize = 20;
+  let fleetSearchTerm = "";
 
-  function renderFleetList(vehicles) {
-    fleetVehicles = vehicles || [];
+  function renderFleetList() {
     const wrapper = document.getElementById("fleetListWrapper");
     if (!wrapper) return;
 
-    if (!vehicles || vehicles.length === 0) {
+    const filtered = (fleetVehicles || []).filter((v) => {
+      if (!fleetSearchTerm) return true;
+      const term = fleetSearchTerm;
+      return (
+        (v.license_plate && v.license_plate.toLowerCase().includes(term)) ||
+        (v.company_name && v.company_name.toLowerCase().includes(term)) ||
+        (v.truck_type && v.truck_type.toLowerCase().includes(term)) ||
+        (v.rit_number && String(v.rit_number).toLowerCase().includes(term))
+      );
+    });
+
+    const total = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(total / fleetPageSize));
+    if (fleetPage > totalPages) fleetPage = totalPages;
+    if (fleetPage < 1) fleetPage = 1;
+    const start = (fleetPage - 1) * fleetPageSize;
+    const pageItems = filtered.slice(start, start + fleetPageSize);
+
+    const countEl = document.getElementById("fleetCount");
+    const pageInfoEl = document.getElementById("fleetPageInfo");
+    const prevBtn = document.getElementById("fleetPrev");
+    const nextBtn = document.getElementById("fleetNext");
+
+    if (countEl)
+      countEl.textContent = total
+        ? `${start + 1}-${Math.min(start + pageItems.length, total)} van ${total}`
+        : "Geen voertuigen";
+    if (pageInfoEl)
+      pageInfoEl.textContent = total
+        ? `${fleetPage} / ${totalPages}`
+        : "0 / 0";
+    if (prevBtn) prevBtn.disabled = fleetPage <= 1;
+    if (nextBtn) nextBtn.disabled = fleetPage >= totalPages;
+
+    if (!total) {
       wrapper.innerHTML = `<div class="p-3 text-muted">${adminTr(
         "fleet.no_vehicles",
         "No vehicles"
       )}</div>`;
-      document.getElementById(
-        "fleetDetailWrapper"
-      ).innerHTML = `<div class="alert alert-info mt-2">${adminTr(
-        "fleet.add_first",
-        "Add a vehicle first."
-      )}</div>`;
+      const detail = document.getElementById("fleetDetailWrapper");
+      if (detail)
+        detail.innerHTML = `<div class="alert alert-info mt-2">${adminTr(
+          "fleet.add_first",
+          "Add a vehicle first."
+        )}</div>`;
       return;
+    }
+
+    // Ensure selected remains within filtered set
+    if (
+      selectedVehicleId &&
+      !filtered.some((v) => v.id === selectedVehicleId)
+    ) {
+      selectedVehicleId = pageItems[0] ? pageItems[0].id : null;
     }
 
     wrapper.innerHTML = `
     <div class="list-group list-group-flush">
-      ${vehicles
+      ${pageItems
         .map(
           (v) => `
         <button type="button" class="list-group-item list-group-item-action ${
@@ -3652,8 +3799,8 @@
 
     if (selectedVehicleId) {
       selectVehicle(selectedVehicleId);
-    } else if (vehicles.length > 0) {
-      selectVehicle(vehicles[0].id);
+    } else if (pageItems.length > 0) {
+      selectVehicle(pageItems[0].id);
     }
   }
 
@@ -3670,7 +3817,7 @@
         // Only render if still the current selection
         fleetMaintenance = data.maintenance || []; // Store maintenance records
         renderVehicleDetail(data.vehicle, data.maintenance || []);
-        renderFleetList(fleetVehicles); // refresh active state
+        renderFleetList(); // refresh active state
       }
     } catch (error) {
       if (fleetLoadingId === id) {
@@ -3727,9 +3874,14 @@
     <div class="card">
       <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
         <h6 class="mb-0">${vehicle.license_plate}</h6>
-        <button class="btn btn-sm btn-warning" onclick="showEditVehicleModal(${
-          vehicle.id
-        })"><i class="bi bi-pencil"></i> Edit</button>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-warning" onclick="showEditVehicleModal(${
+            vehicle.id
+          })"><i class="bi bi-pencil"></i> Edit</button>
+          <button class="btn btn-danger" onclick="deleteVehicleRecord(${
+            vehicle.id
+          })"><i class="bi bi-trash"></i> Delete</button>
+        </div>
       </div>
       <div class="card-body">
         <div class="row mb-4">
@@ -4228,6 +4380,57 @@
       if (bsModal) bsModal.hide();
       await new Promise((resolve) => setTimeout(resolve, 100));
       await selectVehicle(vehicleId);
+    } catch (error) {
+      btn.disabled = false;
+      btn.textContent = adminTr("delete", "Delete");
+      alert(`Error: ${error.message}`);
+    }
+  }
+
+  // ========== DELETE VEHICLE ==========
+  function deleteVehicleRecord(vehicleId) {
+    const vehicle = fleetVehicles.find((v) => v.id === vehicleId);
+    if (!vehicle) return;
+
+    const modalHtml = `
+    <div class="modal fade" id="deleteVehicleModal" tabindex="-1">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title">Voertuig verwijderen</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>Weet je zeker dat je het voertuig <strong>${vehicle.license_plate}</strong> wilt verwijderen?</p>
+            <p class="text-muted small">Dit kan niet ongedaan gemaakt worden.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteVehicle(${vehicleId})">Verwijderen</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+    const oldModal = document.getElementById("deleteVehicleModal");
+    if (oldModal) oldModal.remove();
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+    new bootstrap.Modal(document.getElementById("deleteVehicleModal")).show();
+  }
+
+  async function confirmDeleteVehicle(vehicleId) {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = adminTr("deleting", "Deleting...");
+    try {
+      await api.deleteFleetVehicle(vehicleId);
+      selectedVehicleId = null; // ensure we don't re-select the deleted vehicle
+      const modal = document.getElementById("deleteVehicleModal");
+      const bsModal = bootstrap.Modal.getInstance(modal);
+      if (bsModal) bsModal.hide();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      await loadFleetManagement();
     } catch (error) {
       btn.disabled = false;
       btn.textContent = adminTr("delete", "Delete");
@@ -5586,6 +5789,8 @@
   window.openEditCompanyModal = openEditCompanyModal;
   window.submitEditCompany = submitEditCompany;
   window.toggleUserDetails = toggleUserDetails;
+  window.toggleBlockUser = toggleBlockUser;
+  window.showBlockUserModal = showBlockUserModal;
   window.toggleCompanyDetails = toggleCompanyDetails;
   window.toggleSubmissionDetails = toggleSubmissionDetails;
   window.togglePlanningDetails = togglePlanningDetails;
@@ -5610,6 +5815,8 @@
   window.submitEditMaintenance = submitEditMaintenance;
   window.deleteMaintenanceRecord = deleteMaintenanceRecord;
   window.confirmDeleteMaintenance = confirmDeleteMaintenance;
+  window.deleteVehicleRecord = deleteVehicleRecord;
+  window.confirmDeleteVehicle = confirmDeleteVehicle;
   // Planning exports
   window.loadPlanningManagement = loadPlanningManagement;
   window.showAddPlanningModal = showAddPlanningModal;
