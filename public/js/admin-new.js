@@ -21,11 +21,22 @@
   function adminTr(key, fallback) {
     try {
       if (window.t) {
-        const res = window.t("ui", key);
+        // Prefer admin namespace, then fallback to ui
+        let res = window.t("admin", key);
+        if (res && typeof res === "string") return res;
+        res = window.t("ui", key);
         if (res && typeof res === "string") return res;
       }
     } catch (_) {}
     return fallback || key;
+  }
+
+  // Translate known fleet placeholder notes safely
+  function translateFleetNote(note) {
+    if (typeof note === "string" && note.trim() === "fleet.no_maintenance") {
+      return adminTr("fleet.no_maintenance", "No maintenance records");
+    }
+    return note || "-";
   }
 
   async function switchAdminTab(tab) {
@@ -69,7 +80,7 @@
         await loadPlanningManagement();
         break;
       case "smtp":
-        await loadSmtpSettings();
+        await loadSMTPSettings();
         break;
       case "branding":
         await loadBrandingSettings();
@@ -162,43 +173,30 @@
                 .map(
                   (it, idx) => `
                 <tr class="menu-row" data-index="${idx}">
-                  <td><span class="badge-soft text-uppercase">${
-                    idx + 1
-                  }</span></td>
+                  <td><span class="badge-soft text-uppercase">${idx + 1}</span></td>
                   <td>
-                    <div class="text-muted small">${it.page_key}</div>
-                    <input type="hidden" class="page-key" value="${
-                      it.page_key
-                    }" />
+                    <input type="hidden" class="page-key" value="${it.page_key}" />
+                    <span class="text-monospace">${it.page_key}</span>
                   </td>
                   <td>
-                    <input class="form-control form-control-sm label" value="${
-                      it.label
-                    }" />
+                    <input class="form-control form-control-sm label" value="${it.label}" />
                   </td>
                   <td>
-                    <input class="form-control form-control-sm translation-input" data-key="${
-                      it.page_key
-                    }" value="" placeholder="(not loaded)" />
+                    <input class="form-control form-control-sm translation-input" data-key="${it.page_key}" value="" placeholder="(not loaded)" />
                   </td>
                   <td>
                     <div class="form-check form-switch">
-                      <input class="form-check-input visible" type="checkbox" ${
-                        it.visible ? "checked" : ""
-                      } />
+                      <input class="form-check-input visible" type="checkbox" ${it.visible ? "checked" : ""} />
                     </div>
                   </td>
                   <td>
                     <div class="btn-group" role="group">
-                      <button class="btn btn-sm btn-outline-secondary move-up" ${
-                        idx === 0 ? "disabled" : ""
-                      }><i class="bi bi-chevron-up"></i></button>
-                      <button class="btn btn-sm btn-outline-secondary move-down" ${
-                        idx === items.length - 1 ? "disabled" : ""
-                      }><i class="bi bi-chevron-down"></i></button>
+                      <button class="btn btn-sm btn-outline-secondary move-up" ${idx === 0 ? "disabled" : ""}><i class="bi bi-chevron-up"></i></button>
+                      <button class="btn btn-sm btn-outline-secondary move-down" ${idx === items.length - 1 ? "disabled" : ""}><i class="bi bi-chevron-down"></i></button>
                     </div>
                   </td>
-                </tr>`
+                </tr>
+                `
                 )
                 .join("")}
             </tbody>
@@ -3188,12 +3186,52 @@
   }
 
   async function deleteSubmission(submissionId) {
-    if (!confirm("Are you sure you want to delete this submission?")) return;
+    const modalHtml = `
+    <div class="modal fade" id="deleteSubmissionModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title"><i class="bi bi-exclamation-triangle"></i> Delete Submission</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p>Are you sure you want to delete this submission?</p>
+            <p class="text-muted small"><i class="bi bi-info-circle"></i> This action cannot be undone.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteSubmission(${submissionId})">
+              <i class="bi bi-trash"></i> Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    `;
 
+    const oldModal = document.getElementById("deleteSubmissionModal");
+    if (oldModal) oldModal.remove();
+
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+    new bootstrap.Modal(document.getElementById("deleteSubmissionModal")).show();
+  }
+
+  async function confirmDeleteSubmission(submissionId) {
     try {
       await api.deleteSubmission(submissionId);
-      alert("Submission deleted successfully");
-      loadAdminSubmissions();
+      bootstrap.Modal.getInstance(document.getElementById("deleteSubmissionModal")).hide();
+      
+      // Show success alert
+      const successAlert = document.createElement("div");
+      successAlert.className = "alert alert-success alert-dismissible fade show";
+      successAlert.innerHTML = `
+        <strong>Success!</strong> Submission deleted successfully.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.getElementById("adminContent").insertAdjacentElement("afterbegin", successAlert);
+      
+      // Reload submissions after 1 second
+      setTimeout(() => loadAdminSubmissions(), 1000);
     } catch (error) {
       alert("Error deleting submission: " + error.message);
     }
@@ -3652,14 +3690,24 @@
       return;
     }
 
-    const maintenanceRows = maintenance.length
-      ? maintenance
+    // Normalize placeholder-only maintenance list to render empty-state
+    const normalizedMaintenance =
+      Array.isArray(maintenance) &&
+      maintenance.length === 1 &&
+      maintenance[0] &&
+      typeof maintenance[0].notes === "string" &&
+      maintenance[0].notes.trim() === "fleet.no_maintenance"
+        ? []
+        : maintenance;
+
+    const maintenanceRows = normalizedMaintenance.length
+      ? normalizedMaintenance
           .map(
             (m) => `
         <tr>
           <td>${new Date(m.maintenance_date).toLocaleDateString("nl-NL")}</td>
           <td>${m.km ?? "-"}</td>
-          <td>${m.notes || "-"}</td>
+          <td>${(m && typeof m.notes === "string" && m.notes.trim() === "fleet.no_maintenance") ? '<span data-i18n="admin:fleet.no_maintenance">No maintenance records</span>' : (m.notes || "-")}</td>
           <td class="text-end">
             <button class="btn btn-sm btn-warning me-1" onclick="showEditMaintenanceModal(${
               m.id
@@ -3672,10 +3720,7 @@
       `
           )
           .join("")
-      : `<tr><td colspan="4" class="text-center text-muted">${adminTr(
-          "fleet.no_maintenance",
-          "No maintenance records"
-        )}</td></tr>`;
+      : `<tr><td colspan="4" class="text-center text-muted" data-i18n="admin:fleet.no_maintenance">No maintenance records</td></tr>`;
 
     detail.innerHTML = `
     <div class="card">
@@ -3745,6 +3790,11 @@
       </div>
     </div>
   `;
+    
+    // Apply translations to data-i18n elements
+    if (window.app && window.app.applyTranslationsToDom) {
+      setTimeout(() => window.app.applyTranslationsToDom(), 0);
+    }
   }
 
   function showAddVehicleModal() {
@@ -5542,6 +5592,7 @@
   window.toggleEditFillInCompany = toggleEditFillInCompany;
   window.viewSubmissionDetails = viewSubmissionDetails;
   window.deleteSubmission = deleteSubmission;
+  window.confirmDeleteSubmission = confirmDeleteSubmission;
   window.editSubmissionHours = editSubmissionHours;
   window.emailSubmission = emailSubmission;
   window.sendEmailSubmission = sendEmailSubmission;
