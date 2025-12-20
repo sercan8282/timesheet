@@ -325,7 +325,8 @@ const invoiceManager = {
     if (this.invoices.length === 0) {
       return `<tr><td colspan="7" class="text-center text-muted">${t(
         "ui",
-        "invoice.none_found"
+        "invoice.none_found",
+        "No invoices found"
       )}</td></tr>`;
     }
 
@@ -1002,7 +1003,7 @@ const invoiceManager = {
         dot_rate_is_percent: dot_rate_is_percent ? 1 : 0,
       });
 
-      showToast(t("ui", "invoice.template_updated"), "success");
+      showToast(t("ui", "invoice.template_updated", "Template settings updated"), "success");
       await this.loadData();
       await this.editTemplate(this.currentTemplate.id);
     } catch (error) {
