@@ -3034,9 +3034,41 @@ class Database {
           description TEXT,
           parser_type TEXT NOT NULL,
           config TEXT,
+          sample_pdf_path TEXT,
           is_active INTEGER DEFAULT 1,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Ensure sample_pdf_path exists on import_templates
+      this.db.all(`PRAGMA table_info(import_templates)`, [], (err, columns) => {
+        if (!err && columns && !columns.some((c) => c.name === "sample_pdf_path")) {
+          this.db.run(
+            `ALTER TABLE import_templates ADD COLUMN sample_pdf_path TEXT`,
+            (alterErr) => {
+              if (alterErr) {
+                console.error("Error adding sample_pdf_path to import_templates:", alterErr);
+              } else {
+                console.log("✓ Added sample_pdf_path column to import_templates");
+              }
+            }
+          );
+        }
+      });
+
+      // Template field mappings to guide AI extraction (regex/keyword per template)
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS template_field_mappings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          template_id INTEGER NOT NULL,
+          field_key TEXT NOT NULL,
+          pattern TEXT,
+          page INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(template_id, field_key),
+          FOREIGN KEY (template_id) REFERENCES import_templates(id) ON DELETE CASCADE
         )
       `);
 

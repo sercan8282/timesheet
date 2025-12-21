@@ -590,6 +590,29 @@ html[lang="en-GB"] input[type="time"] {
   }
 }
 
+  .ai-text-layer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    pointer-events: auto;
+  }
+  .ai-text-layer span {
+    position: absolute;
+    transform-origin: 0% 0%;
+    white-space: pre;
+    pointer-events: auto;
+    color: transparent; /* prevent double text */
+    background: transparent;
+  }
+  .ai-text-layer span:hover {
+    outline: 1px dashed #0d6efd;
+    background: rgba(13, 110, 253, 0.12);
+  }
+  .ai-text-layer span.bg-warning {
+    color: transparent; /* keep text invisible even when selected */
+    background: rgba(255, 193, 7, 0.35);
+    outline: 1px solid rgba(255, 193, 7, 0.8);
+  }
 .toggle-details {
   display: inline-block;
   transition: transform 0.3s ease;
