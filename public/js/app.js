@@ -287,14 +287,11 @@ class App {
 
     if (this.user.isAdmin) {
       console.log(
-        "[DEBUG showApp] Setting nav-admin and nav-invoices to display: block"
+        "[DEBUG showApp] Setting nav-admin, nav-invoices, nav-revenue to display: block"
       );
-      if (adminMenu && adminMenu.style.display !== "none")
-        adminMenu.style.display = "block";
-      if (invoicesMenu && invoicesMenu.style.display !== "none")
-        invoicesMenu.style.display = "block";
-      if (revenueMenu && revenueMenu.style.display !== "none")
-        revenueMenu.style.display = "block";
+      if (adminMenu) adminMenu.style.display = "block";
+      if (invoicesMenu) invoicesMenu.style.display = "block";
+      if (revenueMenu) revenueMenu.style.display = "block";
     } else {
       console.log(
         "[DEBUG showApp] Setting nav-admin and nav-invoices to display: none"

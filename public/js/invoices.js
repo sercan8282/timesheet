@@ -41,6 +41,9 @@ const invoiceManager = {
             <button class="btn btn-outline-primary" onclick="invoiceManager.showImportPdf()">
               <i class="bi bi-file-earmark-arrow-up"></i> <span data-i18n="ui:invoices.import_pdf">Importeer PDF</span>
             </button>
+            <button class="btn btn-outline-info" onclick="invoiceManager.showImportSettings()">
+              <i class="bi bi-gear"></i> Import Instellingen
+            </button>
           </div>
         </div>
 
@@ -57,6 +60,16 @@ const invoiceManager = {
               </button>
             </div>
           </div>
+                              <button class="btn btn-sm btn-outline-primary me-2" onclick="invoiceManager.manageImportTemplate(${
+                                t.id
+                              })">
+                                <i class="bi bi-magic"></i> AI mapping / Upload
+                              </button>
+                                <button class="btn btn-sm btn-outline-primary me-2" onclick="invoiceManager.manageImportTemplate(${
+                                  t.id
+                                })">
+                                  <i class="bi bi-magic"></i> AI mapping
+                                </button>
         </div>
 
         <!-- Filters -->
@@ -129,10 +142,32 @@ const invoiceManager = {
     `;
   },
 
-  showImportPdf() {
+  async showImportPdf() {
+    // Refresh templates so newly created ones (e.g., Verhoef) appear without full page reload
+    try {
+      this.templates = await api.getInvoiceTemplates();
+    } catch (e) {
+      console.error("Failed to refresh invoice templates for import modal", e);
+    }
+
     const templateOptions = this.templates
       .map((t) => `<option value="${t.id}">${t.name}</option>`)
       .join("");
+
+    let importTemplates = [];
+    try {
+      importTemplates = await api.getImportTemplates();
+    } catch (err) {
+      console.error("Error loading import templates for modal:", err);
+    }
+
+    const importTemplateOptions =
+      `<option value="">-- AI template optioneel --</option>` +
+      importTemplates
+        .map(
+          (t) => `<option value="${t.id}">${t.name} (${t.parser_type})</option>`
+        )
+        .join("");
 
     const modalHtml = `
       <div class="modal fade" id="importPdfModal" tabindex="-1">
@@ -153,11 +188,32 @@ const invoiceManager = {
                 </select>
                 <div class="form-text">De template bepaalt het factuuradres en afzender informatie op de PDF</div>
               </div>
+
+              <div class="mb-3">
+                <label class="form-label">AI import template (veld-mapping)</label>
+                <select id="importAiTemplateSelect" class="form-select">
+                  ${importTemplateOptions}
+                </select>
+                <div class="form-text">Optioneel: kies een import template met regex-mapping zodat factuurnummer en totaal worden gevonden.</div>
+              </div>
               
               <div class="mb-3">
                 <label for="importPdfInput" class="form-label">PDF bestanden</label>
                 <input type="file" id="importPdfInput" class="form-control" accept="application/pdf" multiple />
                 <div class="form-text">Je kunt maximaal 20 bestanden tegelijk uploaden</div>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <div>
+                  <button class="btn btn-sm btn-outline-primary" id="autoDetectBtn">
+                    <i class="bi bi-magic"></i> Auto-detecteer voorbeeld
+                  </button>
+                </div>
+                <div class="small text-muted">Controleert het eerste PDF bestand op factuurnummer en totaal</div>
+              </div>
+
+              <div id="autoDetectResult" class="border rounded p-2 bg-light mb-3 small">
+                <div class="text-muted">Nog niet geanalyseerd</div>
               </div>
               
               <div id="importProgress" style="display: none;">
@@ -188,6 +244,115 @@ const invoiceManager = {
     const bsModal = new bootstrap.Modal(modalEl);
     bsModal.show();
 
+    let lastAutoDetect = null;
+
+    const renderAutoDetectResult = (data) => {
+      const target = document.getElementById("autoDetectResult");
+      if (!target) return;
+      if (!data) {
+        target.innerHTML = `<div class="text-muted">Nog niet geanalyseerd</div>`;
+        return;
+      }
+
+      const labels = {
+        invoice_number: "Factuurnummer",
+        invoice_date: "Datum",
+        customer_name: "Klant",
+        subtotal: "Subtotaal",
+        vat_amount: "BTW",
+        total_amount: "Totaal",
+      };
+
+      const badgeFor = (key) => {
+        const field = data.fields?.[key];
+        const missing = !field || field.missing;
+        const confidence = Math.round((field?.confidence || 0) * 100);
+        const val = field?.value;
+        let cls = "bg-success";
+        if (missing) cls = "bg-danger";
+        else if ((field?.confidence || 0) < 0.75) cls = "bg-warning text-dark";
+        const text = missing ? "Ontbreekt" : val ?? "-";
+        return `<span class="badge ${cls} me-1 mb-1">${labels[key]}: ${text} (${confidence}%)</span>`;
+      };
+
+      const missingRequired = data.summary?.missing_fields || [];
+      const notes = data.summary?.notes || [];
+
+      target.innerHTML = `
+        <div class="fw-semibold mb-1">Analyse: ${
+          data.file?.filename || "(bestand)"
+        }</div>
+        <div class="mb-2">${badgeFor("invoice_number")}${badgeFor(
+        "total_amount"
+      )}${badgeFor("invoice_date")}${badgeFor("customer_name")}${badgeFor(
+        "subtotal"
+      )}${badgeFor("vat_amount")}</div>
+        ${
+          missingRequired.length
+            ? `<div class="text-danger">Ontbreekt: ${missingRequired.join(
+                ", "
+              )}</div>`
+            : ""
+        }
+        ${
+          notes.length
+            ? `<div class="text-warning">${notes.join(" ")}</div>`
+            : ""
+        }
+      `;
+    };
+
+    const runAutoDetect = async (silent = false) => {
+      const input = document.getElementById("importPdfInput");
+      if (!input.files || input.files.length === 0) {
+        if (!silent) showToast(t("ui", "select_min_one_pdf"), "error");
+        return null;
+      }
+
+      const file = input.files[0];
+      const formData = new FormData();
+      formData.append("pdf", file);
+
+      // pass optional AI import template id
+      const aiTemplateId = document.getElementById(
+        "importAiTemplateSelect"
+      )?.value;
+      if (aiTemplateId) {
+        formData.append("template_id", aiTemplateId);
+      }
+
+      const btn = document.getElementById("autoDetectBtn");
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Bezig...';
+      }
+
+      try {
+        const result = await api.autoDetectImportPdf(formData);
+        lastAutoDetect = result;
+        renderAutoDetectResult(result);
+        if (!silent) {
+          showToast("Auto-detect afgerond", "success");
+        }
+        return result;
+      } catch (err) {
+        console.error("Auto-detect error:", err);
+        if (!silent) showToast(err.message || "Auto-detect mislukt", "error");
+        renderAutoDetectResult(null);
+        return null;
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML =
+            '<i class="bi bi-magic"></i> Auto-detecteer voorbeeld';
+        }
+      }
+    };
+
+    document.getElementById("autoDetectBtn").onclick = () =>
+      runAutoDetect(false);
+
     const confirmBtn = document.getElementById("importPdfConfirm");
     confirmBtn.onclick = async () => {
       const input = document.getElementById("importPdfInput");
@@ -205,6 +370,25 @@ const invoiceManager = {
 
       if (!templateSelect.value) {
         showToast(t("ui", "select_template"), "error");
+        return;
+      }
+
+      // Validate required fields using auto-detect on the first file
+      const detectResult = lastAutoDetect || (await runAutoDetect(true));
+      if (!detectResult) {
+        showToast("Auto-detect mislukt, kan niet importeren", "error");
+        return;
+      }
+
+      const missingRequired = detectResult.summary?.missing_fields || [];
+      if (
+        missingRequired.includes("invoice_number") ||
+        missingRequired.includes("total_amount")
+      ) {
+        showToast(
+          "Factuurnummer of totaal ontbreekt in PDF, vul deze eerst handmatig in",
+          "error"
+        );
         return;
       }
 
@@ -234,6 +418,11 @@ const invoiceManager = {
         const formData = new FormData();
         formData.append("pdf", file);
         formData.append("template_id", templateSelect.value);
+        // pass optional AI import template id for field mappings
+        const aiTplSel = document.getElementById("importAiTemplateSelect");
+        if (aiTplSel && aiTplSel.value) {
+          formData.append("ai_template_id", aiTplSel.value);
+        }
 
         try {
           await api.importInvoicePDF(formData);
@@ -445,19 +634,29 @@ const invoiceManager = {
                 </div>
               </div>
               <div class="d-flex flex-wrap gap-2">
-                <button class="btn btn-outline-primary btn-sm flex-fill" onclick="invoiceManager.viewInvoice(${invoice.id})">
+                <button class="btn btn-outline-primary btn-sm flex-fill" onclick="invoiceManager.viewInvoice(${
+                  invoice.id
+                })">
                   <i class="bi bi-eye"></i> ${t("ui", "view", "Bekijk")}
                 </button>
-                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="invoiceManager.showEditInvoice(${invoice.id})">
+                <button class="btn btn-outline-secondary btn-sm flex-fill" onclick="invoiceManager.showEditInvoice(${
+                  invoice.id
+                })">
                   <i class="bi bi-pencil"></i> ${t("ui", "edit", "Bewerk")}
                 </button>
-                <button class="btn btn-outline-success btn-sm flex-fill" onclick="invoiceManager.downloadPDF(${invoice.id})">
+                <button class="btn btn-outline-success btn-sm flex-fill" onclick="invoiceManager.downloadPDF(${
+                  invoice.id
+                })">
                   <i class="bi bi-file-pdf"></i> PDF
                 </button>
-                <button class="btn btn-outline-info btn-sm flex-fill" onclick="invoiceManager.showEmailModal(${invoice.id})">
+                <button class="btn btn-outline-info btn-sm flex-fill" onclick="invoiceManager.showEmailModal(${
+                  invoice.id
+                })">
                   <i class="bi bi-envelope"></i> Email
                 </button>
-                <button class="btn btn-outline-danger btn-sm flex-fill" onclick="invoiceManager.deleteInvoice(${invoice.id})">
+                <button class="btn btn-outline-danger btn-sm flex-fill" onclick="invoiceManager.deleteInvoice(${
+                  invoice.id
+                })">
                   <i class="bi bi-trash"></i> ${t("ui", "delete", "Verwijder")}
                 </button>
               </div>
@@ -1103,7 +1302,10 @@ const invoiceManager = {
         dot_rate_is_percent: dot_rate_is_percent ? 1 : 0,
       });
 
-      showToast(t("ui", "invoice.template_updated", "Template settings updated"), "success");
+      showToast(
+        t("ui", "invoice.template_updated", "Template settings updated"),
+        "success"
+      );
       await this.loadData();
       await this.editTemplate(this.currentTemplate.id);
     } catch (error) {
@@ -1503,21 +1705,76 @@ const invoiceManager = {
   },
 
   async deleteTemplate(templateId) {
-    if (!confirm(t("ui", "confirm_delete_template"))) {
-      return;
-    }
-
     try {
-      await api.deleteInvoiceTemplate(templateId);
-      showToast(t("ui", "invoice.template_deleted"), "success");
-      await this.loadData();
-      this.showTemplates();
+      // Get template details to show in confirmation
+      let tpl = (this.templates || []).find((t) => String(t.id) === String(templateId));
+      if (!tpl) {
+        try { tpl = await api.getInvoiceTemplate(templateId); } catch (e) {}
+      }
+
+      const name = tpl && tpl.name ? tpl.name : `#${templateId}`;
+      const modalHtml = `
+        <div class="modal fade" id="deleteTemplateModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-trash"></i> ${t("ui", "invoice.template_delete_title", "Template verwijderen")}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>${t("ui", "confirm_delete_template", "Weet je zeker dat je dit template wilt verwijderen?")}</p>
+                <div class="alert alert-light border">
+                  <div><strong>${t("ui", "invoice.template_name", "Naam")}</strong>: ${name}</div>
+                </div>
+                <div class="text-muted small">${t("ui", "invoice.template_delete_hint", "Als er facturen aan dit template gekoppeld zijn, kan verwijderen mislukken.")}</div>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">${t("ui", "cancel", "Annuleren")}</button>
+                <button id="confirmDeleteTemplateBtn" class="btn btn-danger">
+                  <i class="bi bi-trash3"></i> ${t("ui", "delete", "Verwijderen")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      let container = document.getElementById("modal-container");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "modal-container";
+        document.body.appendChild(container);
+      }
+      container.innerHTML = modalHtml;
+
+      const modalEl = document.getElementById("deleteTemplateModal");
+      const bsModal = new bootstrap.Modal(modalEl);
+      bsModal.show();
+
+      const confirmBtn = document.getElementById("confirmDeleteTemplateBtn");
+      const originalHtml = confirmBtn.innerHTML;
+      confirmBtn.onclick = async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${t("ui", "deleting", "Verwijderen...")}`;
+        try {
+          await api.deleteInvoiceTemplate(templateId);
+          showToast(t("ui", "invoice.template_deleted", "Factuursjabloon verwijderd"), "success");
+          await this.loadData();
+          this.showTemplates();
+          bsModal.hide();
+        } catch (error) {
+          console.error("Error deleting template:", error);
+          showToast(
+            `${t("ui", "invoice.template_delete_failed", "Verwijderen mislukt")}: ${error.message}`,
+            "error"
+          );
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = originalHtml;
+        }
+      };
     } catch (error) {
-      console.error("Error deleting template:", error);
-      showToast(
-        `${t("ui", "invoice.template_delete_failed")}: ${error.message}`,
-        "error"
-      );
+      console.error("Error preparing delete template modal:", error);
+      showToast(t("ui", "invoice.template_delete_failed", "Verwijderen mislukt"), "error");
     }
   },
 
@@ -2949,21 +3206,80 @@ Met vriendelijke groet</textarea>
   },
 
   async deleteInvoice(invoiceId) {
-    if (!confirm(t("ui", "confirm_delete_invoice"))) {
-      return;
-    }
-
     try {
-      await api.deleteInvoice(invoiceId);
-      showToast(t("ui", "invoice.deleted"), "success");
-      await this.loadData();
-      this.renderInvoiceList();
+      // Get invoice details to show in the confirmation modal
+      let invoice = (this.invoices || []).find((i) => String(i.id) === String(invoiceId));
+      if (!invoice) {
+        try { invoice = await api.getInvoice(invoiceId); } catch (e) {}
+      }
+
+      const number = invoice && invoice.invoice_number ? invoice.invoice_number : `#${invoiceId}`;
+      const customer = invoice && invoice.customer_name ? invoice.customer_name : "-";
+      const total = invoice && typeof invoice.total_amount !== "undefined" ? invoice.total_amount : null;
+
+      const modalHtml = `
+        <div class="modal fade" id="deleteInvoiceModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-trash"></i> ${t("ui", "invoice.delete_title", "Factuur verwijderen")}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>${t("ui", "confirm_delete_invoice", "Weet je zeker dat je deze factuur wilt verwijderen?")}</p>
+                <div class="alert alert-light border">
+                  <div><strong>${t("ui", "invoice.number", "Factuurnummer")}</strong>: ${number}</div>
+                  <div><strong>${t("ui", "invoice.customer", "Klant")}</strong>: ${customer}</div>
+                  ${total !== null ? `<div><strong>${t("ui", "invoice.total", "Totaal")}</strong>: € ${Number(total).toFixed(2)}</div>` : ""}
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">${t("ui", "cancel", "Annuleren")}</button>
+                <button id="confirmDeleteInvoiceBtn" class="btn btn-danger">
+                  <i class="bi bi-trash3"></i> ${t("ui", "delete", "Verwijderen")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      let container = document.getElementById("modal-container");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "modal-container";
+        document.body.appendChild(container);
+      }
+      container.innerHTML = modalHtml;
+
+      const modalEl = document.getElementById("deleteInvoiceModal");
+      const bsModal = new bootstrap.Modal(modalEl);
+      bsModal.show();
+
+      const confirmBtn = document.getElementById("confirmDeleteInvoiceBtn");
+      const originalHtml = confirmBtn.innerHTML;
+      confirmBtn.onclick = async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${t("ui", "deleting", "Verwijderen...")}`;
+        try {
+          await api.deleteInvoice(invoiceId);
+          showToast(t("ui", "invoice.deleted", "Factuur verwijderd"), "success");
+          await this.loadData();
+          this.renderInvoiceList();
+          bsModal.hide();
+        } catch (error) {
+          console.error("Error deleting invoice:", error);
+          showToast(
+            `${t("ui", "invoice.invoice_delete_failed", "Verwijderen mislukt")}: ${error.message}`,
+            "error"
+          );
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = originalHtml;
+        }
+      };
     } catch (error) {
-      console.error("Error deleting invoice:", error);
-      showToast(
-        `${t("ui", "invoice.invoice_delete_failed")}: ${error.message}`,
-        "error"
-      );
+      console.error("Error preparing delete invoice modal:", error);
+      showToast(t("ui", "invoice.invoice_delete_failed", "Verwijderen mislukt"), "error");
     }
   },
 
@@ -2992,9 +3308,7 @@ Met vriendelijke groet</textarea>
 
   updateBulkActions() {
     const selected = document.querySelectorAll(".invoice-checkbox:checked");
-    const selectedIds = new Set(
-      Array.from(selected).map((cb) => cb.value)
-    );
+    const selectedIds = new Set(Array.from(selected).map((cb) => cb.value));
     const count = selectedIds.size;
     const bulkBar = document.getElementById("bulk-actions-bar");
     const countSpan = document.getElementById("selected-count");
@@ -3034,7 +3348,9 @@ Met vriendelijke groet</textarea>
 
   async bulkDelete() {
     const checkboxes = document.querySelectorAll(".invoice-checkbox:checked");
-    const ids = Array.from(new Set(Array.from(checkboxes).map((cb) => cb.value)));
+    const ids = Array.from(
+      new Set(Array.from(checkboxes).map((cb) => cb.value))
+    );
 
     if (ids.length === 0) {
       showToast(t("ui", "invoice.none_selected"), "error");
@@ -3108,11 +3424,13 @@ Met vriendelijke groet</textarea>
       return;
     }
 
-    const confirmMessage = (t(
-      "ui",
-      "invoice.confirm_delete_before_date",
-      "Weet je zeker dat je {count} facturen van vóór {date} wilt verwijderen?"
-    ) || "Weet je zeker dat je {count} facturen wilt verwijderen?")
+    const confirmMessage = (
+      t(
+        "ui",
+        "invoice.confirm_delete_before_date",
+        "Weet je zeker dat je {count} facturen van vóór {date} wilt verwijderen?"
+      ) || "Weet je zeker dat je {count} facturen wilt verwijderen?"
+    )
       .replace("{count}", oldInvoices.length)
       .replace("{date}", beforeDate);
 
@@ -3171,7 +3489,12 @@ Met vriendelijke groet</textarea>
     if (confirmBtn) {
       // Pass a shallow copy to avoid mutating the current list reference mid-delete
       confirmBtn.onclick = () =>
-        this.confirmDeleteOldInvoices(beforeDate, [...oldInvoices], modal, confirmBtn);
+        this.confirmDeleteOldInvoices(
+          beforeDate,
+          [...oldInvoices],
+          modal,
+          confirmBtn
+        );
     }
   },
 
@@ -3202,7 +3525,11 @@ Met vriendelijke groet</textarea>
 
       if (errorCount === 0) {
         showToast(
-          t("ui", "invoice.deleted_before_date", "{count} facturen verwijderd voor {date}")
+          t(
+            "ui",
+            "invoice.deleted_before_date",
+            "{count} facturen verwijderd voor {date}"
+          )
             .replace("{count}", successCount)
             .replace("{date}", beforeDate),
           "success"
@@ -3240,12 +3567,20 @@ Met vriendelijke groet</textarea>
   clearAllInvoices() {
     const count = this.invoices.length;
     if (count === 0) {
-      showToast(t("ui", "invoice.none_found", "Geen facturen gevonden"), "info");
+      showToast(
+        t("ui", "invoice.none_found", "Geen facturen gevonden"),
+        "info"
+      );
       return;
     }
 
-    const message = (t("ui", "invoice.clear_all_warning", "Weet je zeker dat je alle {count} facturen wilt verwijderen? Dit kan niet ongedaan worden gemaakt.") || "")
-      .replace("{count}", count);
+    const message = (
+      t(
+        "ui",
+        "invoice.clear_all_warning",
+        "Weet je zeker dat je alle {count} facturen wilt verwijderen? Dit kan niet ongedaan worden gemaakt."
+      ) || ""
+    ).replace("{count}", count);
     const subText = t(
       "ui",
       "invoice.clear_all_final_confirm",
@@ -3299,7 +3634,8 @@ Met vriendelijke groet</textarea>
 
     const confirmBtn = document.getElementById("confirmClearAllInvoicesBtn");
     if (confirmBtn) {
-      confirmBtn.onclick = () => this.confirmClearAllInvoices(modal, confirmBtn);
+      confirmBtn.onclick = () =>
+        this.confirmClearAllInvoices(modal, confirmBtn);
     }
   },
 
@@ -3330,10 +3666,11 @@ Met vriendelijke groet</textarea>
 
       if (errorCount === 0) {
         showToast(
-          t("ui", "invoice.all_deleted", "Alle {count} facturen verwijderd").replace(
-            "{count}",
-            successCount
-          ),
+          t(
+            "ui",
+            "invoice.all_deleted",
+            "Alle {count} facturen verwijderd"
+          ).replace("{count}", successCount),
           "success"
         );
       } else {
@@ -3386,6 +3723,9 @@ Met vriendelijke groet</textarea>
               <button class="btn btn-primary" onclick="invoiceManager.showCreateImportTemplate()">
                 <i class="bi bi-plus-circle"></i> Nieuw Import Template
               </button>
+              <button class="btn btn-outline-danger ms-2" onclick="invoiceManager.cleanUnusedImportTemplates()">
+                <i class="bi bi-trash3"></i> Verwijder niet-gebruikte
+              </button>
               <button class="btn btn-outline-secondary" onclick="invoiceManager.renderInvoiceList()">
                 <i class="bi bi-arrow-left"></i> Terug
               </button>
@@ -3416,6 +3756,13 @@ Met vriendelijke groet</textarea>
                               <p class="mb-1 text-muted small">${
                                 t.description || "Geen beschrijving"
                               }</p>
+                              <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary" onclick="invoiceManager.manageImportTemplate(${
+                                  t.id
+                                })">
+                                  <i class="bi bi-magic"></i> AI mapping / Upload sample
+                                </button>
+                              </div>
                               <small class="text-secondary">Parser: <code>${
                                 t.parser_type
                               }</code></small>
@@ -3567,7 +3914,7 @@ Met vriendelijke groet</textarea>
     }
 
     try {
-      await api.createImportTemplate({
+      const tpl = await api.createImportTemplate({
         name,
         description,
         parser_type,
@@ -3575,7 +3922,11 @@ Met vriendelijke groet</textarea>
       });
 
       showToast(t("ui", "invoice.import_template_created"), "success");
-      await this.showImportSettings();
+      if (tpl && tpl.id) {
+        await this.manageImportTemplate(tpl.id);
+      } else {
+        await this.showImportSettings();
+      }
     } catch (error) {
       console.error("Error saving import template:", error);
       showToast(
@@ -3586,19 +3937,647 @@ Met vriendelijke groet</textarea>
   },
 
   async deleteImportTemplate(templateId) {
-    if (!confirm(t("ui", "invoice.import_template_delete_confirm"))) {
+    try {
+      const tpl = await api.getImportTemplate(templateId);
+
+      const modalHtml = `
+        <div class="modal fade" id="deleteImportTemplateModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-trash"></i> ${t("ui", "delete", "Verwijderen")}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>${t("ui", "invoice.import_template_delete_confirm", "Weet je zeker dat je dit import template wilt verwijderen?")}</p>
+                <div class="alert alert-light border">
+                  <div><strong>${t("ui", "invoice.template_name", "Naam")}</strong>: ${tpl && tpl.name ? tpl.name : "#"}</div>
+                  <div><strong>${t("ui", "invoice.parser_type", "Parser type")}</strong>: ${tpl && tpl.parser_type ? tpl.parser_type : "-"}</div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">${t("ui", "cancel", "Annuleren")}</button>
+                <button id="confirmDeleteImportTplBtn" class="btn btn-danger">
+                  <i class="bi bi-trash3"></i> ${t("ui", "delete", "Verwijderen")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      let container = document.getElementById("modal-container");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "modal-container";
+        document.body.appendChild(container);
+      }
+      container.innerHTML = modalHtml;
+
+      const modalEl = document.getElementById("deleteImportTemplateModal");
+      const bsModal = new bootstrap.Modal(modalEl);
+      bsModal.show();
+
+      const confirmBtn = document.getElementById("confirmDeleteImportTplBtn");
+      const originalHtml = confirmBtn.innerHTML;
+      confirmBtn.onclick = async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>${t("ui", "deleting", "Verwijderen...")}`;
+        try {
+          await api.deleteImportTemplate(templateId);
+          showToast(t("ui", "invoice.import_template_deleted", "Template verwijderd"), "success");
+          await this.showImportSettings();
+          bsModal.hide();
+        } catch (error) {
+          console.error("Error deleting import template:", error);
+          showToast(
+            `${t("ui", "invoice.import_template_delete_failed", "Verwijderen mislukt")}: ${error.message}`,
+            "error"
+          );
+        } finally {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = originalHtml;
+        }
+      };
+    } catch (error) {
+      console.error("Error preparing delete modal:", error);
+      showToast(t("ui", "invoice.import_template_delete_failed", "Verwijderen mislukt"), "error");
+    }
+  },
+
+  async cleanUnusedImportTemplates() {
+    if (
+      !confirm(
+        t(
+          "ui",
+          "invoice.import_template_cleanup_confirm",
+          "Weet je zeker dat je alle niet-gebruikte import templates wilt verwijderen?"
+        )
+      )
+    ) {
       return;
     }
 
     try {
-      // TODO: implement delete endpoint
-      showToast(t("ui", "invoice.feature_not_available"), "info");
+      const result = await api.cleanupImportTemplates();
+      const count = (result && result.count) || 0;
+      if (count > 0) {
+        showToast(
+          `${count} ${t(
+            "ui",
+            "invoice.import_templates_deleted",
+            "templates verwijderd"
+          )}`,
+          "success"
+        );
+      } else {
+        showToast(
+          t(
+            "ui",
+            "invoice.no_unused_import_templates",
+            "Geen niet-gebruikte import templates gevonden"
+          ),
+          "info"
+        );
+      }
+      await this.showImportSettings();
     } catch (error) {
-      console.error("Error deleting import template:", error);
+      console.error("Error cleaning unused import templates:", error);
       showToast(
-        `${t("ui", "invoice.import_template_delete_failed")}: ${error.message}`,
+        `${t(
+          "ui",
+          "invoice.import_template_cleanup_failed",
+          "Opschonen mislukt"
+        )}: ${error.message}`,
         "error"
       );
+    }
+  },
+
+  async manageImportTemplate(templateId) {
+    try {
+      const tpl = await api.getImportTemplate(templateId);
+      const mappings = tpl.mappings || [];
+
+      const fieldKeys = [
+        "invoice_number",
+        "total_amount",
+        "invoice_date",
+        "customer_name",
+        "subtotal",
+        "vat_amount",
+      ];
+
+      const labels = {
+        invoice_number: "Factuurnummer",
+        total_amount: "Totaal",
+        invoice_date: "Datum",
+        customer_name: "Klant",
+        subtotal: "Subtotaal",
+        vat_amount: "BTW",
+      };
+
+      const mappingRows = fieldKeys
+        .map((key) => {
+          const existing = mappings.find((m) => m.field_key === key) || {};
+          return `
+            <div class="border rounded p-2 mb-2">
+              <div class="d-flex align-items-center justify-content-between mb-1">
+                <div class="fw-semibold">${labels[key]}</div>
+                <span class="badge bg-secondary" id="aiBadge-${key}">Nog niet gedetecteerd</span>
+              </div>
+              <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-sm btn-outline-secondary ai-select-btn" data-field="${key}">
+                  <i class="bi bi-cursor"></i> Selecteer op PDF
+                </button>
+                <select class="form-select form-select-sm ai-line-select" data-field="${key}">
+                  <option value="">-- Kies tekstregel ter inspiratie --</option>
+                </select>
+              </div>
+              <small class="text-muted d-block mb-2">Klik eerst “Selecteer op PDF”, klik dan op de gewenste tekst in de PDF. Je kunt ook een gedetecteerde regel kiezen.</small>
+              <input type="text" class="form-control form-control-sm ai-map-input" data-field="${key}" placeholder="Regex bijv: ${key}[:\-\s]*([A-Z0-9./-]+)" value="${
+            existing.pattern || ""
+          }">
+            </div>`;
+        })
+        .join("");
+
+      const samplePreview = `
+        <div id="aiPdfContainer" class="border rounded mb-2" style="position: relative; width: 100%; min-height: 320px; background: #f8f9fa; overflow: hidden;"></div>
+      `;
+
+      const modalHtml = `
+        <div class="modal fade" id="manageImportTemplateModal" tabindex="-1">
+          <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">AI mapping voor ${tpl.name}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label">Upload sample PDF</label>
+                  <input type="file" id="aiSampleUpload" class="form-control" accept="application/pdf">
+                  <small class="text-muted">Gebruik een representatieve factuur om regex te testen.</small>
+                </div>
+                ${samplePreview}
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                  <button class="btn btn-sm btn-outline-primary" id="aiDetectSampleBtn">
+                    <i class="bi bi-magic"></i> Analyseer sample met AI
+                  </button>
+                  <div class="small text-muted">We tonen gevonden velden en de ruwe tekstregels voor regex hulp.</div>
+                </div>
+                <div id="aiDetectStatus" class="border rounded p-2 bg-light small mb-3">
+                  <div class="text-muted">Nog niet geanalyseerd</div>
+                </div>
+                <div class="alert alert-info small">
+                  Tip: Klik “Selecteer op PDF” bij een veld en klik vervolgens op de tekst in de PDF om het automatisch te vullen zonder zelf een regex te typen. Regex blijft mogelijk voor gevorderd gebruik.
+                </div>
+                <div>${mappingRows}</div>
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
+                <button class="btn btn-primary" id="saveAiMappingsBtn">Opslaan</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      // inject modal
+      let container = document.getElementById("modal-container");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "modal-container";
+        document.body.appendChild(container);
+      }
+      container.insertAdjacentHTML("beforeend", modalHtml);
+
+      const modalEl = document.getElementById("manageImportTemplateModal");
+      const bsModal = new bootstrap.Modal(modalEl);
+      bsModal.show();
+
+      let lastDetect = null;
+      let currentLines = [];
+      let uploadedSampleFile = null;
+      let activeSelectField = null;
+      let currentPdfObjectUrl = null;
+
+      const badgeFor = (key, field) => {
+        const badge = modalEl.querySelector(`#aiBadge-${key}`);
+        if (!badge) return;
+        if (!field || field.missing) {
+          badge.textContent = `${labels[key]} ontbreekt`;
+          badge.className = "badge bg-danger";
+          return;
+        }
+        const confidence = Math.round((field.confidence || 0) * 100);
+        let cls = "badge bg-success";
+        if ((field.confidence || 0) < 0.75) cls = "badge bg-warning text-dark";
+        badge.textContent = `${labels[key]}: ${
+          field.value ?? "-"
+        } (${confidence}%)`;
+        badge.className = cls;
+      };
+
+      const renderDetectResult = (data) => {
+        const target = modalEl.querySelector("#aiDetectStatus");
+        if (!target) return;
+        if (!data) {
+          target.innerHTML = `<div class="text-muted">Nog niet geanalyseerd</div>`;
+          fieldKeys.forEach((k) => {
+            const badge = modalEl.querySelector(`#aiBadge-${k}`);
+            if (badge) {
+              badge.textContent = "Nog niet gedetecteerd";
+              badge.className = "badge bg-secondary";
+            }
+          });
+          return;
+        }
+
+        const missingRequired = data.summary?.missing_fields || [];
+        const notes = data.summary?.notes || [];
+
+        fieldKeys.forEach((k) => badgeFor(k, data.fields?.[k]));
+
+        target.innerHTML = `
+          <div class="fw-semibold mb-1">Analyse: ${
+            data.file?.filename || "(sample)"
+          }</div>
+          ${
+            missingRequired.length
+              ? `<div class="text-danger">Ontbreekt: ${missingRequired.join(
+                  ", "
+                )}</div>`
+              : ""
+          }
+          ${
+            notes.length
+              ? `<div class="text-warning">${notes.join(" ")}</div>`
+              : ""
+          }
+        `;
+      };
+
+      const ensurePdfJs = () => {
+        if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+
+        const sources = [
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js",
+          "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.js",
+          "https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.min.js",
+          "https://mozilla.github.io/pdf.js/build/pdf.min.js",
+          "/js/vendor/pdfjs/pdf.min.js",
+        ];
+
+        const tryLoad = (srcIndex = 0) => {
+          if (srcIndex >= sources.length) {
+            return Promise.reject(
+              new Error("pdf.js laden mislukt (alle cdn's)")
+            );
+          }
+          const src = sources[srcIndex];
+          return new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            script.src = src;
+            script.onload = () => {
+              if (window.pdfjsLib) {
+                const workerSrc = src.replace(
+                  "pdf.min.js",
+                  "pdf.worker.min.js"
+                );
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+                resolve(window.pdfjsLib);
+              } else {
+                reject(new Error("pdf.js niet beschikbaar"));
+              }
+            };
+            script.onerror = () => {
+              // try next source
+              tryLoad(srcIndex + 1)
+                .then(resolve)
+                .catch(reject);
+            };
+            document.head.appendChild(script);
+          });
+        };
+
+        return tryLoad();
+      };
+
+      const renderPdfPreview = async (fileOrUrl) => {
+        const container = modalEl.querySelector("#aiPdfContainer");
+        if (!container) return;
+        container.innerHTML =
+          '<div class="p-3 text-muted small">PDF laden...</div>';
+        let fallbackUrl = null;
+        if (fileOrUrl instanceof File) {
+          fallbackUrl = URL.createObjectURL(fileOrUrl);
+        } else if (typeof fileOrUrl === "string") {
+          fallbackUrl = fileOrUrl.startsWith("http")
+            ? fileOrUrl
+            : `${window.location.origin}${fileOrUrl}`;
+        }
+        try {
+          const pdfjsLib = await ensurePdfJs();
+          let loadingTask;
+          if (fileOrUrl instanceof File) {
+            const data = await fileOrUrl.arrayBuffer();
+            loadingTask = pdfjsLib.getDocument({ data });
+          } else {
+            let url = fileOrUrl;
+            if (
+              fileOrUrl &&
+              fileOrUrl.startsWith &&
+              fileOrUrl.startsWith("/")
+            ) {
+              // allow relative served sample paths
+              url = window.location.origin + fileOrUrl;
+            }
+            loadingTask = pdfjsLib.getDocument(url);
+          }
+
+          const pdf = await loadingTask.promise;
+
+          container.innerHTML = "";
+          container.style.position = "relative";
+          container.style.width = "100%";
+          container.style.maxHeight = "70vh";
+          container.style.overflow = "auto";
+
+          // Use container width to scale pages
+          const containerWidth = container.clientWidth || 800;
+          const fragment = document.createDocumentFragment();
+
+          const renderPage = async (pageNum) => {
+            const page = await pdf.getPage(pageNum);
+            const baseViewport = page.getViewport({ scale: 1 });
+            const scale = containerWidth / baseViewport.width;
+            const viewport = page.getViewport({ scale });
+
+            const pageWrap = document.createElement("div");
+            pageWrap.className = "ai-pdf-page";
+            Object.assign(pageWrap.style, {
+              position: "relative",
+              marginBottom: "12px",
+              width: `${viewport.width}px`,
+              height: `${viewport.height}px`,
+            });
+
+            const canvas = document.createElement("canvas");
+            const textLayer = document.createElement("div");
+            textLayer.className = "ai-text-layer";
+            Object.assign(textLayer.style, {
+              position: "absolute",
+              left: "0",
+              top: "0",
+              width: `${viewport.width}px`,
+              height: `${viewport.height}px`,
+              pointerEvents: "auto",
+            });
+
+            const context = canvas.getContext("2d");
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            canvas.style.width = `${viewport.width}px`;
+            canvas.style.height = `${viewport.height}px`;
+
+            pageWrap.appendChild(canvas);
+            pageWrap.appendChild(textLayer);
+            fragment.appendChild(pageWrap);
+
+            await page.render({ canvasContext: context, viewport }).promise;
+            const textContent = await page.getTextContent();
+            await pdfjsLib.renderTextLayer({
+              textContent,
+              container: textLayer,
+              viewport,
+              textDivs: [],
+            }).promise;
+
+            textLayer.querySelectorAll("span").forEach((span) => {
+              span.style.background = "transparent";
+              span.style.color = "rgba(0,0,0,0.75)";
+              span.style.cursor = "pointer";
+              span.addEventListener("click", () => {
+                if (!activeSelectField) {
+                  showToast(
+                    "Kies eerst een veld met 'Selecteer op PDF'",
+                    "info"
+                  );
+                  return;
+                }
+                const text = span.textContent?.trim();
+                if (!text) return;
+                const targetInput = modalEl.querySelector(
+                  `.ai-map-input[data-field="${activeSelectField}"]`
+                );
+                if (!targetInput) return;
+                const suggestion = `(${escapeRegex(text)})`;
+                targetInput.value = suggestion;
+                textLayer
+                  .querySelectorAll("span")
+                  .forEach((s) => s.classList.remove("bg-warning"));
+                span.classList.add("bg-warning");
+                span.style.borderRadius = "2px";
+                showToast(
+                  `${labels[activeSelectField]} gevuld vanaf selectie`,
+                  "success"
+                );
+              });
+            });
+          };
+
+          for (let p = 1; p <= pdf.numPages; p++) {
+            // eslint-disable-next-line no-await-in-loop
+            await renderPage(p);
+          }
+
+          container.appendChild(fragment);
+        } catch (err) {
+          console.error("PDF render mislukt", err);
+          const link = fallbackUrl
+            ? `<a href="${fallbackUrl}" target="_blank" rel="noopener">Open PDF in nieuw tabblad</a>`
+            : "";
+          container.innerHTML = `<div class="p-3 text-danger small">Kon PDF niet laden (${
+            err.message || "onbekend"
+          }). ${link}</div>`;
+        }
+      };
+
+      const populateLineSelects = (lines) => {
+        currentLines = lines || [];
+        const options =
+          '<option value="">-- Kies tekstregel ter inspiratie --</option>' +
+          currentLines
+            .map((line, idx) => {
+              const display =
+                line.length > 120 ? `${line.slice(0, 117)}...` : line;
+              return `<option value="${idx}">${display}</option>`;
+            })
+            .join("");
+        modalEl.querySelectorAll(".ai-line-select").forEach((sel) => {
+          sel.innerHTML = options;
+        });
+      };
+
+      const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      const suggestRegexFromLine = (line) => {
+        if (!line) return "";
+        const amountMatch = line.match(/([0-9][0-9.,]*\d)/);
+        if (amountMatch) {
+          const escapedAmount = escapeRegex(amountMatch[1]);
+          return escapeRegex(line).replace(escapedAmount, "([0-9.,-]+)");
+        }
+        return `${escapeRegex(line)}\\s*([A-Za-z0-9./-]+)`;
+      };
+
+      const getSampleFile = async () => {
+        const fileInput = modalEl.querySelector("#aiSampleUpload");
+        const selected = fileInput?.files?.[0];
+        if (selected) return selected;
+        if (uploadedSampleFile) return uploadedSampleFile;
+        if (tpl.sample_pdf_path) {
+          const response = await fetch(tpl.sample_pdf_path);
+          const blob = await response.blob();
+          return new File([blob], `${tpl.name || "sample"}.pdf`, {
+            type: "application/pdf",
+          });
+        }
+        return null;
+      };
+
+      const runDetectOnSample = async () => {
+        const btn = modalEl.querySelector("#aiDetectSampleBtn");
+        const file = await getSampleFile();
+        if (!file) {
+          showToast("Upload eerst een sample PDF", "error");
+          return;
+        }
+
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Bezig...';
+        }
+
+        try {
+          const formData = new FormData();
+          formData.append("pdf", file);
+          formData.append("template_id", templateId);
+          const result = await api.autoDetectImportPdf(formData);
+          lastDetect = result;
+          renderDetectResult(result);
+          populateLineSelects(result.raw_lines || []);
+          showToast("Analyse afgerond", "success");
+        } catch (err) {
+          console.error("Detect sample failed", err);
+          showToast(err.message || "Analyse mislukt", "error");
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML =
+              '<i class="bi bi-magic"></i> Analyseer sample met AI';
+          }
+        }
+      };
+
+      document.getElementById("saveAiMappingsBtn").onclick = async () => {
+        try {
+          const inputs = modalEl.querySelectorAll(".ai-map-input");
+          const newMappings = Array.from(inputs).map((inp) => ({
+            field_key: inp.dataset.field,
+            pattern: inp.value.trim(),
+            page: 1,
+          }));
+
+          await api.saveImportTemplateMappings(templateId, newMappings);
+          showToast("AI mappings opgeslagen", "success");
+          bsModal.hide();
+        } catch (err) {
+          console.error("Error saving mappings:", err);
+          showToast(err.message || "Opslaan mislukt", "error");
+        }
+      };
+
+      // sample upload handler
+      document
+        .getElementById("aiSampleUpload")
+        .addEventListener("change", async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          uploadedSampleFile = file;
+          const formData = new FormData();
+          formData.append("pdf", file);
+          try {
+            const res = await api.uploadImportTemplateSample(
+              templateId,
+              formData
+            );
+            showToast("Sample geüpload", "success");
+            await renderPdfPreview(file);
+          } catch (err) {
+            console.error("Sample upload failed:", err);
+            showToast(err.message || "Upload mislukt", "error");
+          }
+        });
+
+      modalEl.querySelectorAll(".ai-line-select").forEach((sel) => {
+        sel.onchange = (e) => {
+          const field = e.target.dataset.field;
+          const idx = parseInt(e.target.value, 10);
+          if (Number.isNaN(idx) || idx < 0 || idx >= currentLines.length)
+            return;
+          const targetInput = modalEl.querySelector(
+            `.ai-map-input[data-field="${field}"]`
+          );
+          if (!targetInput) return;
+          const suggestion = suggestRegexFromLine(currentLines[idx]);
+          targetInput.value = suggestion;
+        };
+      });
+
+      // field selection buttons
+      modalEl.querySelectorAll(".ai-select-btn").forEach((btn) => {
+        btn.onclick = () => {
+          const field = btn.dataset.field;
+          activeSelectField = activeSelectField === field ? null : field;
+          modalEl.querySelectorAll(".ai-select-btn").forEach((b) => {
+            b.classList.toggle(
+              "btn-primary",
+              b.dataset.field === activeSelectField
+            );
+            b.classList.toggle(
+              "btn-outline-secondary",
+              b.dataset.field !== activeSelectField
+            );
+          });
+          if (activeSelectField) {
+            showToast(
+              `Klik nu op de PDF voor ${labels[activeSelectField]}`,
+              "info"
+            );
+          }
+        };
+      });
+
+      const detectBtn = modalEl.querySelector("#aiDetectSampleBtn");
+      if (detectBtn) detectBtn.onclick = () => runDetectOnSample();
+
+      // if we already have a sample pdf path, offer initial line list after fetch
+      if (tpl.sample_pdf_path) {
+        renderDetectResult(null);
+        renderPdfPreview(tpl.sample_pdf_path);
+      }
+
+      modalEl.addEventListener("hidden.bs.modal", () => {
+        if (currentPdfObjectUrl) {
+          URL.revokeObjectURL(currentPdfObjectUrl);
+        }
+        modalEl.remove();
+      });
+    } catch (error) {
+      console.error("Error managing import template:", error);
+      showToast("Kon import template niet openen", "error");
     }
   },
 };

@@ -995,7 +995,16 @@ class API {
 
   // Import Templates
   async getImportTemplates() {
-    return this.request("/admin/invoices/import-templates");
+    try {
+      return await this.request("/admin/invoices/import-templates");
+    } catch (err) {
+      // Fallback to public endpoint if auth/token issues
+      try {
+        return await this.request("/admin/invoices/public/import-templates");
+      } catch (e2) {
+        throw err;
+      }
+    }
   }
 
   async createImportTemplate(data) {
@@ -1003,6 +1012,70 @@ class API {
       method: "POST",
       body: JSON.stringify(data),
     });
+  }
+
+  async getImportTemplate(id) {
+    return this.request(`/admin/invoices/import-templates/${id}`);
+  }
+
+  async uploadImportTemplateSample(id, formData) {
+    const response = await fetch(
+      `${API_BASE_URL}/admin/invoices/import-templates/${id}/sample`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: formData,
+      }
+    );
+    const data = await response.json().catch(() => ({ error: "Server error" }));
+    if (!response.ok) throw new Error(data.error || "Upload mislukt");
+    return data;
+  }
+
+  async saveImportTemplateMappings(id, mappings) {
+    return this.request(`/admin/invoices/import-templates/${id}/mappings`, {
+      method: "PUT",
+      body: JSON.stringify({ mappings }),
+    });
+  }
+
+  async getImportTemplateMappings(id) {
+    const tpl = await this.getImportTemplate(id);
+    return tpl.mappings || [];
+  }
+
+  async deleteImportTemplate(id) {
+    return this.request(`/admin/invoices/import-templates/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async cleanupImportTemplates() {
+    return this.request(`/admin/invoices/import-templates/cleanup`, {
+      method: "POST",
+    });
+  }
+
+  async autoDetectImportPdf(formData) {
+    // allow caller to append template_id before calling
+    const response = await fetch(
+      `${API_BASE_URL}/admin/invoices/import-templates/auto-detect`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: formData,
+      }
+    );
+
+    const data = await response.json().catch(() => ({ error: "Server error" }));
+    if (!response.ok) {
+      throw new Error(data.error || "Auto-detect mislukt");
+    }
+    return data;
   }
 
   // Invoice PDF Import

@@ -82,12 +82,43 @@ const uploadPdf = multer({
 router.get("/import-templates", auth, async (req, res) => {
   try {
     const templates = await db.all(
-      "SELECT * FROM import_templates WHERE is_active = 1 ORDER BY name ASC"
+      "SELECT * FROM import_templates WHERE is_active = 1 OR is_active IS NULL ORDER BY name ASC"
     );
     res.json(templates);
   } catch (error) {
     console.error("Error fetching import templates:", error);
     res.status(500).json({ error: "Fout bij ophalen van import templates" });
+  }
+});
+
+// Public (no-auth) import templates list for UI fallback
+router.get("/public/import-templates", async (req, res) => {
+  try {
+    const templates = await db.all(
+      "SELECT * FROM import_templates WHERE is_active = 1 OR is_active IS NULL ORDER BY name ASC"
+    );
+    res.json(templates);
+  } catch (error) {
+    console.error("Error fetching import templates (public):", error);
+    res.status(500).json({ error: "Fout bij ophalen van import templates" });
+  }
+});
+
+// Get single import template with mappings
+router.get("/import-templates/:id", auth, async (req, res) => {
+  try {
+    const tpl = await db.get("SELECT * FROM import_templates WHERE id = ?", [
+      req.params.id,
+    ]);
+    if (!tpl) return res.status(404).json({ error: "Template niet gevonden" });
+    const mappings = await db.all(
+      "SELECT field_key, pattern, page FROM template_field_mappings WHERE template_id = ?",
+      [req.params.id]
+    );
+    res.json({ ...tpl, mappings });
+  } catch (error) {
+    console.error("Error fetching import template:", error);
+    res.status(500).json({ error: "Fout bij ophalen van import template" });
   }
 });
 
@@ -103,7 +134,7 @@ router.post("/import-templates", auth, async (req, res) => {
     }
 
     const result = await db.run(
-      `INSERT INTO import_templates (name, description, parser_type, config) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO import_templates (name, description, parser_type, config, is_active) VALUES (?, ?, ?, ?, 1)`,
       [name, description || null, parser_type, JSON.stringify(config || {})]
     );
 
@@ -112,10 +143,162 @@ router.post("/import-templates", auth, async (req, res) => {
       [result.id]
     );
 
+    // Ensure a matching invoice_template exists so it shows up in the layout dropdown
+    const existingInvoiceTpl = await db.get(
+      "SELECT id FROM invoice_templates WHERE name = ?",
+      [name]
+    );
+    if (!existingInvoiceTpl) {
+      await db.run(
+        `INSERT INTO invoice_templates (name, description, is_default, hourly_rate, km_rate, dot_rate, dot_rate_is_percent)
+         VALUES (?, ?, 0, 0, 0, 0, 0)`,
+        [name, description || null]
+      );
+    }
+
     res.status(201).json(newTemplate);
   } catch (error) {
     console.error("Error creating import template:", error);
     res.status(500).json({ error: "Fout bij aanmaken import template" });
+  }
+});
+
+// Upload a sample PDF for an import template to support mapping/preview
+router.post(
+  "/import-templates/:id/sample",
+  auth,
+  uploadPdf.single("pdf"),
+  async (req, res) => {
+    try {
+      const tpl = await db.get("SELECT * FROM import_templates WHERE id = ?", [
+        req.params.id,
+      ]);
+      if (!tpl)
+        return res.status(404).json({ error: "Template niet gevonden" });
+      if (!req.file) {
+        return res.status(400).json({ error: "Geen PDF geüpload" });
+      }
+
+      const relativePath = `/uploads/invoices/imports/${path.basename(
+        req.file.path
+      )}`;
+      await db.run(
+        "UPDATE import_templates SET sample_pdf_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        [relativePath, req.params.id]
+      );
+
+      res.json({ success: true, sample_pdf_path: relativePath });
+    } catch (error) {
+      console.error("Error uploading sample PDF:", error);
+      res.status(500).json({ error: "Fout bij uploaden van sample PDF" });
+    }
+  }
+);
+
+// Save field mappings for an import template (regex-based anchors)
+router.put("/import-templates/:id/mappings", auth, async (req, res) => {
+  try {
+    const { mappings } = req.body;
+    if (!Array.isArray(mappings)) {
+      return res.status(400).json({ error: "Mappings array is verplicht" });
+    }
+
+    const tpl = await db.get("SELECT id FROM import_templates WHERE id = ?", [
+      req.params.id,
+    ]);
+    if (!tpl) return res.status(404).json({ error: "Template niet gevonden" });
+
+    // Replace existing mappings
+    await db.run("DELETE FROM template_field_mappings WHERE template_id = ?", [
+      req.params.id,
+    ]);
+
+    for (const m of mappings) {
+      if (!m.field_key) continue;
+      await db.run(
+        `INSERT INTO template_field_mappings (template_id, field_key, pattern, page)
+         VALUES (?, ?, ?, ?)`,
+        [req.params.id, m.field_key, m.pattern || null, m.page || 1]
+      );
+    }
+
+    const saved = await db.all(
+      "SELECT field_key, pattern, page FROM template_field_mappings WHERE template_id = ?",
+      [req.params.id]
+    );
+    res.json({ success: true, mappings: saved });
+  } catch (error) {
+    console.error("Error saving template mappings:", error);
+    res.status(500).json({ error: "Fout bij opslaan van mappings" });
+  }
+});
+
+// Delete import template (and cascade mappings)
+router.delete("/import-templates/:id", auth, async (req, res) => {
+  try {
+    const tpl = await db.get(
+      "SELECT id, sample_pdf_path FROM import_templates WHERE id = ?",
+      [req.params.id]
+    );
+    if (!tpl) {
+      return res.status(404).json({ error: "Template niet gevonden" });
+    }
+
+    // Remove sample PDF file if present
+    if (tpl.sample_pdf_path) {
+      const normalized = tpl.sample_pdf_path.replace(/^[/\\]+/, "");
+      const full = path.join(__dirname, "..", "public", normalized);
+      try {
+        if (fs.existsSync(full)) fs.unlinkSync(full);
+      } catch (e) {
+        console.warn("Kon sample PDF niet verwijderen:", e.message);
+      }
+    }
+
+    await db.run("DELETE FROM import_templates WHERE id = ?", [
+      req.params.id,
+    ]);
+
+    // template_field_mappings has ON DELETE CASCADE, so no manual cleanup needed
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting import template:", error);
+    res
+      .status(500)
+      .json({ error: "Fout bij verwijderen van import template" });
+  }
+});
+
+// Cleanup unused import templates (no mappings and no sample PDF)
+router.post("/import-templates/cleanup", auth, async (req, res) => {
+  try {
+    // Find templates with zero mappings and no sample_pdf_path
+    const candidates = await db.all(
+      `SELECT it.id
+       FROM import_templates it
+       LEFT JOIN template_field_mappings tfm ON tfm.template_id = it.id
+       GROUP BY it.id
+       HAVING COUNT(tfm.id) = 0 AND (it.sample_pdf_path IS NULL OR it.sample_pdf_path = '')`
+    );
+
+    const ids = candidates.map((r) => r.id);
+    if (!ids.length) {
+      return res.json({ deleted: [], count: 0 });
+    }
+
+    // Delete all candidates
+    const placeholders = ids.map(() => "?").join(",");
+    await db.run(
+      `DELETE FROM import_templates WHERE id IN (${placeholders})`,
+      ids
+    );
+
+    res.json({ deleted: ids, count: ids.length });
+  } catch (error) {
+    console.error("Error cleaning up import templates:", error);
+    res
+      .status(500)
+      .json({ error: "Fout bij opschonen van import templates" });
   }
 });
 
@@ -1204,21 +1387,70 @@ module.exports = router;
 // Helper: parse common EU currency formats to float
 function parseEuroAmount(str) {
   if (!str) return NaN;
-  let s = String(str).trim().replace(/[\s€]/g, "");
-  s = s.replace(/[\u00A0]/g, ""); // non-breaking spaces
-  // Detect decimal separator
-  if (/[,]\d{2}\b/.test(s)) {
-    // Decimal comma style (e.g., 4.846,41)
-    s = s.replace(/\./g, "").replace(/,/g, ".");
-  } else if (/[.]\d{2}\b/.test(s)) {
-    // Decimal dot style (e.g., 4,846.41)
-    s = s.replace(/,/g, "");
+  const raw = String(str)
+    .replace(/[€\u00A0]/g, " ")
+    .trim();
+  // Capture the first plausible number token (with optional thousands and optional 2 decimals)
+  const m = raw.match(
+    /\b(\d{1,3}(?:[\.,]\d{3})*(?:[\.,]\d{2})|\d+(?:[\.,]\d{2})|\d+)\b/
+  );
+  if (!m) return NaN;
+  let token = m[1];
+  // Decide decimal separator using the last occurrence and digits count after it
+  const lastComma = token.lastIndexOf(",");
+  const lastDot = token.lastIndexOf(".");
+  if (lastComma > -1 && token.length - lastComma - 1 === 2) {
+    // comma decimals; strip thousands dots
+    token = token.replace(/\./g, "").replace(/,/g, ".");
+  } else if (lastDot > -1 && token.length - lastDot - 1 === 2) {
+    // dot decimals; strip thousands commas
+    token = token.replace(/,/g, "");
   } else {
-    // No obvious decimals; strip thousand separators
-    s = s.replace(/[\.,]/g, "");
+    // No clear decimals; remove all separators
+    token = token.replace(/[\.,]/g, "");
   }
-  const val = parseFloat(s);
+  const val = parseFloat(token);
   return Number.isFinite(val) ? val : NaN;
+}
+
+// Apply template mappings (regex-based) to extract specific fields before heuristics results are returned
+async function applyTemplateMappings(text, templateId) {
+  if (!templateId) return {};
+  try {
+    const mappings = await db.all(
+      "SELECT field_key, pattern FROM template_field_mappings WHERE template_id = ?",
+      [templateId]
+    );
+    if (!mappings || mappings.length === 0) return {};
+
+    const result = {};
+    for (const m of mappings) {
+      if (!m.pattern) continue;
+      try {
+        const rx = new RegExp(m.pattern, "i");
+        const match = text.match(rx);
+        if (match && match[1]) {
+          const raw = match[1].trim();
+          if (
+            m.field_key === "total_amount" ||
+            m.field_key === "subtotal" ||
+            m.field_key === "vat_amount"
+          ) {
+            const num = parseEuroAmount(raw);
+            if (Number.isFinite(num)) result[m.field_key] = num;
+          } else {
+            result[m.field_key] = raw;
+          }
+        }
+      } catch (err) {
+        console.warn("Invalid mapping regex", m.pattern, err.message);
+      }
+    }
+    return result;
+  } catch (err) {
+    console.error("Error applying template mappings:", err);
+    return {};
+  }
 }
 
 // Helper: extract fields from PDF text using heuristics
@@ -1284,6 +1516,27 @@ function extractInvoiceDataFromText(text) {
     }
   }
   if (!customer_name) {
+    // Heuristic: take the first meaningful line after a 'Klant' label, or a company-like line near the top
+    const idxKlant = lines.findIndex((l) => /\bKlant\b/i.test(l));
+    const blacklist =
+      /(Factuur|Factuurnummer|PAGINA|DATUM|Verzend|Vervaldatum|Referentie)/i;
+    if (idxKlant >= 0) {
+      for (let i = idxKlant + 1; i <= idxKlant + 6 && i < lines.length; i++) {
+        const cand = lines[i];
+        if (cand && !blacklist.test(cand) && /[A-Za-z]{2,}/.test(cand)) {
+          customer_name = cand.replace(/\s{2,}/g, " ").trim();
+          break;
+        }
+      }
+    }
+    if (!customer_name) {
+      const guess = lines.find(
+        (l) => /[A-Za-z].+\s+[A-Za-z]/.test(l) && !blacklist.test(l)
+      );
+      if (guess) customer_name = guess.substring(0, 80).trim();
+    }
+  }
+  if (!customer_name) {
     // Fallback: take first non-empty line that looks like a company (has space and letters)
     const guess = lines.find((l) => /[A-Za-z].+\s+[A-Za-z]/.test(l));
     if (guess) customer_name = guess.substring(0, 80);
@@ -1313,7 +1566,9 @@ function extractInvoiceDataFromText(text) {
   const totalLine = [...lines]
     .reverse()
     .find((l) =>
-      /(totaal\s*incl\.?\s*btw|totaal\b|grand total|total)/i.test(l)
+      /(totaal\s*te\s*betalen|te\s*betalen\s*totaal|totaal\s*incl\.?\s*btw|totaal\b|grand total|total|amount due|balance due)/i.test(
+        l
+      )
     );
   if (totalLine) {
     const ms = [...totalLine.matchAll(/([€]?[\s\u00A0]*[0-9\.,]+\-?)/g)].map(
@@ -1321,6 +1576,47 @@ function extractInvoiceDataFromText(text) {
     );
     const pick = ms.reverse().find((x) => x.includes("€")) || ms.pop();
     if (pick) total_amount = parseEuroAmount(pick);
+  }
+
+  // Fallback: if no total found, look at nearby lines after 'TE BETALEN' or 'Amount due'
+  if (!Number.isFinite(total_amount)) {
+    // Try inline match in normalized text where label and amount are separated by spaces/newlines
+    const inline = normalized.match(
+      /(te\s*betalen|amount\s*due|balance\s*due|grand\s*total|total)[^€0-9]{0,80}(€?\s*[0-9\.,]+\-?)/i
+    );
+    if (inline && inline[2]) {
+      const val = parseEuroAmount(inline[2]);
+      if (Number.isFinite(val)) total_amount = val;
+    }
+
+    const idx = lines.findIndex((l) =>
+      /(te\s*betalen|amount\s*due|balance\s*due|grand\s*total|total)/i.test(l)
+    );
+    if (idx >= 0) {
+      const windowLines = lines.slice(
+        Math.max(0, idx - 2),
+        Math.min(lines.length, idx + 4)
+      );
+      for (const l of windowLines) {
+        const m = l.match(/€\s*[0-9\.,]+\-?/);
+        if (m) {
+          const val = parseEuroAmount(m[0]);
+          if (Number.isFinite(val)) {
+            total_amount = val;
+            break;
+          }
+        } else {
+          const m2 = l.match(/\b[0-9][0-9\.,]+\-?\b/);
+          if (m2) {
+            const val2 = parseEuroAmount(m2[0]);
+            if (Number.isFinite(val2)) {
+              total_amount = val2;
+              break;
+            }
+          }
+        }
+      }
+    }
   }
 
   // Find VAT line
@@ -1443,6 +1739,402 @@ function extractInvoiceDataFromText(text) {
     });
   }
 
+  // Generic table extraction fallback (columns: Artikel nr., Omschrijving, Aant., Net p/s, Net tot., BTW)
+  if (line_items.length === 0) {
+    const headerIdx = lines.findIndex(
+      (l) => /Artikel\s*nr\.?/i.test(l) && /Omschrijving/i.test(l)
+    );
+    if (headerIdx >= 0) {
+      const endIdx = lines.findIndex(
+        (l, i) =>
+          i > headerIdx &&
+          /(TE\s*BETALEN|TOTAAL\s*EXCL\.|TOTAAL\s*INC|TOTAAL\s*INCL|TOTAAL\s*TOT)/i.test(
+            l
+          )
+      );
+      const dataLines = lines.slice(
+        headerIdx + 1,
+        endIdx > headerIdx + 1 ? endIdx : headerIdx + 120
+      );
+
+      const isDivider = (t) => /^(\-|=|_)+$/.test(t) || !t.trim();
+      const hasEuro = (t) => /€\s*[0-9\.,]+\-?/.test(t);
+      const normalize = (t) => t.replace(/\s{2,}/g, " ").trim();
+
+      // Aggregate 1–3 lines per row to capture description + unit + total that may be split
+      for (let i = 0; i < dataLines.length; i++) {
+        let rowText = normalize(dataLines[i]);
+        if (isDivider(rowText)) continue;
+
+        // If the line doesn't contain enough price info, try to append next lines
+        let j = i + 1;
+        while (
+          j < dataLines.length &&
+          (!hasEuro(rowText) ||
+            (rowText.match(/€\s*[0-9\.,]+\-?/g) || []).length < 2)
+        ) {
+          const candidate = normalize(dataLines[j]);
+          if (isDivider(candidate)) break;
+          rowText += " " + candidate;
+          j++;
+        }
+        i = j - 1; // advance index
+
+        const euros = rowText.match(/€\s*[0-9\.,]+\-?/g) || [];
+        if (euros.length === 0) continue; // not a data row
+
+        // Parse euro values present on the row (unit, total, possibly VAT)
+        const euroVals = euros
+          .map((e) => parseEuroAmount(e))
+          .filter((v) => Number.isFinite(v));
+        if (euroVals.length === 0) continue;
+
+        // Quantity: prefer the rightmost decimal/integer near prices; allow 12,75 style
+        const firstEuroIdx = rowText.indexOf(euros[0]);
+        const leftPart =
+          firstEuroIdx > -1 ? rowText.substring(0, firstEuroIdx) : rowText;
+        const cleanedLeft = leftPart
+          // Remove dates: DD-MM-YYYY, YYYY-MM-DD, DD/MM/YY
+          .replace(/\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b/gi, " ")
+          .replace(/\b20\d{2}[\/-]\d{1,2}[\/-]\d{1,2}\b/gi, " ")
+          // Remove times like 10:00
+          .replace(/\b\d{1,2}:\d{2}\b/g, " ")
+          // Remove long IDs or product codes (6+ digits)
+          .replace(/\b\d{6,}\b/g, " ")
+          .replace(/\s{2,}/g, " ");
+        // Prefer integer quantities 1-3 digits not attached to letters, near the end
+        const tail = cleanedLeft.slice(Math.max(0, cleanedLeft.length - 40));
+        const intTokens =
+          tail.match(/(?<![A-Za-z])\b\d{1,3}\b(?![A-Za-z])/g) || [];
+        let qtyCandidates = intTokens
+          .map((q) => parseInt(q, 10))
+          .filter((q) => Number.isFinite(q) && q > 0 && q < 1000);
+        // If no integer found, allow decimals (still exclude large values)
+        if (qtyCandidates.length === 0) {
+          const decTokens =
+            tail.match(
+              /(?<![A-Za-z])\b\d{1,3}(?:[\.,]\d{1,2})?\b(?![A-Za-z])/g
+            ) || [];
+          qtyCandidates = decTokens
+            .map((q) => parseFloat(q.replace(/,/g, ".")))
+            .filter((q) => Number.isFinite(q) && q > 0 && q < 1000);
+        }
+        let qty = qtyCandidates.length
+          ? qtyCandidates[qtyCandidates.length - 1]
+          : 1;
+
+        // Pick unit and total ensuring consistency with qty (qty * unit ≈ total)
+        let unitPrice =
+          euroVals.length >= 2 ? euroVals[euroVals.length - 2] : euroVals[0];
+        let lineTotal = euroVals[euroVals.length - 1];
+        const tolerance = (t) => Math.max(0.01, t * 0.005); // 0.5% or 0.01 min
+
+        // Try all combinations to find the best match
+        let best = {
+          resid: Number.POSITIVE_INFINITY,
+          qty,
+          unit: unitPrice,
+          total: lineTotal,
+        };
+        for (const q of qtyCandidates.length ? qtyCandidates : [qty]) {
+          for (let i = 0; i < euroVals.length; i++) {
+            for (let j = i + 1; j < euroVals.length; j++) {
+              const unit = euroVals[i];
+              const total = euroVals[j];
+              const resid = Math.abs(q * unit - total);
+              if (resid < best.resid) best = { resid, qty: q, unit, total };
+            }
+          }
+        }
+        if (best.resid <= tolerance(best.total)) {
+          qty = best.qty;
+          unitPrice = best.unit;
+          lineTotal = best.total;
+        } else {
+          // If only one euro value, infer unit from total and qty
+          if (euroVals.length === 1 && Number.isFinite(qty)) {
+            lineTotal = euroVals[0];
+            unitPrice = qty ? lineTotal / qty : euroVals[0];
+          } else {
+            // Fallback to rightmost pair: penultimate as unit, last as total
+            unitPrice =
+              euroVals.length >= 2
+                ? euroVals[euroVals.length - 2]
+                : euroVals[0];
+            lineTotal = euroVals[euroVals.length - 1];
+          }
+        }
+        // Always compute total as qty * unit to ensure consistency
+        if (
+          !Number.isFinite(unitPrice) &&
+          Number.isFinite(qty) &&
+          Number.isFinite(lineTotal) &&
+          qty > 0
+        ) {
+          unitPrice = lineTotal / qty;
+        }
+        if (Number.isFinite(qty) && Number.isFinite(unitPrice)) {
+          lineTotal = Number((qty * unitPrice).toFixed(2));
+        }
+        if (!Number.isFinite(lineTotal)) continue;
+
+        // Description: remove leading code/id and quantity tokens
+        let description = normalize(
+          leftPart.replace(/^\s*\d+[A-Za-z0-9\-\/ _]*\s*/, "")
+        );
+        if (!description || description.length < 2)
+          description = normalize(rowText.replace(euros.join(" "), "").trim());
+
+        line_items.push({
+          description,
+          quantity: Number.isFinite(qty) ? qty : 1,
+          unit_price: Number.isFinite(unitPrice) ? unitPrice : 0,
+          line_total: lineTotal,
+          item_date: null,
+          item_km: null,
+          item_hours: null,
+          item_rate: Number.isFinite(unitPrice) ? unitPrice : null,
+        });
+      }
+    }
+  }
+
+  // Filter out rows that match total, subtotal, or VAT (summary rows, not data rows)
+  const summaryThreshold = 0.1; // allow minor rounding differences
+  line_items = line_items.filter((item) => {
+    // Skip if line_total matches any summary amount
+    if (
+      Number.isFinite(total_amount) &&
+      Math.abs(item.line_total - total_amount) < summaryThreshold
+    )
+      return false;
+    if (
+      Number.isFinite(subtotal) &&
+      Math.abs(item.line_total - subtotal) < summaryThreshold
+    )
+      return false;
+    if (
+      Number.isFinite(vat_amount) &&
+      Math.abs(item.line_total - vat_amount) < summaryThreshold
+    )
+      return false;
+
+    const desc = (item.description || "").trim();
+    const hasLetters = /[A-Za-z]/.test(desc);
+    const hasSummaryKeyword =
+      /(totaal|subtotal|subtotaal|btw|incl\.?|excl\.?)/i.test(desc);
+
+    // Drop lines that look like summary rows (no letters, only euros/numbers)
+    if (!hasLetters && desc.length < 100) return false;
+    // Drop explicit summary keywords when qty/unit/total align
+    if (
+      hasSummaryKeyword &&
+      item.quantity === 1 &&
+      Math.abs(item.line_total - item.unit_price) < summaryThreshold
+    )
+      return false;
+
+    // Drop empty/blank description lines that equal the total/subtotal
+    const descHasContent = desc.length > 0 && /[A-Za-z0-9]/.test(desc);
+    if (
+      !descHasContent &&
+      Number.isFinite(total_amount) &&
+      Math.abs(item.line_total - total_amount) < summaryThreshold
+    )
+      return false;
+    if (
+      !descHasContent &&
+      Number.isFinite(subtotal) &&
+      Math.abs(item.line_total - subtotal) < summaryThreshold
+    )
+      return false;
+
+    // Drop very short descriptions (<10 chars) when totals match summary amounts (common for blank total rows)
+    if (desc.trim().length < 10) {
+      if (
+        Number.isFinite(total_amount) &&
+        Math.abs(item.line_total - total_amount) < summaryThreshold
+      )
+        return false;
+      if (
+        Number.isFinite(subtotal) &&
+        Math.abs(item.line_total - subtotal) < summaryThreshold
+      )
+        return false;
+    }
+
+    // Drop lines where qty=1, unit=total, and total matches grand/subtotal closely (typical summary row)
+    if (
+      item.quantity === 1 &&
+      Math.abs(item.line_total - item.unit_price) < summaryThreshold
+    ) {
+      if (
+        Number.isFinite(total_amount) &&
+        Math.abs(item.line_total - total_amount) < summaryThreshold
+      )
+        return false;
+      if (
+        Number.isFinite(subtotal) &&
+        Math.abs(item.line_total - subtotal) < summaryThreshold
+      )
+        return false;
+    }
+
+    // Drop numeric-only short lines with qty=1 and unit==total even if we didn't detect totals
+    if (
+      !hasLetters &&
+      desc.trim().length < 60 &&
+      item.quantity === 1 &&
+      Math.abs(item.line_total - item.unit_price) < summaryThreshold
+    ) {
+      return false;
+    }
+
+    // Drop lines that have no letters and consist mainly of euros/numbers matching the grand total
+    if (
+      !hasLetters &&
+      Number.isFinite(total_amount) &&
+      Math.abs(item.line_total - total_amount) < summaryThreshold
+    )
+      return false;
+    // Drop very short descriptions (<40 chars, no letters) that match total/subtotal
+    if (desc.trim().length < 40 && !hasLetters) {
+      if (
+        Number.isFinite(total_amount) &&
+        Math.abs(item.line_total - total_amount) < summaryThreshold
+      )
+        return false;
+      if (
+        Number.isFinite(subtotal) &&
+        Math.abs(item.line_total - subtotal) < summaryThreshold
+      )
+        return false;
+    }
+    return true;
+  });
+
+  // Final guard: if the last line_item matches the invoice total or subtotal and has a short/empty description, drop it
+  if (line_items.length > 0) {
+    const last = line_items[line_items.length - 1];
+    const lastDesc = (last.description || "").trim();
+    const lastHasLetters = /[A-Za-z]/.test(lastDesc);
+    const lastShort = lastDesc.length < 40;
+    if (!lastHasLetters && lastShort) {
+      if (
+        Number.isFinite(total_amount) &&
+        Math.abs(last.line_total - total_amount) < summaryThreshold
+      ) {
+        line_items.pop();
+      } else if (
+        Number.isFinite(subtotal) &&
+        Math.abs(last.line_total - subtotal) < summaryThreshold
+      ) {
+        line_items.pop();
+      }
+    }
+  }
+
+  // Additional guard: drop any numeric-only/short line that equals the detected total/subtotal or looks like a grand total row
+  if (line_items.length > 0) {
+    const sumTotals = line_items.reduce(
+      (s, it) => s + (Number.isFinite(it.line_total) ? it.line_total : 0),
+      0
+    );
+    const candidates = [];
+    for (let idx = 0; idx < line_items.length; idx++) {
+      const it = line_items[idx];
+      const desc = (it.description || "").trim();
+      const hasLetters = /[A-Za-z]/.test(desc);
+      const shortDesc = desc.length < 60;
+      const qtyIsOne = Math.abs((it.quantity || 0) - 1) < 0.01;
+      const unitEqualsTotal =
+        Math.abs((it.unit_price || 0) - (it.line_total || 0)) <
+        summaryThreshold;
+      const matchesTotal =
+        Number.isFinite(total_amount) &&
+        Math.abs(it.line_total - total_amount) < summaryThreshold;
+      const matchesSubtotal =
+        Number.isFinite(subtotal) &&
+        Math.abs(it.line_total - subtotal) < summaryThreshold;
+      const sumOthers =
+        sumTotals - (Number.isFinite(it.line_total) ? it.line_total : 0);
+
+      if (
+        !hasLetters &&
+        shortDesc &&
+        qtyIsOne &&
+        unitEqualsTotal &&
+        (matchesTotal || matchesSubtotal)
+      ) {
+        candidates.push(idx);
+        continue;
+      }
+      // If this line is the max and close to total/subtotal while others sum to less, also drop
+      const isMax =
+        it.line_total === Math.max(...line_items.map((x) => x.line_total || 0));
+      if (!hasLetters && shortDesc && isMax) {
+        if (
+          matchesTotal ||
+          matchesSubtotal ||
+          (sumOthers > 0 &&
+            Math.abs(it.line_total - sumOthers) > summaryThreshold &&
+            it.line_total > sumOthers * 0.8)
+        ) {
+          candidates.push(idx);
+        }
+      }
+    }
+    // Remove candidates from the end to preserve indexes
+    candidates
+      .sort((a, b) => b - a)
+      .forEach((idx) => {
+        line_items.splice(idx, 1);
+      });
+  }
+
+  // Pattern-based block extraction fallback: match rows with description, qty, unit and total
+  if (line_items.length === 0) {
+    const blockStart = normalized.indexOf("artikel nr");
+    const teBetalenIdx = normalized.lastIndexOf("te betalen");
+    const blockEnd =
+      teBetalenIdx > blockStart ? teBetalenIdx : normalized.length;
+    if (blockStart > -1) {
+      const block = normalized.substring(blockStart, blockEnd);
+      const rowRegex =
+        /(.*?)\s+(\d{1,3}(?:[\.,]\d{1,2})?)\s+€\s*([0-9\.,\-]+)\s+€\s*([0-9\.,\-]+)/g;
+      let m;
+      while ((m = rowRegex.exec(block)) !== null) {
+        const desc = m[1].trim();
+        const qty = parseFloat(m[2].replace(/,/g, "."));
+        let unit = parseEuroAmount(m[3]);
+        let total = parseEuroAmount(m[4]);
+        // Always compute total from qty * unit; if unit missing, infer from provided total
+        if (
+          !Number.isFinite(unit) &&
+          Number.isFinite(total) &&
+          Number.isFinite(qty) &&
+          qty > 0
+        ) {
+          unit = total / qty;
+        }
+        if (Number.isFinite(qty) && Number.isFinite(unit)) {
+          total = Number((qty * unit).toFixed(2));
+        }
+        if (!Number.isFinite(total)) continue;
+        line_items.push({
+          description: desc,
+          quantity: Number.isFinite(qty) ? qty : 1,
+          unit_price: Number.isFinite(unit) ? unit : 0,
+          line_total: total,
+          item_date: null,
+          item_km: null,
+          item_hours: null,
+          item_rate: Number.isFinite(unit) ? unit : null,
+        });
+      }
+    }
+  }
+
   // Extract totals from PDF footer ("Totaal uren39.75€ 2,583.75")
   // The footer shows: "Totaal uren<hours>€ <bedrag>"
   const totalHoursLine = text.match(/Totaal\s*uren\s*([\d.,]+)/);
@@ -1514,6 +2206,188 @@ async function generateNextInvoiceNumber() {
   return `${currentYear}-${String(nextNumber).padStart(4, "0")}`;
 }
 
+// Auto-detect fields from a PDF without saving an invoice
+router.post(
+  "/import-templates/auto-detect",
+  auth,
+  uploadPdf.single("pdf"),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Geen PDF geüpload" });
+      }
+
+      const fileBuffer = fs.readFileSync(req.file.path);
+      const parsed = await pdfParse(fileBuffer);
+      const templateId = req.body?.template_id
+        ? parseInt(req.body.template_id)
+        : req.query?.template_id
+        ? parseInt(req.query.template_id)
+        : null;
+
+      const extracted = extractInvoiceDataFromText(parsed.text || "");
+
+      // Apply template mappings first to override missing fields
+      const mapped = await applyTemplateMappings(parsed.text || "", templateId);
+      Object.assign(extracted, mapped);
+
+      const requiredFields = ["invoice_number", "total_amount"];
+      const fields = {};
+      const notes = [];
+
+      const annotateField = (
+        key,
+        value,
+        type = "string",
+        source = "heuristic"
+      ) => {
+        const isNumber = type === "number";
+        const normalizedValue = isNumber
+          ? Number.isFinite(value)
+            ? Number(parseFloat(value).toFixed(2))
+            : null
+          : value || null;
+
+        const confidence =
+          normalizedValue === null ? 0 : source === "computed" ? 0.65 : 0.82;
+        const missing = normalizedValue === null;
+
+        fields[key] = {
+          value: normalizedValue,
+          type,
+          confidence,
+          missing,
+          source,
+        };
+      };
+
+      annotateField(
+        "invoice_number",
+        extracted.invoice_number,
+        "string",
+        "pattern"
+      );
+      annotateField("invoice_date", extracted.invoice_date, "date", "pattern");
+      annotateField(
+        "customer_name",
+        extracted.customer_name,
+        "string",
+        "fallback"
+      );
+      annotateField("subtotal", extracted.subtotal, "number", "pattern");
+      annotateField("vat_amount", extracted.vat_amount, "number", "pattern");
+      annotateField(
+        "total_amount",
+        extracted.total_amount,
+        "number",
+        "pattern"
+      );
+
+      // Add computed totals to help the UI spot mismatches
+      if (
+        Number.isFinite(extracted.subtotal) &&
+        Number.isFinite(extracted.vat_amount)
+      ) {
+        const computedTotal = Number(
+          (
+            parseFloat(extracted.subtotal) + parseFloat(extracted.vat_amount)
+          ).toFixed(2)
+        );
+        annotateField(
+          "total_amount_computed",
+          computedTotal,
+          "number",
+          "computed"
+        );
+
+        const delta =
+          fields.total_amount && fields.total_amount.value !== null
+            ? Math.abs(computedTotal - fields.total_amount.value)
+            : null;
+        if (delta !== null && delta > 0.51) {
+          notes.push(
+            `Totaal uit regels wijkt ${delta.toFixed(
+              2
+            )} af van gevonden totaal; controleer subtotal en BTW.`
+          );
+        }
+      }
+
+      const missingFields = requiredFields.filter((key) => {
+        return !fields[key] || fields[key].missing;
+      });
+
+      // Keep raw lines for UI-assisted mapping
+      const raw_lines = String(parsed.text || "")
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .slice(0, 400);
+
+      // Map line items with light metadata
+      const line_items = Array.isArray(extracted.line_items)
+        ? extracted.line_items.map((item) => {
+            const computedLine =
+              Number.parseFloat(item.quantity || 0) *
+              Number.parseFloat(item.unit_price || 0);
+            return {
+              description: item.description || "",
+              item_date: item.item_date || null,
+              item_km: item.item_km ?? null,
+              item_hours: item.item_hours ?? null,
+              item_rate: item.item_rate ?? null,
+              quantity: item.quantity ?? 1,
+              unit_price: item.unit_price ?? 0,
+              line_total: item.line_total ?? null,
+              computed_line_total: Number.isFinite(computedLine)
+                ? Number(computedLine.toFixed(2))
+                : null,
+              confidence: 0.5,
+            };
+          })
+        : [];
+
+      const availableConfidences = Object.values(fields)
+        .map((f) => f.confidence)
+        .filter((c) => typeof c === "number");
+      const avgConfidence =
+        availableConfidences.length > 0
+          ? Number(
+              (
+                availableConfidences.reduce((sum, v) => sum + v, 0) /
+                availableConfidences.length
+              ).toFixed(2)
+            )
+          : 0;
+
+      res.json({
+        success: true,
+        file: {
+          filename: req.file.originalname,
+          size: req.file.size,
+        },
+        fields,
+        line_items,
+        summary: {
+          confidence: avgConfidence,
+          missing_fields: missingFields,
+          notes,
+        },
+        raw_lines,
+      });
+    } catch (error) {
+      console.error("Error auto-detecting PDF:", error);
+      res
+        .status(500)
+        .json({ error: "Fout bij analyseren van PDF: " + error.message });
+    } finally {
+      if (req.file?.path) {
+        fs.unlink(req.file.path, () => {});
+      }
+    }
+  }
+);
+
 // Import PDF and create invoice
 router.post("/import-pdf", auth, uploadPdf.single("pdf"), async (req, res) => {
   try {
@@ -1523,7 +2397,7 @@ router.post("/import-pdf", auth, uploadPdf.single("pdf"), async (req, res) => {
 
     const fileBuffer = fs.readFileSync(req.file.path);
     const parsed = await pdfParse(fileBuffer);
-    const extracted = extractInvoiceDataFromText(parsed.text || "");
+    let extracted = extractInvoiceDataFromText(parsed.text || "");
 
     // Get template_id from request body, or use default
     let template_id = req.body.template_id
@@ -1541,6 +2415,22 @@ router.post("/import-pdf", auth, uploadPdf.single("pdf"), async (req, res) => {
         return res
           .status(400)
           .json({ error: "Geselecteerde template niet gevonden" });
+      }
+    }
+
+    // Apply AI import template mappings if provided to improve field detection
+    const ai_template_id = req.body.ai_template_id
+      ? parseInt(req.body.ai_template_id)
+      : null;
+    if (ai_template_id) {
+      try {
+        const mapped = await applyTemplateMappings(
+          parsed.text || "",
+          ai_template_id
+        );
+        extracted = { ...extracted, ...mapped };
+      } catch (err) {
+        console.warn("AI import template mappings failed", err.message);
       }
     }
 

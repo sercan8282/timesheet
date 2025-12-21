@@ -73,10 +73,7 @@ class Database {
                   "is_blocked",
                   "ALTER TABLE users ADD COLUMN is_blocked INTEGER DEFAULT 0"
                 );
-                ensure(
-                  "note",
-                  "ALTER TABLE users ADD COLUMN note TEXT"
-                );
+                ensure("note", "ALTER TABLE users ADD COLUMN note TEXT");
                 // MFA columns
                 ensure(
                   "mfa_enabled",
@@ -484,10 +481,7 @@ class Database {
           t,
           (err) => {
             if (err && !err.message.includes("UNIQUE constraint failed"))
-              console.error(
-                "Error inserting admin translation",
-                err.message
-              );
+              console.error("Error inserting admin translation", err.message);
           }
         );
       });
@@ -872,9 +866,9 @@ class Database {
           "Fehler beim Duplizieren der Vorlage",
         ],
 
-        ["ui", "invoice.template_deleted", "en", "Template deleted"],
-        ["ui", "invoice.template_deleted", "nl", "Template verwijderd"],
-        ["ui", "invoice.template_deleted", "de", "Vorlage gelöscht"],
+        ["ui", "invoice.template_deleted", "en", "Invoice template deleted"],
+        ["ui", "invoice.template_deleted", "nl", "Factuursjabloon verwijderd"],
+        ["ui", "invoice.template_deleted", "de", "Rechnungsvorlage gelöscht"],
 
         [
           "ui",
@@ -1141,18 +1135,8 @@ class Database {
           "Original-PDF heruntergeladen",
         ],
 
-        [
-          "ui",
-          "invoice.download_original_pdf",
-          "en",
-          "Download Original PDF",
-        ],
-        [
-          "ui",
-          "invoice.download_original_pdf",
-          "nl",
-          "Download Originele PDF",
-        ],
+        ["ui", "invoice.download_original_pdf", "en", "Download Original PDF"],
+        ["ui", "invoice.download_original_pdf", "nl", "Download Originele PDF"],
         [
           "ui",
           "invoice.download_original_pdf",
@@ -2674,6 +2658,37 @@ class Database {
                         console.log(
                           "✓ Seeded UI label translations (en,nl,de)"
                         );
+
+                        // Seed invoice import template UI labels
+                        const invStmt = this.db.prepare(
+                          `INSERT OR IGNORE INTO translations (namespace, key, locale, text) VALUES (?, ?, ?, ?)`
+                        );
+                        const invLabels = [
+                          ["ui", "invoice.import_template_created", "nl", "Import template aangemaakt"],
+                          ["ui", "invoice.import_template_created", "en", "Import template created"],
+                          ["ui", "invoice.import_template_created", "de", "Importvorlage erstellt"],
+                          ["ui", "invoice.import_template_deleted", "nl", "Template verwijderd"],
+                          ["ui", "invoice.import_template_deleted", "en", "Template deleted"],
+                          ["ui", "invoice.import_template_deleted", "de", "Vorlage gelöscht"],
+                          ["ui", "invoice.import_template_delete_confirm", "nl", "Weet je zeker dat je dit import template wilt verwijderen?"],
+                          ["ui", "invoice.import_template_delete_confirm", "en", "Are you sure you want to delete this import template?"],
+                          ["ui", "invoice.import_template_delete_confirm", "de", "Möchten Sie diese Importvorlage wirklich löschen?"],
+                          ["ui", "invoice.import_template_cleanup_confirm", "nl", "Niet-gebruikte import templates verwijderen?"],
+                          ["ui", "invoice.import_template_cleanup_confirm", "en", "Delete unused import templates?"],
+                          ["ui", "invoice.import_template_cleanup_confirm", "de", "Unbenutzte Importvorlagen löschen?"],
+                          ["ui", "invoice.import_templates_deleted", "nl", "templates verwijderd"],
+                          ["ui", "invoice.import_templates_deleted", "en", "templates deleted"],
+                          ["ui", "invoice.import_templates_deleted", "de", "Vorlagen gelöscht"],
+                          ["ui", "invoice.no_unused_import_templates", "nl", "Geen niet-gebruikte import templates gevonden"],
+                          ["ui", "invoice.no_unused_import_templates", "en", "No unused import templates found"],
+                          ["ui", "invoice.no_unused_import_templates", "de", "Keine unbenutzten Importvorlagen gefunden"],
+                          ["ui", "invoice.import_template_cleanup_failed", "nl", "Opschonen mislukt"],
+                          ["ui", "invoice.import_template_cleanup_failed", "en", "Cleanup failed"],
+                          ["ui", "invoice.import_template_cleanup_failed", "de", "Bereinigung fehlgeschlagen"],
+                        ];
+                        invLabels.forEach((u) => invStmt.run(u[0], u[1], u[2], u[3]));
+                        invStmt.finalize();
+                        console.log("✓ Seeded invoice import template label translations");
                       }
                     }
                   );
@@ -3034,9 +3049,50 @@ class Database {
           description TEXT,
           parser_type TEXT NOT NULL,
           config TEXT,
+          sample_pdf_path TEXT,
           is_active INTEGER DEFAULT 1,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Ensure sample_pdf_path exists on import_templates
+      this.db.all(`PRAGMA table_info(import_templates)`, [], (err, columns) => {
+        if (
+          !err &&
+          columns &&
+          !columns.some((c) => c.name === "sample_pdf_path")
+        ) {
+          this.db.run(
+            `ALTER TABLE import_templates ADD COLUMN sample_pdf_path TEXT`,
+            (alterErr) => {
+              if (alterErr) {
+                console.error(
+                  "Error adding sample_pdf_path to import_templates:",
+                  alterErr
+                );
+              } else {
+                console.log(
+                  "✓ Added sample_pdf_path column to import_templates"
+                );
+              }
+            }
+          );
+        }
+      });
+
+      // Template field mappings to guide AI extraction (regex/keyword per template)
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS template_field_mappings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          template_id INTEGER NOT NULL,
+          field_key TEXT NOT NULL,
+          pattern TEXT,
+          page INTEGER DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(template_id, field_key),
+          FOREIGN KEY (template_id) REFERENCES import_templates(id) ON DELETE CASCADE
         )
       `);
 
