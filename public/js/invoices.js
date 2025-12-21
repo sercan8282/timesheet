@@ -2257,8 +2257,8 @@ const invoiceManager = {
         return;
       }
 
-      // Fetch timesheet details for each submission and group by week
-      const weekGroups = {};
+      // Fetch timesheet details for each submission and group by week AND user
+      const weekUserGroups = {}; // Key: "week_user_id"
       const allTimesheets = [];
 
       for (const submission of submissions) {
@@ -2279,11 +2279,17 @@ const invoiceManager = {
 
             allTimesheets.push(fullTimesheet);
 
-            // Group by week
-            if (!weekGroups[ts.week_number]) {
-              weekGroups[ts.week_number] = [];
+            // Group by week AND user
+            const groupKey = `${ts.week_number}_${ts.user_id}`;
+            if (!weekUserGroups[groupKey]) {
+              weekUserGroups[groupKey] = {
+                week_number: ts.week_number,
+                user_id: ts.user_id,
+                user_name: ts.user_name || "Unknown",
+                timesheets: []
+              };
             }
-            weekGroups[ts.week_number].push(fullTimesheet);
+            weekUserGroups[groupKey].timesheets.push(fullTimesheet);
           }
         }
       }
@@ -2321,18 +2327,18 @@ const invoiceManager = {
                            data-ritnumber="${ts.ritnumber || ""}" 
                            data-date="${ts.date || ""}" 
                            data-km="${
-                             ts.total_km || ts.end_km - ts.start_km || 0
+                             ts.total_km ?? (ts.end_km - ts.start_km ?? 0)
                            }" 
-                           data-hours="${ts.total_hours || 0}">
+                           data-hours="${ts.total_hours ?? 0}">
                   </td>
                   <td>${ts.week_number || "-"}</td>
                   <td>${ts.company_name || "Unknown"}</td>
                   <td>${ts.ritnumber || "-"}</td>
                   <td>${ts.date || "-"}</td>
-                  <td>${(ts.total_km || ts.end_km - ts.start_km || 0).toFixed(
+                  <td>${(ts.total_km ?? (ts.end_km - ts.start_km ?? 0)).toFixed(
                     2
                   )}</td>
-                  <td>${(ts.total_hours || 0).toFixed(2)}</td>
+                  <td>${(ts.total_hours ?? 0).toFixed(2)}</td>
                 </tr>
               `
                 )
@@ -2342,10 +2348,18 @@ const invoiceManager = {
         </div>
       `;
 
-      // Build weekly summary table
-      const sortedWeeks = Object.keys(weekGroups).sort(
-        (a, b) => parseInt(b) - parseInt(a)
-      );
+
+      // Build weekly summary table (grouped by week AND user)
+      const sortedWeekUsers = Object.keys(weekUserGroups).sort((a, b) => {
+        const [weekA, userA] = a.split('_');
+        const [weekB, userB] = b.split('_');
+        // Sort by week descending, then by user_id
+        if (parseInt(weekB) !== parseInt(weekA)) {
+          return parseInt(weekB) - parseInt(weekA);
+        }
+        return parseInt(userA) - parseInt(userB);
+      });
+
       const weeklyTableHtml = `
         <div class="table-responsive">
           <table class="table table-hover">
@@ -2353,6 +2367,7 @@ const invoiceManager = {
               <tr>
                 <th><input type="checkbox" id="select-all-weeks" onchange="invoiceManager.toggleAllWeeks(this)"></th>
                 <th>Week</th>
+                <th>Gebruiker</th>
                 <th>Bedrijf</th>
                 <th>Aantal Regels</th>
                 <th>Totaal KM</th>
@@ -2360,33 +2375,54 @@ const invoiceManager = {
               </tr>
             </thead>
             <tbody>
-              ${sortedWeeks
-                .map((weekNum) => {
-                  const weeksInThisWeek = weekGroups[weekNum];
-                  const totalKm = weeksInThisWeek.reduce(
-                    (sum, ts) =>
-                      sum + (ts.total_km || ts.end_km - ts.start_km || 0),
+              ${sortedWeekUsers
+                .map((groupKey) => {
+                  const group = weekUserGroups[groupKey];
+                  const weeksInThisGroup = group.timesheets;
+                  
+                  // DEBUG: Log the actual timesheet data
+                  if (group.user_name === 'testuser') {
+                    console.log('DEBUG testuser group:', {
+                      groupKey,
+                      count: weeksInThisGroup.length,
+                      data: weeksInThisGroup.map(ts => ({
+                        id: ts.id,
+                        total_hours: ts.total_hours,
+                        total_km: ts.total_km,
+                        end_km: ts.end_km,
+                        start_km: ts.start_km
+                      }))
+                    });
+                  }
+                  
+                  const totalKm = weeksInThisGroup.reduce(
+                    (sum, ts) => {
+                      const km = ts.total_km ?? (ts.end_km - ts.start_km) ?? 0;
+                      return sum + km;
+                    },
                     0
                   );
-                  const totalHours = weeksInThisWeek.reduce(
-                    (sum, ts) => sum + (ts.total_hours || 0),
+                  const totalHours = weeksInThisGroup.reduce(
+                    (sum, ts) => sum + (ts.total_hours ?? 0),
                     0
                   );
                   const companies = [
                     ...new Set(
-                      weeksInThisWeek.map((ts) => ts.company_name || "Unknown")
+                      weeksInThisGroup.map((ts) => ts.company_name || "Unknown")
                     ),
                   ].join(", ");
 
                   return `
                 <tr>
                   <td>
-                    <input type="checkbox" class="week-checkbox" data-week="${weekNum}" 
+                    <input type="checkbox" class="week-checkbox" data-week="${group.week_number}" 
+                           data-user-id="${group.user_id}" data-user-name="${group.user_name}"
                            data-company="${companies}">
                   </td>
-                  <td>Week ${weekNum}</td>
+                  <td>Week ${group.week_number}</td>
+                  <td>${group.user_name}</td>
                   <td>${companies}</td>
-                  <td>${weeksInThisWeek.length}</td>
+                  <td>${weeksInThisGroup.length}</td>
                   <td>${totalKm.toFixed(2)}</td>
                   <td>${totalHours.toFixed(2)}</td>
                 </tr>
@@ -2461,8 +2497,8 @@ const invoiceManager = {
       // Add modal to body
       document.body.insertAdjacentHTML("beforeend", modalHtml);
 
-      // Store week groups for later use
-      window.invoiceWeekGroups = weekGroups;
+      // Store week+user groups for later use
+      window.invoiceWeekUserGroups = weekUserGroups;
 
       // Show modal
       const modal = new bootstrap.Modal(
@@ -2504,20 +2540,25 @@ const invoiceManager = {
       return;
     }
 
-    const selectedWeeks = Array.from(checkboxes).map((cb) =>
-      parseInt(cb.dataset.week)
-    );
+    // Get selected week+user combinations
+    const selectedWeekUsers = Array.from(checkboxes).map((cb) => ({
+      week: parseInt(cb.dataset.week),
+      userId: parseInt(cb.dataset.userId),
+      userName: cb.dataset.userName
+    }));
 
-    // Get all timesheets for selected weeks
-    const weeksData = window.invoiceWeekGroups || {};
+    // Get all timesheets for selected weeks+users
+    const weekUserData = window.invoiceWeekUserGroups || {};
     let importedCount = 0;
 
     const mode =
       document.getElementById("weekly-import-mode")?.value || "per-timesheet";
 
-    for (const weekNum of selectedWeeks) {
-      const weekTs = weeksData[weekNum];
-      if (!weekTs || !weekTs.length) continue;
+    for (const selected of selectedWeekUsers) {
+      const groupKey = `${selected.week}_${selected.userId}`;
+      const group = weekUserData[groupKey];
+      if (!group || !group.timesheets || !group.timesheets.length) continue;
+      const weekTs = group.timesheets;
 
       if (mode === "aggregate-company") {
         // Group by company and import one line per company per week
@@ -2543,7 +2584,7 @@ const invoiceManager = {
           );
 
           this.addLineItem({
-            description: `Week ${weekNum} - ${company}`,
+            description: `Week ${selected.week} - ${selected.userName} - ${company}`,
             item_date: rows[0].date,
             item_km: totalKm,
             item_hours: parseFloat(totalHours.toFixed(2)),
