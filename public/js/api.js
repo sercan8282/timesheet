@@ -995,7 +995,16 @@ class API {
 
   // Import Templates
   async getImportTemplates() {
-    return this.request("/admin/invoices/import-templates");
+    try {
+      return await this.request("/admin/invoices/import-templates");
+    } catch (err) {
+      // Fallback to public endpoint if auth/token issues
+      try {
+        return await this.request("/admin/invoices/public/import-templates");
+      } catch (e2) {
+        throw err;
+      }
+    }
   }
 
   async createImportTemplate(data) {
@@ -1035,6 +1044,18 @@ class API {
   async getImportTemplateMappings(id) {
     const tpl = await this.getImportTemplate(id);
     return tpl.mappings || [];
+  }
+
+  async deleteImportTemplate(id) {
+    return this.request(`/admin/invoices/import-templates/${id}`, {
+      method: "DELETE",
+    });
+  }
+
+  async cleanupImportTemplates() {
+    return this.request(`/admin/invoices/import-templates/cleanup`, {
+      method: "POST",
+    });
   }
 
   async autoDetectImportPdf(formData) {

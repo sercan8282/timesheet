@@ -285,21 +285,21 @@ class App {
     const revenueMenu = document.getElementById("nav-revenue");
     console.log("[DEBUG showApp] adminMenu element found:", !!adminMenu);
 
-      if (this.user.isAdmin) {
-        console.log(
-          "[DEBUG showApp] Setting nav-admin, nav-invoices, nav-revenue to display: block"
-        );
-        if (adminMenu) adminMenu.style.display = "block";
-        if (invoicesMenu) invoicesMenu.style.display = "block";
-        if (revenueMenu) revenueMenu.style.display = "block";
-      } else {
-        console.log(
-          "[DEBUG showApp] Setting nav-admin and nav-invoices to display: none"
-        );
-        if (adminMenu) adminMenu.style.display = "none";
-        if (invoicesMenu) invoicesMenu.style.display = "none";
-        if (revenueMenu) revenueMenu.style.display = "none";
-      }
+    if (this.user.isAdmin) {
+      console.log(
+        "[DEBUG showApp] Setting nav-admin, nav-invoices, nav-revenue to display: block"
+      );
+      if (adminMenu) adminMenu.style.display = "block";
+      if (invoicesMenu) invoicesMenu.style.display = "block";
+      if (revenueMenu) revenueMenu.style.display = "block";
+    } else {
+      console.log(
+        "[DEBUG showApp] Setting nav-admin and nav-invoices to display: none"
+      );
+      if (adminMenu) adminMenu.style.display = "none";
+      if (invoicesMenu) invoicesMenu.style.display = "none";
+      if (revenueMenu) revenueMenu.style.display = "none";
+    }
   }
 
   loadPage(page) {

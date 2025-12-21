@@ -479,21 +479,21 @@ html[lang="en-GB"] input[type="time"] {
   .btn-mobile-full {
     width: 100%;
   }
-  
+
   .timesheet-row .card-body {
     padding: 0.75rem !important;
   }
-  
+
   .timesheet-row .form-control-sm {
     font-size: 0.95rem;
     min-height: 44px; /* Better touch target */
   }
-  
+
   .timesheet-row input[type="time"],
   .timesheet-row input[type="date"] {
     min-height: 44px; /* Better touch target */
   }
-  
+
   .timesheet-row .btn-danger {
     padding: 0.5rem;
     font-size: 1rem;
@@ -525,7 +525,7 @@ html[lang="en-GB"] input[type="time"] {
     width: 100%;
     flex-direction: column;
   }
-  
+
   .card-header .d-flex .d-flex .btn {
     width: 100%;
   }
@@ -541,19 +541,19 @@ html[lang="en-GB"] input[type="time"] {
   .table-responsive .table td {
     padding: 0.4rem 0.3rem;
   }
-  
+
   .table-responsive .btn-group-vertical {
     display: flex;
     flex-direction: row !important;
     gap: 2px;
   }
-  
+
   .table-responsive .btn-group-vertical .btn {
     flex: 1;
     padding: 0.3rem 0.5rem;
     font-size: 0.75rem;
   }
-  
+
   .table-responsive .btn-group-vertical .btn i {
     margin-right: 0;
   }
@@ -590,29 +590,29 @@ html[lang="en-GB"] input[type="time"] {
   }
 }
 
-  .ai-text-layer {
-    position: absolute;
-    left: 0;
-    top: 0;
-    pointer-events: auto;
-  }
-  .ai-text-layer span {
-    position: absolute;
-    transform-origin: 0% 0%;
-    white-space: pre;
-    pointer-events: auto;
-    color: transparent; /* prevent double text */
-    background: transparent;
-  }
-  .ai-text-layer span:hover {
-    outline: 1px dashed #0d6efd;
-    background: rgba(13, 110, 253, 0.12);
-  }
-  .ai-text-layer span.bg-warning {
-    color: transparent; /* keep text invisible even when selected */
-    background: rgba(255, 193, 7, 0.35);
-    outline: 1px solid rgba(255, 193, 7, 0.8);
-  }
+.ai-text-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+}
+.ai-text-layer span {
+  position: absolute;
+  transform-origin: 0% 0%;
+  white-space: pre;
+  pointer-events: auto;
+  color: transparent; /* prevent double text */
+  background: transparent;
+}
+.ai-text-layer span:hover {
+  outline: 1px dashed #0d6efd;
+  background: rgba(13, 110, 253, 0.12);
+}
+.ai-text-layer span.bg-warning {
+  color: transparent; /* keep text invisible even when selected */
+  background: rgba(255, 193, 7, 0.35);
+  outline: 1px solid rgba(255, 193, 7, 0.8);
+}
 .toggle-details {
   display: inline-block;
   transition: transform 0.3s ease;
@@ -628,7 +628,7 @@ html[lang="en-GB"] input[type="time"] {
   .table-responsive {
     font-size: 0.85rem;
   }
-  
+
   .user-details-row .d-grid {
     grid-template-columns: 1fr;
   }
