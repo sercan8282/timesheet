@@ -1984,7 +1984,8 @@ router.get("/hours-report", async (req, res) => {
         u.full_name,
         t.week_number,
         COUNT(*) as work_days,
-        SUM(CAST(t.total_hours AS REAL)) as total_hours
+        SUM(CAST(t.total_hours AS REAL)) as total_hours,
+        SUM(CAST(t.total_km AS REAL)) as total_km
       FROM users u
       LEFT JOIN timesheets t ON u.id = t.user_id
       LEFT JOIN submissions s ON (',' || s.timesheet_ids || ',') LIKE ('%,' || t.id || ',%')
@@ -2008,6 +2009,7 @@ router.get("/hours-report", async (req, res) => {
     const report = results.map((row) => ({
       ...row,
       total_hours: parseFloat(row.total_hours || 0).toFixed(2),
+      total_km: parseFloat(row.total_km || 0).toFixed(2),
       overworked: row.week_number
         ? (parseFloat(row.total_hours || 0) - 40).toFixed(2)
         : "0.00",

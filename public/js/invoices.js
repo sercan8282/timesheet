@@ -2862,12 +2862,20 @@ const invoiceManager = {
     const lineItems = this.getLineItems();
 
     if (!invoiceNumber || !invoiceDate) {
-      showToast("Factuurnummer en datum zijn verplicht", "error");
+        showToast(t("ui", "invoice.number_and_date_required"), "error");
       return null;
     }
 
     if (lineItems.length === 0) {
-      showToast(t("ui", "invoice.add_at_least_one_line"), "error");
+      // Fallback text ensures a clear message even if the translation cache is stale
+      showToast(
+        t(
+          "ui",
+          "invoice.add_at_least_one_line",
+          "Voeg minimaal één factuurregel toe"
+        ),
+        "error"
+      );
       return null;
     }
 

@@ -3616,6 +3616,7 @@
         <td>${row.week_number ?? "-"}</td>
         <td>${row.work_days ?? 0}</td>
         <td>${parseFloat(row.total_hours || 0).toFixed(2)}</td>
+        <td>${parseFloat(row.total_km || 0).toFixed(2)}</td>
         <td>${parseFloat(row.overworked || 0).toFixed(2)}</td>
       </tr>
     `
@@ -3631,6 +3632,7 @@
               <th>Week</th>
               <th>Work Days</th>
               <th>Total Hours</th>
+              <th>Total KM</th>
               <th>Overworked</th>
             </tr>
           </thead>
