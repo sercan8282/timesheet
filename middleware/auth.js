@@ -38,14 +38,15 @@ const authMiddleware = async (req, res, next) => {
       }
 
       // Check if MFA setup is required (user exists but MFA not enabled)
-      // Allow access only to MFA endpoints
+      // Allow access only to MFA endpoints and logout
       const mfaEndpoints = [
         '/api/mfa/setup',
-        '/api/mfa/verify-setup',
-        '/api/mfa/backup-codes',
+        '/api/mfa/verify',
+        '/api/mfa/disable',
+        '/api/mfa/verify-backup',
         '/api/auth/logout'
       ];
-      const isMfaEndpoint = mfaEndpoints.some(ep => req.path.startsWith(ep));
+      const isMfaEndpoint = mfaEndpoints.some(ep => req.path === ep || req.path.startsWith(ep + '/'));
       
       if (!user.mfa_enabled && !isMfaEndpoint) {
         return res.status(403).json({
