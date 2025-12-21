@@ -68,19 +68,29 @@ function initLogin() {
       }
 
       // Successful login
+      // Only save token and user if MFA is not required for setup
+      // If MFA setup is required, the token will be saved after setup completion
+      if (response.mfaSetupRequired) {
+        // Store token temporarily for MFA setup, but not in localStorage yet
+        api.setToken(response.token);
+        // Store user data temporarily (will be saved after MFA setup)
+        window.tempUserData = response.user;
+        showMFAModal({
+          setupMode: true,
+          required: true,
+        });
+        return;
+      }
+
+      // Normal login flow (MFA already enabled or not required)
       api.setToken(response.token);
       localStorage.setItem("user", JSON.stringify(response.user));
 
-      // Check if MFA setup prompt needed
+      // Check if MFA setup prompt needed (legacy, should not happen anymore)
       if (response.mfaPromptRequired) {
         showMFAModal({
           setupMode: true,
           required: false,
-        });
-      } else if (response.mfaSetupRequired) {
-        showMFAModal({
-          setupMode: true,
-          required: true,
         });
       } else {
         window.location.reload();
