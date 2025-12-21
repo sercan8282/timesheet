@@ -3234,23 +3234,27 @@
                     <th>End Time</th>
                     <th>Break</th>
                     <th>Hours</th>
-                    <th>Notes</th>
+                    <th>KM</th>
                   </tr>
                 </thead>
                 <tbody>
                   ${timesheets
                     .map(
-                      (ts) => `
+                      (ts) => {
+                        const totalHours = ts.total_hours ?? 0;
+                        const totalKm = ts.total_km ?? (ts.end_km - ts.start_km ?? 0);
+                        return `
                     <tr>
                       <td>${new Date(ts.date).toLocaleDateString("nl-NL")}</td>
                       <td>${getDayName(ts.date)}</td>
                       <td>${ts.start_time || "-"}</td>
                       <td>${ts.end_time || "-"}</td>
-                      <td>${ts.break_duration || "-"}</td>
-                      <td>${ts.hours || "-"}</td>
-                      <td>${ts.notes || "-"}</td>
+                      <td>${ts.pause_time || "-"}</td>
+                      <td>${totalHours.toFixed(2)}</td>
+                      <td>${totalKm.toFixed(2)}</td>
                     </tr>
-                  `
+                  `;
+                      }
                     )
                     .join("")}
                 </tbody>
@@ -3612,6 +3616,7 @@
         <td>${row.week_number ?? "-"}</td>
         <td>${row.work_days ?? 0}</td>
         <td>${parseFloat(row.total_hours || 0).toFixed(2)}</td>
+        <td>${parseFloat(row.total_km || 0).toFixed(2)}</td>
         <td>${parseFloat(row.overworked || 0).toFixed(2)}</td>
       </tr>
     `
@@ -3627,6 +3632,7 @@
               <th>Week</th>
               <th>Work Days</th>
               <th>Total Hours</th>
+              <th>Total KM</th>
               <th>Overworked</th>
             </tr>
           </thead>

@@ -176,7 +176,7 @@ router.get("/timesheets/:id", async (req, res) => {
   }
 });
 
-// Get timesheet details by IDs
+// Get timesheet details by IDs (for invoice import, admin can see all users' timesheets)
 router.post("/timesheets/details", async (req, res) => {
   try {
     const { ids } = req.body;
@@ -185,23 +185,29 @@ router.post("/timesheets/details", async (req, res) => {
     }
 
     const placeholders = ids.map(() => "?").join(",");
-    const timesheets = await db.all(
-      `SELECT t.id, t.week_number, t.date, t.start_time, t.end_time, t.start_km, t.end_km, t.pause_time, t.ritnumber, t.user_id, t.company_id,
-              COALESCE(c.name, 'Unknown') AS company_name
-       FROM timesheets t
-       LEFT JOIN companies c ON t.company_id = c.id
-       WHERE t.id IN (${placeholders}) AND t.user_id = ? ORDER BY t.week_number, t.date`,
-      [...ids, req.user.id]
-    );
+    
+    let query = `SELECT t.id, t.week_number, t.date, t.start_time, t.end_time, t.start_km, t.end_km, t.total_km, t.total_hours, t.pause_time, t.ritnumber, t.user_id, t.company_id,
+                        COALESCE(c.name, 'Unknown') AS company_name,
+                        COALESCE(u.full_name, u.username, 'Unknown') AS user_name
+                 FROM timesheets t
+                 LEFT JOIN companies c ON t.company_id = c.id
+                 LEFT JOIN users u ON u.id = t.user_id
+                 WHERE t.id IN (${placeholders})`;
+    
+    const params = [...ids];
+    
+    // If not admin, restrict to current user's timesheets
+    if (!req.user.isAdmin) {
+      query += ` AND t.user_id = ?`;
+      params.push(req.user.id);
+    }
+    
+    query += ` ORDER BY t.week_number, t.date`;
+    
+    const timesheets = await db.all(query, params);
 
-    // Enhance with user_name from users table (fallback to token fullName/username)
-    const enrichedTimesheets = timesheets.map((ts) => ({
-      ...ts,
-      user_name:
-        req.user.fullName || req.user.username || ts.user_name || "Unknown",
-    }));
-
-    res.json(enrichedTimesheets);
+    // Return timesheets as-is (user_name already populated from users table)
+    res.json(timesheets);
   } catch (error) {
     console.error("Error fetching timesheet details:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -426,19 +432,26 @@ router.delete("/timesheets/:id", async (req, res) => {
   }
 });
 
-// Get user's submissions history
+// Get user's submissions history (or all submissions if admin)
 router.get("/submissions", async (req, res) => {
   try {
-    const submissions = await db.all(
-      `SELECT 
-         s.*, 
-         COALESCE(u.full_name, u.username, s.user_name, 'Unknown') AS user_name
-       FROM submissions s
-       LEFT JOIN users u ON u.id = s.user_id
-       WHERE s.user_id = ?
-       ORDER BY s.submission_date DESC`,
-      [req.user.id]
-    );
+    let query = `SELECT 
+       s.*, 
+       COALESCE(u.full_name, u.username, s.user_name, 'Unknown') AS user_name
+     FROM submissions s
+     LEFT JOIN users u ON u.id = s.user_id`;
+    
+    const params = [];
+    
+    // If admin, show all submissions; otherwise show only current user's
+    if (req.user.isAdmin) {
+      query += ` ORDER BY s.submission_date DESC`;
+    } else {
+      query += ` WHERE s.user_id = ? ORDER BY s.submission_date DESC`;
+      params.push(req.user.id);
+    }
+
+    const submissions = await db.all(query, params);
 
     res.json(submissions);
   } catch (error) {
