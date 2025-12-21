@@ -81,7 +81,8 @@ async function generateInvoicePDF(invoiceId) {
     };
 
     const renderImageBlock = (el, x, y, width) => {
-      const imagePath = path.join(__dirname, "../public", el.image_path);
+      const relPath = (el.image_path || "").replace(/^\/+/, "");
+      const imagePath = path.join(__dirname, "../public", relPath);
       if (fs.existsSync(imagePath)) {
         try {
           const imgWidth = Math.min(width - 10, 150);
@@ -236,11 +237,23 @@ async function generateInvoicePDF(invoiceId) {
           .text(element.content, 50, yPosition);
         yPosition += (parseInt(element.font_size) || 12) + 10;
       } else if (element.element_type === "image" && element.image_path) {
-        const imagePath = path.join(__dirname, "../public", element.image_path);
+        const relPath = (element.image_path || "").replace(/^\/+/, "");
+        const imagePath = path.join(__dirname, "../public", relPath);
         if (fs.existsSync(imagePath)) {
           try {
-            doc.image(imagePath, 50, yPosition, { width: 150 });
-            yPosition += 160;
+            const imgWidth = parseInt(element.image_width, 10) || 150;
+            const margin = 50;
+            const pageWidth = doc.page.width;
+            let x = margin;
+
+            if (element.image_align === "center") {
+              x = Math.max(margin, (pageWidth - imgWidth) / 2);
+            } else if (element.image_align === "right") {
+              x = pageWidth - margin - imgWidth;
+            }
+
+            doc.image(imagePath, x, yPosition, { width: imgWidth });
+            yPosition += imgWidth + 10;
           } catch (err) {
             console.error("Error adding template image:", err);
           }

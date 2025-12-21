@@ -1191,13 +1191,21 @@ const invoiceManager = {
         const previewEl = document.querySelector(selector);
         if (previewEl) {
           const label = el.label || el.element_type;
-          const content = el.content
-            ? el.content.substring(0, 20) +
-              (el.content.length > 20 ? "..." : "")
-            : "";
-          previewEl.innerHTML += `<div style="margin: 5px 0; padding: 4px; background: #f0f0f0; border-radius: 2px; font-weight: 500;">${label}${
-            content ? ": " + content : ""
-          }</div>`;
+          if (el.image_path) {
+            previewEl.innerHTML += `
+              <div style="margin: 5px 0; padding: 4px; background: #f0f0f0; border-radius: 2px;">
+                <div style="font-weight: 500">${label}</div>
+                <img src="${el.image_path}" alt="image" style="max-width: 120px; max-height: 80px; display: block; margin-top: 4px;" />
+              </div>
+            `;
+          } else {
+            const content = el.content
+              ? el.content.substring(0, 40) + (el.content.length > 40 ? "..." : "")
+              : "";
+            previewEl.innerHTML += `<div style="margin: 5px 0; padding: 4px; background: #f0f0f0; border-radius: 2px; font-weight: 500;">${label}${
+              content ? ": " + content : ""
+            }</div>`;
+          }
         }
       }
     });
@@ -1312,6 +1320,30 @@ const invoiceManager = {
           <label class="form-label">Afbeelding *</label>
           <input type="file" class="form-control" id="element-image" accept="image/*">
         </div>
+        <div class="mb-3">
+          <label class="form-label">Plaats sectie</label>
+          <select class="form-select" id="element-image-section">
+            <option value="image" selected>Onder (body)</option>
+            <option value="top_left">Boven Links</option>
+            <option value="top_center">Boven Midden</option>
+            <option value="top_right">Boven Rechts</option>
+            <option value="address_left">Adres Links</option>
+            <option value="address_center">Adres Midden</option>
+            <option value="address_right">Adres Rechts</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Plaatsing</label>
+          <select class="form-select" id="element-image-align">
+            <option value="left">Links</option>
+            <option value="center">Midden</option>
+            <option value="right">Rechts</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Breedte (px)</label>
+          <input type="number" class="form-control" id="element-image-width" value="150" min="50" max="600">
+        </div>
       `
       );
     } else {
@@ -1376,11 +1408,49 @@ const invoiceManager = {
 
   async addElement() {
     const templateId = this.currentTemplate.id;
-    const type = document.getElementById("element-type").value;
+    const originalType = document.getElementById("element-type").value;
+    let type = originalType;
     const label = document.getElementById("element-label").value;
     const order = document.getElementById("element-order").value;
 
     const formData = new FormData();
+    // If the user selected "Afbeelding", we treat it specially and do not require text content
+    if (originalType === "image") {
+      const section = document.getElementById("element-image-section")?.value || "image";
+      type = section; // element_type becomes the chosen section or 'image' for body
+      formData.append("element_type", type);
+      formData.append("label", label);
+      formData.append("position_order", order);
+
+      const imageFile = document.getElementById("element-image")?.files?.[0];
+      if (!imageFile) {
+        showToast(t("ui", "invoice.select_image"), "error");
+        return;
+      }
+      formData.append("image", imageFile);
+
+      const alignEl = document.getElementById("element-image-align");
+      const widthEl = document.getElementById("element-image-width");
+      const imageAlign = alignEl ? alignEl.value : "left";
+      const imageWidth = widthEl ? widthEl.value : 150;
+      formData.append("image_align", imageAlign || "left");
+      formData.append("image_width", imageWidth || 150);
+
+      try {
+        await api.addTemplateElement(templateId, formData);
+        showToast(t("ui", "invoice.element_added"), "success");
+        await this.editTemplate(templateId);
+      } catch (error) {
+        console.error("Error adding element:", error);
+        showToast(
+          `${t("ui", "invoice.element_add_failed")}: ${error.message}`,
+          "error"
+        );
+      }
+      return; // prevent falling through to text handling
+    }
+
+    // Default path: non-image elements
     formData.append("element_type", type);
     formData.append("label", label);
     formData.append("position_order", order);
@@ -1405,6 +1475,11 @@ const invoiceManager = {
       formData.append("font_size", fontSize);
       formData.append("font_color", fontColor);
       formData.append("font_weight", fontWeight);
+      // Optional image for layout/text sections (e.g., logo in top columns)
+      const imageFileOptional = document.getElementById("element-image")?.files?.[0];
+      if (imageFileOptional) {
+        formData.append("image", imageFileOptional);
+      }
     } else if (type === "sender" || type === "title") {
       const content = document.getElementById("element-content").value;
       const fontSize = document.getElementById("element-font-size").value;
@@ -1427,6 +1502,12 @@ const invoiceManager = {
         return;
       }
       formData.append("image", imageFile);
+      const alignEl = document.getElementById("element-image-align");
+      const widthEl = document.getElementById("element-image-width");
+      const imageAlign = alignEl ? alignEl.value : "left";
+      const imageWidth = widthEl ? widthEl.value : 150;
+      formData.append("image_align", imageAlign || "left");
+      formData.append("image_width", imageWidth || 150);
     }
 
     try {
@@ -1464,7 +1545,11 @@ const invoiceManager = {
           el.element_type.startsWith("top_") ||
           el.element_type.startsWith("address_")
         ) {
-          preview = `<p style="font-size: ${el.font_size}px; color: ${el.font_color}; font-weight: ${el.font_weight};">${el.content}</p>`;
+          if (el.image_path) {
+            preview = `<img src="${el.image_path}" alt="Template image" style="max-width: 200px; max-height: 100px;">`;
+          } else {
+            preview = `<p style="font-size: ${el.font_size}px; color: ${el.font_color}; font-weight: ${el.font_weight};">${el.content}</p>`;
+          }
         } else if (el.element_type === "image" && el.image_path) {
           preview = `<img src="${el.image_path}" alt="Template image" style="max-width: 200px; max-height: 100px;">`;
         } else {
@@ -1645,6 +1730,12 @@ const invoiceManager = {
       if (imageFile) {
         formData.append("image", imageFile);
       }
+      const section = document.getElementById("edit-element-section")?.value || element.element_type || "image";
+      formData.append("element_type", section);
+      const imageAlign = document.getElementById("edit-element-image-align").value;
+      const imageWidth = document.getElementById("edit-element-image-width").value;
+      formData.append("image_align", imageAlign || element.image_align || "left");
+      formData.append("image_width", imageWidth || element.image_width || 150);
     } else {
       const content = document.getElementById("edit-element-content").value;
       const fontSize = document.getElementById("edit-element-font-size").value;
