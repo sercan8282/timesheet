@@ -38,21 +38,31 @@ const authMiddleware = async (req, res, next) => {
       }
 
       // Check if MFA setup is required (user exists but MFA not enabled)
-      // Allow access only to MFA endpoints and logout
-      const mfaEndpoints = [
-        '/api/mfa/setup',
-        '/api/mfa/verify',
-        '/api/mfa/disable',
-        '/api/mfa/verify-backup',
-        '/api/auth/logout'
-      ];
-      const isMfaEndpoint = mfaEndpoints.some(ep => req.path === ep || req.path.startsWith(ep + '/'));
-      
-      if (!user.mfa_enabled && !isMfaEndpoint) {
-        return res.status(403).json({
-          error: "MFA setup required",
-          mfaSetupRequired: true
-        });
+      // Allow access to MFA-related endpoints even if MFA not enabled
+      // These endpoints should allow the user to SET UP MFA
+      if (!user.mfa_enabled) {
+        // Only allow MFA setup/verify/disable and logout endpoints
+        // For other endpoints, return MFA setup required error
+        const allowedWithoutMFA = [
+          '/api/mfa/setup',
+          '/api/mfa/verify',
+          '/api/mfa/disable',
+          '/api/mfa/verify-backup',
+          '/api/auth/logout'
+        ];
+        
+        const isAllowedEndpoint = allowedWithoutMFA.some(ep => 
+          req.path === ep || 
+          req.path.startsWith(ep + '/') ||
+          req.path.startsWith(ep + '?')
+        );
+        
+        if (!isAllowedEndpoint) {
+          return res.status(403).json({
+            error: "MFA setup required",
+            mfaSetupRequired: true
+          });
+        }
       }
 
       // Merge DB values to ensure fullName is always available for logging/submissions
