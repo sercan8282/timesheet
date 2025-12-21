@@ -41,6 +41,9 @@ const authMiddleware = async (req, res, next) => {
       // Allow access to MFA-related endpoints even if MFA not enabled
       // These endpoints should allow the user to SET UP MFA
       if (!user.mfa_enabled) {
+        // Build full path including base path for checking
+        const fullPath = req.baseUrl + req.path;
+        
         // Only allow MFA setup/verify/disable and logout endpoints
         // For other endpoints, return MFA setup required error
         const allowedWithoutMFA = [
@@ -48,20 +51,28 @@ const authMiddleware = async (req, res, next) => {
           '/api/mfa/verify',
           '/api/mfa/disable',
           '/api/mfa/verify-backup',
+          '/api/mfa/status',
           '/api/auth/logout'
         ];
         
         const isAllowedEndpoint = allowedWithoutMFA.some(ep => 
-          req.path === ep || 
-          req.path.startsWith(ep + '/') ||
-          req.path.startsWith(ep + '?')
+          fullPath === ep || 
+          fullPath.startsWith(ep + '/') ||
+          fullPath.startsWith(ep + '?')
         );
         
+        console.log(`[MFA Check] User ${user.id} (${user.username}) MFA disabled`);
+        console.log(`[MFA Check] req.path: ${req.path}, req.baseUrl: ${req.baseUrl}, fullPath: ${fullPath}`);
+        console.log(`[MFA Check] Allowed: ${isAllowedEndpoint}`);
+        
         if (!isAllowedEndpoint) {
+          console.log(`[MFA Check] BLOCKING access to ${fullPath}`);
           return res.status(403).json({
             error: "MFA setup required",
             mfaSetupRequired: true
           });
+        } else {
+          console.log(`[MFA Check] ALLOWING access to ${fullPath}`);
         }
       }
 
