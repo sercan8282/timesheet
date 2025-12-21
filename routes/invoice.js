@@ -778,6 +778,7 @@ router.post("/invoices", auth, async (req, res) => {
     const {
       template_id,
       invoice_number,
+      invoice_type,
       customer_name,
       customer_address,
       invoice_date,
@@ -808,12 +809,13 @@ router.post("/invoices", auth, async (req, res) => {
     // Create invoice
     const result = await db.run(
       `INSERT INTO invoices 
-       (template_id, invoice_number, customer_name, customer_address, 
+       (template_id, invoice_number, invoice_type, customer_name, customer_address, 
         invoice_date, due_date, subtotal, vat_amount, total_amount, notes, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         template_id,
         invoice_number,
+        invoice_type || 'Verkoop',
         customer_name || null,
         customer_address || null,
         invoice_date,
@@ -995,6 +997,7 @@ router.put("/invoices/:id", auth, async (req, res) => {
       customer_address,
       invoice_date,
       due_date,
+      invoice_type,
       status,
       notes,
       line_items,
@@ -1028,7 +1031,7 @@ router.put("/invoices/:id", auth, async (req, res) => {
     await db.run(
       `UPDATE invoices 
        SET customer_name = ?, customer_address = ?, invoice_date = ?, due_date = ?,
-           subtotal = ?, vat_amount = ?, total_amount = ?, status = ?, notes = ?,
+           invoice_type = ?, subtotal = ?, vat_amount = ?, total_amount = ?, status = ?, notes = ?,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [
@@ -1036,6 +1039,7 @@ router.put("/invoices/:id", auth, async (req, res) => {
         customer_address,
         invoice_date,
         due_date,
+        invoice_type || 'Verkoop',
         subtotal.toFixed(2),
         vat_amount.toFixed(2),
         total_amount.toFixed(2),
@@ -2473,10 +2477,13 @@ router.post("/import-pdf", auth, uploadPdf.single("pdf"), async (req, res) => {
       req.file.path
     )}`;
 
+    // Get invoice_type from request body (Verkoop or Inkoop)
+    const invoice_type = req.body.invoice_type === 'Inkoop' ? 'Inkoop' : 'Verkoop';
+
     const result = await db.run(
       `INSERT INTO invoices 
-       (template_id, invoice_number, customer_name, invoice_date, subtotal, vat_amount, total_amount, status, notes, original_pdf_path, created_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)`,
+       (template_id, invoice_number, customer_name, invoice_date, subtotal, vat_amount, total_amount, status, notes, original_pdf_path, invoice_type, created_by)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?)`,
       [
         template_id,
         invoice_number,
@@ -2491,6 +2498,7 @@ router.post("/import-pdf", auth, uploadPdf.single("pdf"), async (req, res) => {
             : ""
         }`,
         originalPdfPath,
+        invoice_type,
         req.user.id,
       ]
     );
