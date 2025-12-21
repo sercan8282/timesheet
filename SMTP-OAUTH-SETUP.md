@@ -24,7 +24,7 @@ De applicatie gebruikt **Client Credentials Flow** (app-only) om een access toke
 4. Vul in:
    - **Name**: `Timesheet SMTP Sender` (of eigen naam)
    - **Supported account types**: `Accounts in this organizational directory only (Single tenant)`
-   - **Redirect URI**: *laat leeg* (niet nodig voor client credentials)
+   - **Redirect URI**: _laat leeg_ (niet nodig voor client credentials)
 5. Klik **Register**
 
 ### 1.2 Noteer belangrijke waarden
@@ -48,6 +48,7 @@ Deze waarden heb je nodig voor de SMTP-instellingen in de app.
 4. Klik **Add**
 
 **BELANGRIJK**: Kopieer onmiddellijk de **Value** (niet de Secret ID!):
+
 - ✅ **Value**: De lange string die begint met iets als `g-28Q~...` (dit is het echte wachtwoord)
 - ❌ **Secret ID**: De korte GUID — gebruik dit NIET
 
@@ -141,14 +142,14 @@ sqlite3 database.sqlite
 ```
 
 ```sql
-UPDATE smtp_settings SET 
+UPDATE smtp_settings SET
   smtp_host = 'smtp.office365.com',
   smtp_port = 587,
   smtp_user = 'noreply@yourdomain.com',
   auth_type = 'oauth2',
-  oauth_tenant_id = '12345678-1234-1234-1234-123456789012',
-  oauth_client_id = '1d48ee70-0050-4138-ac35-48a63215e94f',
-  oauth_client_secret = 'g-28Q~eMaMPbb.p8k0GgBjxZmSM5b_maqy25hbFo',
+  oauth_tenant_id = '',
+  oauth_client_id = '',
+  oauth_client_secret = '',
   oauth_scope = 'https://outlook.office365.com/.default';
 ```
 
@@ -165,6 +166,7 @@ node -e "require('./utils/email').testSMTPConnection().then(console.log).catch(e
 ```
 
 **Verwacht resultaat** (bij succes):
+
 ```
 [SMTP TEST] Starting SMTP connection test...
 [SMTP TEST] Using auth type: oauth2
@@ -194,6 +196,7 @@ node -e "require('./utils/email').testSMTPConnection().then(console.log).catch(e
 **Oorzaak**: De scope is niet correct geformatteerd of bevat een Secret ID in plaats van een scope.
 
 **Oplossing**:
+
 - Zorg dat `oauth_scope` is ingesteld op `https://outlook.office365.com/.default`
 - Controleer dat je de **Value** van de client secret gebruikt, NIET de Secret ID
 - De app normaliseert dit automatisch sinds de laatste update
@@ -205,6 +208,7 @@ node -e "require('./utils/email').testSMTPConnection().then(console.log).catch(e
 **Oorzaak**: Je hebt de Secret ID in plaats van de Secret Value gebruikt.
 
 **Oplossing**:
+
 1. Ga naar Entra ID → App registrations → Jouw app → Certificates & secrets
 2. Maak een **nieuwe** client secret aan (oude kun je niet meer zien)
 3. Kopieer de **Value** (lange string, begint bijv. met `g-28Q~...`)
@@ -217,6 +221,7 @@ node -e "require('./utils/email').testSMTPConnection().then(console.log).catch(e
 **Oorzaak**: Admin consent is niet verleend voor de API permissions.
 
 **Oplossing**:
+
 1. Ga naar Entra ID → App registrations → Jouw app → API permissions
 2. Klik **Grant admin consent for [Your Tenant]**
 3. Bevestig met **Yes**
@@ -229,6 +234,7 @@ node -e "require('./utils/email').testSMTPConnection().then(console.log).catch(e
 **Oorzaak**: Mailbox heeft SMTP AUTH uitgeschakeld.
 
 **Oplossing**:
+
 1. Ga naar Exchange Admin Center → Recipients → Mailboxes
 2. Selecteer de verzendende mailbox
 3. **Mail flow settings** → **SMTP AUTH** → **Enable**
@@ -241,6 +247,7 @@ node -e "require('./utils/email').testSMTPConnection().then(console.log).catch(e
 **Oorzaak**: Gebruik van v1 endpoint in plaats van v2, of verkeerde scope-formaat.
 
 **Oplossing**:
+
 - De app gebruikt automatisch het v2 endpoint: `https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token`
 - Scope moet zijn: `https://outlook.office365.com/.default` (voor SMTP)
 - Voor Graph (indien je die route kiest): `https://graph.microsoft.com/.default`
@@ -292,11 +299,13 @@ Dit vereist andere code en geen SMTP-server, maar werkt ook met Client Credentia
 - [Exchange Online SMTP AUTH](https://learn.microsoft.com/en-us/exchange/clients-and-mobile-in-exchange-online/authenticated-client-smtp-submission)
 
 Voor vragen of problemen, controleer de logs met:
+
 ```powershell
 pm2 logs timesheet --lines 100
 ```
 
 Of test handmatig:
+
 ```powershell
 node -e "require('./utils/email').testSMTPConnection().then(console.log).catch(console.error)"
 ```
