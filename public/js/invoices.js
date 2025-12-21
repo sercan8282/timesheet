@@ -7,6 +7,12 @@ const invoiceManager = {
   editingInvoiceStatus: null,
   templates: [],
   invoices: [],
+  filteredInvoices: [],
+  pageSize: 50,
+  currentPage: 1,
+  filterSearch: "",
+  filterStatus: "",
+  filterDateBefore: "",
 
   async init() {
     await this.loadData();
@@ -17,6 +23,8 @@ const invoiceManager = {
     try {
       this.templates = await api.getInvoiceTemplates();
       this.invoices = await api.getInvoices();
+      this.filteredInvoices = [...this.invoices];
+      this.currentPage = 1;
     } catch (error) {
       console.error("Error loading invoice data:", error);
       showToast(t("ui", "invoice.load_error"), "error");
@@ -24,6 +32,7 @@ const invoiceManager = {
   },
 
   renderInvoiceList() {
+    const { pageInvoices, totalPages, totalFiltered } = this.getPaginatedInvoices();
     const content = document.getElementById("content");
     content.innerHTML = `
       <div class="container-fluid mt-4">
@@ -60,16 +69,6 @@ const invoiceManager = {
               </button>
             </div>
           </div>
-                              <button class="btn btn-sm btn-outline-primary me-2" onclick="invoiceManager.manageImportTemplate(${
-                                t.id
-                              })">
-                                <i class="bi bi-magic"></i> AI mapping / Upload
-                              </button>
-                                <button class="btn btn-sm btn-outline-primary me-2" onclick="invoiceManager.manageImportTemplate(${
-                                  t.id
-                                })">
-                                  <i class="bi bi-magic"></i> AI mapping
-                                </button>
         </div>
 
         <!-- Filters -->
@@ -79,19 +78,20 @@ const invoiceManager = {
               <div class="col-md-3">
                 <input type="text" class="form-control" id="invoice-search" 
                        placeholder="Zoek op factuurnummer of klant..." data-i18n="ui:invoices.search_placeholder"
+                       value="${this.filterSearch}"
                        onkeyup="invoiceManager.filterInvoices()">
               </div>
               <div class="col-md-2">
                 <select class="form-select" id="invoice-status-filter" onchange="invoiceManager.filterInvoices()">
-                  <option value="" data-i18n="ui:invoices.all_statuses">Alle statussen</option>
-                  <option value="draft" data-i18n="ui:invoices.status_draft">Concept</option>
-                  <option value="sent" data-i18n="ui:invoices.status_sent">Verzonden</option>
-                  <option value="paid" data-i18n="ui:invoices.status_paid">Betaald</option>
-                  <option value="cancelled" data-i18n="ui:invoices.status_cancelled">Geannuleerd</option>
+                  <option value="" ${this.filterStatus === "" ? "selected" : ""} data-i18n="ui:invoices.all_statuses">Alle statussen</option>
+                  <option value="draft" ${this.filterStatus === "draft" ? "selected" : ""} data-i18n="ui:invoices.status_draft">Concept</option>
+                  <option value="sent" ${this.filterStatus === "sent" ? "selected" : ""} data-i18n="ui:invoices.status_sent">Verzonden</option>
+                  <option value="paid" ${this.filterStatus === "paid" ? "selected" : ""} data-i18n="ui:invoices.status_paid">Betaald</option>
+                  <option value="cancelled" ${this.filterStatus === "cancelled" ? "selected" : ""} data-i18n="ui:invoices.status_cancelled">Geannuleerd</option>
                 </select>
               </div>
               <div class="col-md-3">
-                <input type="date" class="form-control" id="invoice-date-before" placeholder="Voor datum" onchange="invoiceManager.filterInvoices()">
+                <input type="date" class="form-control" id="invoice-date-before" placeholder="Voor datum" value="${this.filterDateBefore}" onchange="invoiceManager.filterInvoices()">
               </div>
               <div class="col-md-2">
                 <button class="btn btn-outline-danger w-100" onclick="invoiceManager.deleteOldInvoices()">
@@ -119,6 +119,7 @@ const invoiceManager = {
                     </th>
                     <th><span data-i18n="ui:invoices.number">Factuurnummer</span></th>
                     <th><span data-i18n="ui:invoices.customer">Klant</span></th>
+                    <th>Type</th>
                     <th><span data-i18n="ui:invoices.date">Datum</span></th>
                     <th><span data-i18n="ui:invoices.total">Bedrag</span></th>
                     <th><span data-i18n="ui:invoices.status">Status</span></th>
@@ -126,50 +127,48 @@ const invoiceManager = {
                   </tr>
                 </thead>
                 <tbody id="invoice-table-body">
-                  ${this.renderInvoiceRows()}
+                  ${this.renderInvoiceRows(pageInvoices)}
                 </tbody>
               </table>
             </div>
+            ${this.renderPagination(totalPages, totalFiltered)}
           </div>
         </div>
 
         <div class="d-lg-none">
           <div class="accordion" id="invoiceAccordion">
-            ${this.renderInvoiceCards()}
+            ${this.renderInvoiceCards(pageInvoices)}
           </div>
+          ${this.renderPagination(totalPages, totalFiltered)}
         </div>
       </div>
     `;
   },
 
   async showImportPdf() {
-    // Refresh templates so newly created ones (e.g., Verhoef) appear without full page reload
     try {
-      this.templates = await api.getInvoiceTemplates();
-    } catch (e) {
-      console.error("Failed to refresh invoice templates for import modal", e);
-    }
+      const [templates, importTemplates] = await Promise.all([
+        api.getInvoiceTemplates(),
+        api.getImportTemplates(),
+      ]);
 
-    const templateOptions = this.templates
-      .map((t) => `<option value="${t.id}">${t.name}</option>`)
-      .join("");
-
-    let importTemplates = [];
-    try {
-      importTemplates = await api.getImportTemplates();
-    } catch (err) {
-      console.error("Error loading import templates for modal:", err);
-    }
-
-    const importTemplateOptions =
-      `<option value="">-- AI template optioneel --</option>` +
-      importTemplates
-        .map(
-          (t) => `<option value="${t.id}">${t.name} (${t.parser_type})</option>`
-        )
+      const templateOptions = (templates || [])
+        .map((tpl) => {
+          const label = tpl.is_default ? `${tpl.name} (default)` : tpl.name;
+          return `<option value="${tpl.id}">${label}</option>`;
+        })
         .join("");
 
-    const modalHtml = `
+      const importTemplateOptions = (importTemplates || []).length
+        ? importTemplates
+            .map(
+              (t) =>
+                `<option value="${t.id}">${t.name} (${t.parser_type || ""})</option>`
+            )
+            .join("")
+        : `<option value="">Geen import templates beschikbaar</option>`;
+
+      const modalHtml = `
       <div class="modal fade" id="importPdfModal" tabindex="-1">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -195,6 +194,15 @@ const invoiceManager = {
                   ${importTemplateOptions}
                 </select>
                 <div class="form-text">Optioneel: kies een import template met regex-mapping zodat factuurnummer en totaal worden gevonden.</div>
+              </div>
+
+              <div class="mb-3">
+                <label for="importInvoiceType" class="form-label">Type factuur</label>
+                <select id="importInvoiceType" class="form-select">
+                  <option value="Verkoop" selected>Verkoop (Inkomsten)</option>
+                  <option value="Inkoop">Inkoop (Uitgaven)</option>
+                </select>
+                <div class="form-text">Verkoop = inkomsten (facturen naar klanten), Inkoop = uitgaven (facturen van leveranciers)</div>
               </div>
               
               <div class="mb-3">
@@ -231,52 +239,52 @@ const invoiceManager = {
         </div>
       </div>`;
 
-    // Inject modal into DOM if not present
-    let container = document.getElementById("modal-container");
-    if (!container) {
-      container = document.createElement("div");
-      container.id = "modal-container";
-      document.body.appendChild(container);
-    }
-    container.innerHTML = modalHtml;
-
-    const modalEl = document.getElementById("importPdfModal");
-    const bsModal = new bootstrap.Modal(modalEl);
-    bsModal.show();
-
-    let lastAutoDetect = null;
-
-    const renderAutoDetectResult = (data) => {
-      const target = document.getElementById("autoDetectResult");
-      if (!target) return;
-      if (!data) {
-        target.innerHTML = `<div class="text-muted">Nog niet geanalyseerd</div>`;
-        return;
+      // Inject modal into DOM if not present
+      let container = document.getElementById("modal-container");
+      if (!container) {
+        container = document.createElement("div");
+        container.id = "modal-container";
+        document.body.appendChild(container);
       }
+      container.innerHTML = modalHtml;
 
-      const labels = {
-        invoice_number: "Factuurnummer",
-        invoice_date: "Datum",
-        customer_name: "Klant",
-        subtotal: "Subtotaal",
-        vat_amount: "BTW",
-        total_amount: "Totaal",
-      };
+      const modalEl = document.getElementById("importPdfModal");
+      const bsModal = new bootstrap.Modal(modalEl);
+      bsModal.show();
 
-      const badgeFor = (key) => {
-        const field = data.fields?.[key];
-        const missing = !field || field.missing;
-        const confidence = Math.round((field?.confidence || 0) * 100);
-        const val = field?.value;
-        let cls = "bg-success";
-        if (missing) cls = "bg-danger";
-        else if ((field?.confidence || 0) < 0.75) cls = "bg-warning text-dark";
-        const text = missing ? "Ontbreekt" : val ?? "-";
-        return `<span class="badge ${cls} me-1 mb-1">${labels[key]}: ${text} (${confidence}%)</span>`;
-      };
+      let lastAutoDetect = null;
 
-      const missingRequired = data.summary?.missing_fields || [];
-      const notes = data.summary?.notes || [];
+      const renderAutoDetectResult = (data) => {
+        const target = document.getElementById("autoDetectResult");
+        if (!target) return;
+        if (!data) {
+          target.innerHTML = `<div class="text-muted">Nog niet geanalyseerd</div>`;
+          return;
+        }
+
+        const labels = {
+          invoice_number: "Factuurnummer",
+          invoice_date: "Datum",
+          customer_name: "Klant",
+          subtotal: "Subtotaal",
+          vat_amount: "BTW",
+          total_amount: "Totaal",
+        };
+
+        const badgeFor = (key) => {
+          const field = data.fields?.[key];
+          const missing = !field || field.missing;
+          const confidence = Math.round((field?.confidence || 0) * 100);
+          const val = field?.value;
+          let cls = "bg-success";
+          if (missing) cls = "bg-danger";
+          else if ((field?.confidence || 0) < 0.75) cls = "bg-warning text-dark";
+          const text = missing ? "Ontbreekt" : val ?? "-";
+          return `<span class="badge ${cls} me-1 mb-1">${labels[key]}: ${text} (${confidence}%)</span>`;
+        };
+
+        const missingRequired = data.summary?.missing_fields || [];
+        const notes = data.summary?.notes || [];
 
       target.innerHTML = `
         <div class="fw-semibold mb-1">Analyse: ${
@@ -423,6 +431,11 @@ const invoiceManager = {
         if (aiTplSel && aiTplSel.value) {
           formData.append("ai_template_id", aiTplSel.value);
         }
+        // pass invoice_type (Verkoop or Inkoop)
+        const invoiceTypeSel = document.getElementById("importInvoiceType");
+        if (invoiceTypeSel && invoiceTypeSel.value) {
+          formData.append("invoice_type", invoiceTypeSel.value);
+        }
 
         try {
           await api.importInvoicePDF(formData);
@@ -478,6 +491,10 @@ const invoiceManager = {
       await this.loadData();
       this.renderInvoiceList();
     };
+    } catch (error) {
+      console.error("Error showing import PDF modal:", error);
+      showToast("Kon import modal niet openen", "error");
+    }
   },
 
   async loadImportTemplatesForModal() {
@@ -516,16 +533,16 @@ const invoiceManager = {
     }
   },
 
-  renderInvoiceRows() {
-    if (this.invoices.length === 0) {
-      return `<tr><td colspan="7" class="text-center text-muted">${t(
+  renderInvoiceRows(invoices) {
+    if (!invoices || invoices.length === 0) {
+      return `<tr><td colspan="8" class="text-center text-muted">${t(
         "ui",
         "invoice.none_found",
         "No invoices found"
       )}</td></tr>`;
     }
 
-    return this.invoices
+    return invoices
       .map((invoice) => {
         const statusBadge = this.getStatusBadge(invoice.status);
         return `
@@ -537,6 +554,7 @@ const invoiceManager = {
           </td>
           <td><strong>${invoice.invoice_number}</strong></td>
           <td>${invoice.customer_name || "-"}</td>
+          <td>${invoice.invoice_type || 'Verkoop'}</td>
           <td>${invoice.invoice_date}</td>
           <td>€ ${parseFloat(invoice.total_amount).toFixed(2)}</td>
           <td>${statusBadge}</td>
@@ -575,8 +593,8 @@ const invoiceManager = {
       .join("");
   },
 
-  renderInvoiceCards() {
-    if (this.invoices.length === 0) {
+  renderInvoiceCards(invoices) {
+    if (!invoices || invoices.length === 0) {
       return `<div class="alert alert-light text-center text-muted mb-0">${t(
         "ui",
         "invoice.none_found",
@@ -584,7 +602,7 @@ const invoiceManager = {
       )}</div>`;
     }
 
-    return this.invoices
+    return invoices
       .map((invoice) => {
         const statusBadge = this.getStatusBadge(invoice.status);
         const collapseId = `invoice-collapse-${invoice.id}`;
@@ -678,34 +696,73 @@ const invoiceManager = {
     return badges[status] || '<span class="badge bg-secondary">Onbekend</span>';
   },
 
+  getFilteredInvoices() {
+    const search = (this.filterSearch || "").toLowerCase();
+    const status = this.filterStatus || "";
+    const dateBefore = this.filterDateBefore;
+
+    return this.invoices.filter((inv) => {
+      const text = `${inv.invoice_number || ""} ${(inv.customer_name || "").toLowerCase()}`.toLowerCase();
+      const matchesSearch = !search || text.includes(search);
+      const matchesStatus = !status || (inv.status || "").toLowerCase() === status.toLowerCase();
+      const matchesDate = !dateBefore || (inv.invoice_date && new Date(inv.invoice_date) <= new Date(dateBefore));
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  },
+
+  getPaginatedInvoices() {
+    const filtered = this.getFilteredInvoices();
+    const totalFiltered = filtered.length;
+    const totalPages = Math.max(1, Math.ceil(totalFiltered / this.pageSize));
+    this.currentPage = Math.min(this.currentPage, totalPages);
+    const start = (this.currentPage - 1) * this.pageSize;
+    const pageInvoices = filtered.slice(start, start + this.pageSize);
+    return { pageInvoices, totalPages, totalFiltered };
+  },
+
+  renderPagination(totalPages, totalFiltered) {
+    if (!totalFiltered) return "";
+
+    const prevDisabled = this.currentPage <= 1 ? "disabled" : "";
+    const nextDisabled = this.currentPage >= totalPages ? "disabled" : "";
+
+    // windowed page buttons (max 5)
+    const pages = [];
+    const start = Math.max(1, this.currentPage - 2);
+    const end = Math.min(totalPages, start + 4);
+    for (let p = start; p <= end; p++) {
+      pages.push(
+        `<button class="btn btn-sm ${
+          p === this.currentPage ? "btn-primary" : "btn-outline-primary"
+        }" onclick="invoiceManager.goToPage(${p})">${p}</button>`
+      );
+    }
+
+    return `
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+        <div class="text-muted small">Pagina ${this.currentPage} / ${totalPages} • ${totalFiltered} facturen</div>
+        <div class="btn-group" role="group" aria-label="Paginatie">
+          <button class="btn btn-sm btn-outline-primary" ${prevDisabled} onclick="invoiceManager.goToPage(${this.currentPage - 1})">Vorige</button>
+          ${pages.join("")}
+          <button class="btn btn-sm btn-outline-primary" ${nextDisabled} onclick="invoiceManager.goToPage(${this.currentPage + 1})">Volgende</button>
+        </div>
+      </div>`;
+  },
+
+  goToPage(page) {
+    if (!page || page < 1) return;
+    const filtered = this.getFilteredInvoices();
+    const totalPages = Math.max(1, Math.ceil(filtered.length / this.pageSize));
+    this.currentPage = Math.max(1, Math.min(page, totalPages));
+    this.renderInvoiceList();
+  },
+
   filterInvoices() {
-    const searchTerm = document
-      .getElementById("invoice-search")
-      .value.toLowerCase();
-    const statusFilter = document.getElementById("invoice-status-filter").value;
-
-    const rows = document.querySelectorAll("#invoice-table-body tr");
-    rows.forEach((row) => {
-      const text = row.textContent.toLowerCase();
-      const matchesSearch = text.includes(searchTerm);
-      const status = row.querySelector(".badge")
-        ? row.querySelector(".badge").textContent.toLowerCase()
-        : "";
-      const matchesStatus = !statusFilter || status.includes(statusFilter);
-
-      row.style.display = matchesSearch && matchesStatus ? "" : "none";
-    });
-
-    const cards = document.querySelectorAll(".invoice-accordion-item");
-    cards.forEach((card) => {
-      const text = card.textContent.toLowerCase();
-      const badge = card.querySelector(".badge");
-      const status = badge ? badge.textContent.toLowerCase() : "";
-      const matchesSearch = text.includes(searchTerm);
-      const matchesStatus = !statusFilter || status.includes(statusFilter);
-
-      card.style.display = matchesSearch && matchesStatus ? "" : "none";
-    });
+    this.filterSearch = document.getElementById("invoice-search").value;
+    this.filterStatus = document.getElementById("invoice-status-filter").value;
+    this.filterDateBefore = document.getElementById("invoice-date-before").value;
+    this.currentPage = 1;
+    this.renderInvoiceList();
   },
 
   // ============================================
@@ -1888,13 +1945,20 @@ const invoiceManager = {
                   </div>
 
                   <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                      <label class="form-label">Type *</label>
+                      <select class="form-select" id="invoice-type">
+                        <option value="Verkoop" selected>Verkoop (Inkomsten)</option>
+                        <option value="Inkoop">Inkoop (Uitgaven)</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
                       <label class="form-label">Factuurdatum *</label>
                       <input type="date" class="form-control" id="invoice-date" value="${
                         new Date().toISOString().split("T")[0]
                       }">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                       <label class="form-label">Vervaldatum</label>
                       <input type="date" class="form-control" id="invoice-due-date">
                     </div>
@@ -2059,13 +2123,20 @@ const invoiceManager = {
                   </div>
 
                   <div class="row mb-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                      <label class="form-label">Type *</label>
+                      <select class="form-select" id="invoice-type">
+                        <option value="Verkoop" ${invoice.invoice_type === 'Verkoop' || !invoice.invoice_type ? 'selected' : ''}>Verkoop (Inkomsten)</option>
+                        <option value="Inkoop" ${invoice.invoice_type === 'Inkoop' ? 'selected' : ''}>Inkoop (Uitgaven)</option>
+                      </select>
+                    </div>
+                    <div class="col-md-4">
                       <label class="form-label">Factuurdatum *</label>
                       <input type="date" class="form-control" id="invoice-date" value="${
                         invoice.invoice_date || ""
                       }">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                       <label class="form-label">Vervaldatum</label>
                       <input type="date" class="form-control" id="invoice-due-date" value="${
                         invoice.due_date || ""
@@ -2739,6 +2810,7 @@ const invoiceManager = {
     const invoiceNumber = document
       .getElementById("invoice-number")
       .value.trim();
+    const invoiceType = document.getElementById("invoice-type").value;
     const invoiceDate = document.getElementById("invoice-date").value;
     const dueDate = document.getElementById("invoice-due-date").value;
     const customerName = document.getElementById("customer-name").value.trim();
@@ -2762,6 +2834,7 @@ const invoiceManager = {
       const payload = {
         template_id: templateId,
         invoice_number: invoiceNumber,
+        invoice_type: invoiceType,
         customer_name: customerName || null,
         customer_address: customerAddress || null,
         invoice_date: invoiceDate,

@@ -3144,6 +3144,39 @@ class Database {
                     }
                   );
                 }
+                
+                // Check if invoice_type column exists, add if not
+                const hasInvoiceType = columns.some(
+                  (c) => c.name === "invoice_type"
+                );
+                if (!hasInvoiceType) {
+                  this.db.run(
+                    "ALTER TABLE invoices ADD COLUMN invoice_type TEXT DEFAULT 'Verkoop' CHECK(invoice_type IN ('Inkoop','Verkoop'))",
+                    (err) => {
+                      if (err) {
+                        console.error(
+                          "Error adding invoice_type column:",
+                          err
+                        );
+                      } else {
+                        console.log(
+                          "✓ Added invoice_type column to invoices"
+                        );
+                        // Set existing invoices to 'Verkoop'
+                        this.db.run(
+                          "UPDATE invoices SET invoice_type = 'Verkoop' WHERE invoice_type IS NULL",
+                          (updateErr) => {
+                            if (updateErr) {
+                              console.error("Error setting default invoice_type:", updateErr);
+                            } else {
+                              console.log("✓ Set existing invoices to 'Verkoop'");
+                            }
+                          }
+                        );
+                      }
+                    }
+                  );
+                }
               }
             });
           }

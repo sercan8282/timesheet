@@ -114,33 +114,54 @@ function buildRevenue(period, customerFilter, yearFilter, invoices) {
     yearFilter,
     filterByCustomer(customerFilter, invoices)
   );
-  const { totalsByYear, labelSet } = aggregateRevenue(period, filtered);
-  const years = Object.keys(totalsByYear).sort();
+  
+  // Separate invoices by type: Verkoop (income) and Inkoop (expenses)
+  const { incomeByYear, expensesByYear, labelSet } = aggregateRevenueByType(period, filtered);
+  const years = new Set([...Object.keys(incomeByYear), ...Object.keys(expensesByYear)]);
+  const yearsList = Array.from(years).sort();
   const labels = Array.from(labelSet).sort();
 
   // If a specific year is selected, limit to that
   const yearsForChart = yearFilter
-    ? years.filter((y) => y === yearFilter)
-    : years;
+    ? yearsList.filter((y) => y === yearFilter)
+    : yearsList;
 
-  const datasets = yearsForChart.map((year, idx) => {
-    const colorHue = 210 + idx * 25;
-    const bg = `hsla(${colorHue}, 70%, 55%, 0.35)`;
-    const border = `hsla(${colorHue}, 70%, 45%, 0.9)`;
-    return {
-      label: `Omzet ${year}`,
+  // Create datasets for income and expenses per year
+  const datasets = [];
+  
+  yearsForChart.forEach((year, idx) => {
+    // Income dataset (green)
+    const incomeColor = `hsla(120, 60%, ${45 - idx * 5}%, 0.8)`;
+    datasets.push({
+      label: `Inkomsten ${year}`,
       data: labels.map((lbl) =>
-        Number((totalsByYear[year]?.[lbl] || 0).toFixed(2))
+        Number((incomeByYear[year]?.[lbl] || 0).toFixed(2))
       ),
-      backgroundColor: bg,
-      borderColor: border,
-      borderWidth: 1.5,
-    };
+      borderColor: incomeColor,
+      backgroundColor: incomeColor,
+      borderWidth: 2,
+      tension: 0.1,
+      fill: false,
+    });
+
+    // Expenses dataset (red)
+    const expenseColor = `hsla(0, 60%, ${45 - idx * 5}%, 0.8)`;
+    datasets.push({
+      label: `Uitgaven ${year}`,
+      data: labels.map((lbl) =>
+        Number((expensesByYear[year]?.[lbl] || 0).toFixed(2))
+      ),
+      borderColor: expenseColor,
+      backgroundColor: expenseColor,
+      borderWidth: 2,
+      tension: 0.1,
+      fill: false,
+    });
   });
 
   const ctx = document.getElementById("revenue-chart");
   revenueChart = new Chart(ctx, {
-    type: "bar",
+    type: "line",
     data: {
       labels,
       datasets,
@@ -159,19 +180,25 @@ function buildRevenue(period, customerFilter, yearFilter, invoices) {
       plugins: {
         tooltip: {
           callbacks: {
-            label: (ctx) => `€ ${ctx.parsed.y.toFixed(2)}`,
+            label: (ctx) => `${ctx.dataset.label}: € ${ctx.parsed.y.toFixed(2)}`,
           },
+        },
+        legend: {
+          display: true,
+          position: 'top',
         },
       },
     },
   });
 
-  renderTable(labels, yearsForChart, totalsByYear);
+  renderTable(labels, yearsForChart, incomeByYear, expensesByYear);
 }
 
-function aggregateRevenue(period, invoices) {
-  const result = {}; // year -> { label -> sum }
+function aggregateRevenueByType(period, invoices) {
+  const incomeByYear = {}; // year -> { label -> sum }
+  const expensesByYear = {}; // year -> { label -> sum }
   const labelSet = new Set();
+  
   invoices.forEach((inv) => {
     if (!inv.invoice_date || inv.total_amount == null) return;
     const amount = parseFloat(inv.total_amount) || 0;
@@ -192,11 +219,22 @@ function aggregateRevenue(period, invoices) {
     }
 
     const year = d.getFullYear().toString();
-    if (!result[year]) result[year] = {};
-    result[year][key] = (result[year][key] || 0) + amount;
+    const invoiceType = inv.invoice_type || 'Verkoop'; // Default to Verkoop for old invoices
+    
+    if (invoiceType === 'Verkoop') {
+      // Income
+      if (!incomeByYear[year]) incomeByYear[year] = {};
+      incomeByYear[year][key] = (incomeByYear[year][key] || 0) + amount;
+    } else if (invoiceType === 'Inkoop') {
+      // Expenses
+      if (!expensesByYear[year]) expensesByYear[year] = {};
+      expensesByYear[year][key] = (expensesByYear[year][key] || 0) + amount;
+    }
+    
     labelSet.add(key);
   });
-  return { totalsByYear: result, labelSet };
+  
+  return { incomeByYear, expensesByYear, labelSet };
 }
 
 function filterByCustomer(customerFilter, invoices) {
@@ -264,7 +302,7 @@ function populateYears(selectEl, invoices) {
   selectEl.value = hasCurrent ? current : "";
 }
 
-function renderTable(labels, years, totalsByYear) {
+function renderTable(labels, years, incomeByYear, expensesByYear) {
   const thead = document.getElementById("revenue-table-head");
   const tbody = document.getElementById("revenue-table-body");
   if (!thead || !tbody) return;
@@ -272,24 +310,101 @@ function renderTable(labels, years, totalsByYear) {
   thead.innerHTML = `
     <tr>
       <th>Periode</th>
-      ${years.map((y) => `<th class="text-end">Omzet ${y}</th>`).join("")}
+      ${years
+        .map(
+          (y) => `
+        <th class="text-end text-success">Inkomsten ${y}</th>
+        <th class="text-end text-danger">Uitgaven ${y}</th>
+        <th class="text-end fw-bold">Winst/Verlies ${y}</th>
+      `
+        )
+        .join("")}
     </tr>
   `;
+
+  let totalIncome = 0;
+  let totalExpenses = 0;
 
   tbody.innerHTML = labels
     .map((label) => {
       const cells = years
-        .map(
-          (y) => `
-          <td class="text-end">€ ${(totalsByYear[y]?.[label] || 0).toFixed(
-            2
-          )}</td>
-        `
-        )
+        .map((y) => {
+          const income = incomeByYear[y]?.[label] || 0;
+          const expense = expensesByYear[y]?.[label] || 0;
+          const profit = income - expense;
+
+          totalIncome += income;
+          totalExpenses += expense;
+
+          return `
+          <td class="text-end text-success">€ ${income.toFixed(2)}</td>
+          <td class="text-end text-danger">€ ${expense.toFixed(2)}</td>
+          <td class="text-end fw-bold ${
+            profit >= 0 ? "text-success" : "text-danger"
+          }">€ ${profit.toFixed(2)}</td>
+        `;
+        })
         .join("");
       return `<tr><td>${label}</td>${cells}</tr>`;
     })
     .join("");
+
+  const totalProfit = totalIncome - totalExpenses;
+  updateProfitSummary(totalIncome, totalExpenses, totalProfit);
+}
+
+function updateProfitSummary(totalIncome, totalExpenses, totalProfit) {
+  let summaryDiv = document.getElementById("profit-summary");
+
+  if (!summaryDiv) {
+    // Create summary section if it doesn't exist
+    const tableWrapper = document.getElementById("revenue-table-wrapper");
+    if (tableWrapper) {
+      summaryDiv = document.createElement("div");
+      summaryDiv.id = "profit-summary";
+      summaryDiv.className = "mt-4 mb-4";
+      tableWrapper.parentNode.insertBefore(summaryDiv, tableWrapper);
+    } else {
+      return;
+    }
+  }
+
+  const profitClass = totalProfit >= 0 ? "text-success" : "text-danger";
+  const profitIcon = totalProfit >= 0 ? "📈" : "📉";
+
+  summaryDiv.innerHTML = `
+    <h5 class="mb-3">Financieel Overzicht</h5>
+    <div class="row text-center">
+      <div class="col-md-4">
+        <div class="card bg-success bg-opacity-10 border-success">
+          <div class="card-body">
+            <h6 class="text-success mb-1">Totale Inkomsten</h6>
+            <h4 class="text-success mb-0">€ ${totalIncome.toFixed(2)}</h4>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card bg-danger bg-opacity-10 border-danger">
+          <div class="card-body">
+            <h6 class="text-danger mb-1">Totale Uitgaven</h6>
+            <h4 class="text-danger mb-0">€ ${totalExpenses.toFixed(2)}</h4>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card ${profitClass} bg-opacity-10 border-${
+    totalProfit >= 0 ? "success" : "danger"
+  }">
+          <div class="card-body">
+            <h6 class="${profitClass} mb-1">${
+    totalProfit >= 0 ? "Winst" : "Verlies"
+  } ${profitIcon}</h6>
+            <h4 class="${profitClass} mb-0">€ ${totalProfit.toFixed(2)}</h4>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function isoWeek(date) {
