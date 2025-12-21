@@ -2567,7 +2567,7 @@ const invoiceManager = {
             item_date: ts.date,
             item_km: km,
             item_hours: hours,
-            item_rate: 65, // Default rate for transport
+            // item_rate removed - will use template hourly_rate
             quantity: 1,
             unit_price: 0,
           });
