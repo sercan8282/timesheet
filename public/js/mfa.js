@@ -250,6 +250,20 @@ async function mfaSkipSetup() {
 }
 
 function mfaCompleteSetup() {
+  // Save token and user to localStorage now that MFA setup is complete
+  const token = api.getToken();
+  if (token) {
+    localStorage.setItem("token", token);
+  }
+  
+  // Save user data if available from temp storage or current state
+  if (window.tempUserData) {
+    localStorage.setItem("user", JSON.stringify(window.tempUserData));
+    delete window.tempUserData;
+  } else if (window.currentUser) {
+    localStorage.setItem("user", JSON.stringify(window.currentUser));
+  }
+  
   mfaModal.hide();
   if (mfaState.setupMode) {
     // Refresh page to reflect MFA enabled status

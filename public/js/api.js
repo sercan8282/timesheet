@@ -57,6 +57,15 @@ class API {
       // Log error for debugging
       console.error("API Error Response:", data);
 
+      // Handle MFA setup required
+      if (data.mfaSetupRequired && window.showMFAModal) {
+        window.showMFAModal({
+          setupMode: true,
+          required: true,
+        });
+        throw new Error(data.error || "MFA setup required");
+      }
+
       // Handle validation errors
       if (data.errors && Array.isArray(data.errors)) {
         const errorMessages = data.errors

@@ -20,6 +20,7 @@ const authMiddleware = async (req, res, next) => {
         `SELECT 
             u.id, u.username, u.full_name, u.is_blocked, u.role,
             u.company_id, u.phone, u.ritnumber, u.adr, u.mega_kast,
+            u.mfa_enabled,
             c.name AS company_name, c.pause_time AS company_pause_time
          FROM users u
          LEFT JOIN companies c ON c.id = u.company_id
@@ -33,6 +34,23 @@ const authMiddleware = async (req, res, next) => {
       if (user.is_blocked === 1) {
         return res.status(403).json({
           error: "Your account has been blocked. Contact administrator.",
+        });
+      }
+
+      // Check if MFA setup is required (user exists but MFA not enabled)
+      // Allow access only to MFA endpoints
+      const mfaEndpoints = [
+        '/api/mfa/setup',
+        '/api/mfa/verify-setup',
+        '/api/mfa/backup-codes',
+        '/api/auth/logout'
+      ];
+      const isMfaEndpoint = mfaEndpoints.some(ep => req.path.startsWith(ep));
+      
+      if (!user.mfa_enabled && !isMfaEndpoint) {
+        return res.status(403).json({
+          error: "MFA setup required",
+          mfaSetupRequired: true
         });
       }
 

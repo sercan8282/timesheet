@@ -60,9 +60,29 @@ class App {
         console.log("[DEBUG app.init] User refreshed from API:", this.user);
       } catch (error) {
         console.log(
-          "[DEBUG app.init] Could not refresh user, using localStorage:",
+          "[DEBUG app.init] Could not refresh user, error:",
           error
         );
+        
+        // If MFA setup is required, show MFA modal and don't continue with app
+        if (error.message && error.message.includes("MFA setup required")) {
+          console.log("[DEBUG app.init] MFA setup required, showing modal");
+          // Show login page first so MFA modal has somewhere to attach
+          this.showLogin();
+          // Small delay to ensure DOM is ready
+          setTimeout(() => {
+            if (window.showMFAModal) {
+              window.showMFAModal({
+                setupMode: true,
+                required: true,
+              });
+            }
+          }, 100);
+          return; // Stop initialization here
+        }
+        
+        // For other errors, use localStorage user
+        console.log("[DEBUG app.init] Using user from localStorage");
         window.currentUser = this.user;
       }
 

@@ -1,6 +1,7 @@
 const https = require("https");
 const nodemailer = require("nodemailer");
 const db = require("../config/database");
+const url = require("url");
 
 function isOAuth(settings) {
   return settings.auth_type === "oauth2";
@@ -19,8 +20,32 @@ async function fetchAccessToken(settings) {
     throw new Error("OAuth settings are incomplete");
   }
 
-  const scope =
-    settings.oauth_scope || "https://outlook.office365.com/.default";
+  const normalizeScope = (raw) => {
+    const val = (raw || "").trim();
+    // Default to Outlook SMTP resource
+    if (!val) return "https://outlook.office365.com/.default";
+    // If a random non-URL value was set, force Outlook default
+    try {
+      const parsed = new url.URL(val);
+      let s = parsed.origin + parsed.pathname;
+      if (!s.endsWith("/.default")) s = s.replace(/\/?$/, "") + "/.default";
+      return s;
+    } catch {
+      return "https://outlook.office365.com/.default";
+    }
+  };
+
+  let scope = normalizeScope(settings.oauth_scope);
+
+  // If using Office365 SMTP host but Graph scope, prefer Outlook resource
+  const host = (settings.smtp_host || "").toLowerCase();
+  if (host.includes("smtp.office365.com") && scope.startsWith("https://graph.microsoft.com")) {
+    console.warn(
+      "[SMTP OAuth] Graph scope detected with SMTP host; switching to Outlook .default scope"
+    );
+    scope = "https://outlook.office365.com/.default";
+  }
+
   const postData = new URLSearchParams({
     client_id: settings.oauth_client_id,
     client_secret: settings.oauth_client_secret,
@@ -39,6 +64,7 @@ async function fetchAccessToken(settings) {
   };
 
   return new Promise((resolve, reject) => {
+    console.log("[SMTP OAuth] Requesting token from v2 endpoint with scope:", scope);
     const req = https.request(options, (res) => {
       let data = "";
       res.on("data", (chunk) => (data += chunk));
@@ -46,11 +72,63 @@ async function fetchAccessToken(settings) {
         try {
           const parsed = JSON.parse(data);
           if (parsed.error) {
-            return reject(new Error(parsed.error_description || parsed.error));
+            const desc = parsed.error_description || parsed.error;
+            // Improve guidance for common scope/resource mistakes
+            if (desc && desc.includes("AADSTS1002012")) {
+              // One automatic retry with Outlook scope
+              const fallbackScope = "https://outlook.office365.com/.default";
+              if (scope !== fallbackScope) {
+                console.warn("[SMTP OAuth] AADSTS1002012; retrying with scope:", fallbackScope);
+                const retryBody = new URLSearchParams({
+                  client_id: settings.oauth_client_id,
+                  client_secret: settings.oauth_client_secret,
+                  scope: fallbackScope,
+                  grant_type: "client_credentials",
+                }).toString();
+                const retryReq = https.request(options, (rres) => {
+                  let rdata = "";
+                  rres.on("data", (chunk) => (rdata += chunk));
+                  rres.on("end", () => {
+                    try {
+                      const rparsed = JSON.parse(rdata);
+                      if (rparsed.error) {
+                        const rdesc = rparsed.error_description || rparsed.error;
+                        return reject(new Error(rdesc || "Token retry failed"));
+                      }
+                      if (!rparsed.access_token) {
+                        return reject(new Error("No access token returned from Microsoft (retry)"));
+                      }
+                      console.log("[SMTP OAuth] Token acquired after retry with scope:", fallbackScope);
+                      return resolve(rparsed.access_token);
+                    } catch (rerr) {
+                      return reject(new Error("Failed to parse token response (retry)"));
+                    }
+                  });
+                });
+                retryReq.on("error", (rerr) => reject(rerr));
+                retryReq.write(retryBody);
+                retryReq.end();
+                return; // Exit original handler until retry finishes
+              }
+              return reject(
+                new Error(
+                  "AADSTS1002012: Scope must be the resource identifier ending with /.default. Use https://outlook.office365.com/.default for SMTP app-only and grant the SMTP.Send application permission."
+                )
+              );
+            }
+            if (desc && desc.includes("AADSTS70011")) {
+              return reject(
+                new Error(
+                  "AADSTS70011: Invalid or unsupported scope. Ensure you use the v2 token endpoint and a /.default scope (e.g. https://outlook.office365.com/.default)."
+                )
+              );
+            }
+            return reject(new Error(desc || "Token request failed"));
           }
           if (!parsed.access_token) {
             return reject(new Error("No access token returned from Microsoft"));
           }
+          console.log("[SMTP OAuth] Token acquired via v2 endpoint with scope:", scope);
           resolve(parsed.access_token);
         } catch (err) {
           reject(new Error("Failed to parse token response"));
@@ -78,6 +156,8 @@ async function buildTransporter(settings) {
         type: "OAuth2",
         user: settings.smtp_user,
         accessToken,
+        // Explicitly indicate XOAUTH2 for clarity with some SMTP servers
+        method: "XOAUTH2",
       },
       requireTLS: !useSecure,
       tls: {
