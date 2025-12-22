@@ -1006,5 +1006,23 @@
     "key": "yes",
     "locale": "nl",
     "text": "Ja"
+  },
+  {
+    "namespace": "ui",
+    "key": "invoice.confirm_delete_selected",
+    "locale": "en",
+    "text": "Are you sure you want to delete {count} selected invoices?"
+  },
+  {
+    "namespace": "ui",
+    "key": "invoice.confirm_delete_selected",
+    "locale": "nl",
+    "text": "Weet je zeker dat je {count} geselecteerde facturen wilt verwijderen?"
+  },
+  {
+    "namespace": "ui",
+    "key": "invoice.confirm_delete_selected",
+    "locale": "de",
+    "text": "Möchten Sie {count} ausgewählte Rechnungen wirklich löschen?"
   }
 ]

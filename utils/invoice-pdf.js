@@ -140,6 +140,7 @@ async function generateInvoicePDF(invoiceId) {
   const colX = [50, 50 + colWidth, 50 + colWidth * 2];
   const topCols = [[], [], []];
   const addrCols = [[], [], []];
+  const footerCols = [[], [], []];
 
   templateElements.forEach((el) => {
     if (el.element_type === "title") return;
@@ -149,6 +150,9 @@ async function generateInvoicePDF(invoiceId) {
     else if (el.element_type === "address_left") addrCols[0].push(el);
     else if (el.element_type === "address_center") addrCols[1].push(el);
     else if (el.element_type === "address_right") addrCols[2].push(el);
+    else if (el.element_type === "footer_left") footerCols[0].push(el);
+    else if (el.element_type === "footer_center") footerCols[1].push(el);
+    else if (el.element_type === "footer_right") footerCols[2].push(el);
   });
 
   // Auto insert branding logo if missing in top-left
@@ -186,6 +190,27 @@ async function generateInvoicePDF(invoiceId) {
       else if (el.content) y = renderTextBlock(el, x, y, colWidth);
     });
     return y;
+  };
+
+  // Estimate the vertical space a column will consume so we can place the footer at the bottom.
+  const measureColumnHeight = (elements) => {
+    let height = 0;
+    elements.forEach((el) => {
+      if (el.image_path) {
+        const imgWidth = Math.min(colWidth - 10, parseInt(el.image_width, 10) || 150);
+        const imgHeight = parseInt(el.image_height, 10) || imgWidth;
+        height += imgHeight + 10;
+      } else if (el.content) {
+        const content = cleanContent(el.content);
+        const fontFamily = el.font_family && el.font_family !== "inherit" ? el.font_family : defaultFont;
+        const fontName = getFontName(fontFamily, el.font_weight);
+        const fontSize = parseInt(el.font_size, 10) || 12;
+        doc.font(fontName).fontSize(fontSize);
+        const h = doc.heightOfString(content, { width: colWidth - 10 });
+        height += h + 10;
+      }
+    });
+    return height;
   };
 
   const topStartY = 50;
@@ -502,6 +527,33 @@ async function generateInvoicePDF(invoiceId) {
       .text("Opmerkingen:", 50, yPosition);
     yPosition += 15;
     doc.text(invoice.notes, 50, yPosition, { width: tableWidth });
+    yPosition += doc.heightOfString(invoice.notes, { width: tableWidth }) + 20;
+  }
+
+  // Footer rendering (3-column only) placed at bottom with a consistent margin
+  const hasFooterColumns = footerCols[0].length > 0 || footerCols[1].length > 0 || footerCols[2].length > 0;
+
+  if (hasFooterColumns) {
+    const bottomMargin = 50;
+    const footerHeights = footerCols.map((col) => measureColumnHeight(col));
+    const footerHeight = Math.max(...footerHeights, 0);
+
+    // Determine the target Y so the footer sits just above the bottom margin
+    const targetFooterY = doc.page.height - bottomMargin - footerHeight;
+
+    // If current content would collide, move to a fresh page
+    if (yPosition > targetFooterY) {
+      doc.addPage();
+      yPosition = 50;
+    }
+
+    // Start footer either below existing content (with spacing) or at the calculated target
+    const startY = Math.max(yPosition + 20, targetFooterY);
+    const footerY = [startY, startY, startY];
+    footerY[0] = renderColumn(footerCols[0], colX[0], footerY[0]);
+    footerY[1] = renderColumn(footerCols[1], colX[1], footerY[1]);
+    footerY[2] = renderColumn(footerCols[2], colX[2], footerY[2]);
+    yPosition = Math.max(...footerY);
   }
 
   doc.end();

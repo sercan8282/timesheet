@@ -1215,6 +1215,24 @@ const invoiceManager = {
                     <div style="margin-top: 5px; font-size: 10px;" id="preview-addr-right"></div>
                   </div>
                 </div>
+
+                <!-- Footer sectie (1 sectie met keuze tussen 3 kolommen of full width) -->
+                <div style="margin-top: 20px; padding: 10px; background: #f8e8e8; border: 2px dashed #cc3300; border-radius: 4px;">
+                  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <div style="padding: 10px; background: #fff; border: 1px solid #bbb; min-height: 60px; border-radius: 3px; font-size: 11px;">
+                      <strong style="color: #666;">🔻 Footer Links</strong>
+                      <div style="margin-top: 5px; font-size: 10px;" id="preview-footer-left"></div>
+                    </div>
+                    <div style="padding: 10px; background: #fff; border: 1px solid #bbb; min-height: 60px; border-radius: 3px; font-size: 11px;">
+                      <strong style="color: #666;">🔻 Footer Midden</strong>
+                      <div style="margin-top: 5px; font-size: 10px;" id="preview-footer-center"></div>
+                    </div>
+                    <div style="padding: 10px; background: #fff; border: 1px solid #bbb; min-height: 60px; border-radius: 3px; font-size: 11px;">
+                      <strong style="color: #666;">🔻 Footer Rechts</strong>
+                      <div style="margin-top: 5px; font-size: 10px;" id="preview-footer-right"></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1238,6 +1256,11 @@ const invoiceManager = {
                       <option value="address_left">Adres Links (Factuuradres)</option>
                       <option value="address_center">Adres Midden</option>
                       <option value="address_right">Adres Rechts (Afzender)</option>
+                    </optgroup>
+                    <optgroup label="Footer Sectie">
+                      <option value="footer_left">Footer Links</option>
+                      <option value="footer_center">Footer Midden</option>
+                      <option value="footer_right">Footer Rechts</option>
                     </optgroup>
                     <optgroup label="Klassieke Types">
                       <option value="title">Titel (bovenaan PDF)</option>
@@ -1404,13 +1427,10 @@ const invoiceManager = {
       address_left: "#preview-addr-left",
       address_center: "#preview-addr-center",
       address_right: "#preview-addr-right",
+      footer_left: "#preview-footer-left",
+      footer_center: "#preview-footer-center",
+      footer_right: "#preview-footer-right",
     };
-
-    // Clear all preview areas
-    Object.values(positions).forEach((id) => {
-      const el = document.querySelector(id);
-      if (el) el.innerHTML = "";
-    });
 
     // Populate preview areas
     elements.forEach((el) => {
@@ -1473,7 +1493,8 @@ const invoiceManager = {
       type === "sender" ||
       type === "title" ||
       type.startsWith("top_") ||
-      type.startsWith("address_")
+      type.startsWith("address_") ||
+      type.startsWith("footer_")
     ) {
       let labelText = "Tekst Inhoud *";
       let placeholder = "";
@@ -1520,6 +1541,21 @@ const invoiceManager = {
         placeholder = "Bijv: Bedrijfsnaam en adres";
         helpText =
           '<small class="text-muted">Rechterkolom in adressectie (afzender)</small>';
+      } else if (type === "footer_left") {
+        labelText = "Inhoud Footer Links *";
+        placeholder = "Bijv: Copyright of contact";
+        helpText =
+          '<small class="text-muted">Linkerkolom onderaan PDF</small>';
+      } else if (type === "footer_center") {
+        labelText = "Inhoud Footer Midden *";
+        placeholder = "Bijv: Paginanummer of note";
+        helpText =
+          '<small class="text-muted">Middenkolom onderaan PDF</small>';
+      } else if (type === "footer_right") {
+        labelText = "Inhoud Footer Rechts *";
+        placeholder = "Bijv: Website of bedrijfsgegevens";
+        helpText =
+          '<small class="text-muted">Rechterkolom onderaan PDF</small>';
       }
 
       return (
@@ -1573,6 +1609,9 @@ const invoiceManager = {
             <option value="address_left">Adres Links</option>
             <option value="address_center">Adres Midden</option>
             <option value="address_right">Adres Rechts</option>
+            <option value="footer_left">Footer Links</option>
+            <option value="footer_center">Footer Midden</option>
+            <option value="footer_right">Footer Rechts</option>
           </select>
         </div>
         <div class="mb-3">
@@ -1737,7 +1776,8 @@ const invoiceManager = {
     if (
       type === "text" ||
       type.startsWith("top_") ||
-      type.startsWith("address_")
+      type.startsWith("address_") ||
+      type.startsWith("footer_")
     ) {
       const content = document.getElementById("element-content").value;
       const fontSize = document.getElementById("element-font-size").value;
@@ -1823,7 +1863,8 @@ const invoiceManager = {
           el.element_type === "sender" ||
           el.element_type === "title" ||
           el.element_type.startsWith("top_") ||
-          el.element_type.startsWith("address_")
+          el.element_type.startsWith("address_") ||
+          el.element_type.startsWith("footer_")
         ) {
           if (el.image_path) {
             preview = `<img src="${el.image_path}" alt="Template image" style="max-width: 200px; max-height: 100px;">`;
@@ -1899,6 +1940,11 @@ const invoiceManager = {
                     <option value="address_center" ${element.element_type === "address_center" ? "selected" : ""}>Adres Midden</option>
                     <option value="address_right" ${element.element_type === "address_right" ? "selected" : ""}>Adres Rechts</option>
                   </optgroup>
+                  <optgroup label="Footer Sectie">
+                    <option value="footer_left" ${element.element_type === "footer_left" ? "selected" : ""}>Footer Links</option>
+                    <option value="footer_center" ${element.element_type === "footer_center" ? "selected" : ""}>Footer Midden</option>
+                    <option value="footer_right" ${element.element_type === "footer_right" ? "selected" : ""}>Footer Rechts</option>
+                  </optgroup>
                   <optgroup label="Body Sectie">
                     <option value="image" ${element.element_type === "image" ? "selected" : ""}>Afbeelding (body)</option>
                     <option value="text" ${element.element_type === "text" ? "selected" : ""}>Tekst (body)</option>
@@ -1940,7 +1986,8 @@ const invoiceManager = {
               ${
                 element.element_type === "image" || 
                 (element.element_type.startsWith("top_") && element.image_path) ||
-                (element.element_type.startsWith("address_") && element.image_path)
+                (element.element_type.startsWith("address_") && element.image_path) ||
+                (element.element_type.startsWith("footer_") && element.image_path)
                   ? `
                 <div class="mb-3">
                   <label class="form-label">Afbeelding</label>
@@ -3931,11 +3978,13 @@ Met vriendelijke groet</textarea>
       return;
     }
 
-    const confirmMessage = t("ui", "invoice.confirm_delete_selected").replace(
-      "{count}",
-      ids.length
-    );
-    if (!confirm(confirmMessage)) {
+    const confirmMessage = t(
+      "ui",
+      "invoice.confirm_delete_selected",
+      "Weet je zeker dat je {count} geselecteerde facturen wilt verwijderen?"
+    ).replace("{count}", ids.length);
+    const confirmed = await this.showBulkDeleteConfirm(confirmMessage);
+    if (!confirmed) {
       return;
     }
 
@@ -3975,6 +4024,84 @@ Met vriendelijke groet</textarea>
         "error"
       );
     }
+  },
+
+  showBulkDeleteConfirm(message) {
+    return new Promise((resolve) => {
+      let modalEl = document.getElementById("bulkDeleteModal");
+
+      if (!modalEl) {
+        const modalHtml = `
+        <div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="bulkDeleteModalLabel">
+                  <i class="bi bi-trash me-2"></i>${t(
+                    "ui",
+                    "delete_selected",
+                    "Verwijder geselecteerde"
+                  )}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="${t(
+                  "ui",
+                  "close",
+                  "Sluiten"
+                )}"></button>
+              </div>
+              <div class="modal-body">
+                <p class="mb-0" data-role="bulk-delete-message">${message}</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t(
+                  "ui",
+                  "cancel",
+                  "Annuleren"
+                )}</button>
+                <button type="button" class="btn btn-danger" data-role="bulk-delete-confirm">
+                  <i class="bi bi-trash"></i> ${t("ui", "confirm", "Verwijderen")}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+        document.body.insertAdjacentHTML("beforeend", modalHtml.trim());
+        modalEl = document.getElementById("bulkDeleteModal");
+      }
+
+      const messageEl = modalEl.querySelector("[data-role='bulk-delete-message']");
+      if (messageEl) {
+        messageEl.textContent = message;
+      }
+
+      const confirmBtn = modalEl.querySelector("[data-role='bulk-delete-confirm']");
+      const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+      const cleanup = () => {
+        if (confirmBtn) {
+          confirmBtn.removeEventListener("click", onConfirm);
+        }
+        modalEl.removeEventListener("hidden.bs.modal", onHide);
+      };
+
+      const onHide = () => {
+        cleanup();
+        resolve(false);
+      };
+
+      const onConfirm = () => {
+        cleanup();
+        bsModal.hide();
+        resolve(true);
+      };
+
+      if (confirmBtn) {
+        confirmBtn.addEventListener("click", onConfirm, { once: true });
+      }
+      modalEl.addEventListener("hidden.bs.modal", onHide, { once: true });
+      bsModal.show();
+    });
   },
 
   async deleteOldInvoices() {
