@@ -272,7 +272,7 @@ async function loadLeaveBalance() {
         ? new Date(balance.updated_at).toLocaleString(locale)
         : "-";
   } catch (error) {
-    card.innerHTML = `<div class="alert alert-danger mb-0">${error.message}</div>`;
+    card.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -351,7 +351,7 @@ async function loadLeaveRequests() {
       })
       .join("");
   } catch (error) {
-    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${error.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${escapeHtml(error.message)}</td></tr>`;
   }
 }
 
@@ -458,7 +458,7 @@ async function updateLeaveRequest(id) {
       ? translate("ui", "leave.updated_pending", "Request updated and reset to pending approval.")
       : translate("ui", "leave.updated_success", "Request updated and balance adjusted.");
     
-    alertDiv.innerHTML = `<div class="alert alert-success">${successMessage}</div>`;
+    alertDiv.innerHTML = `<div class="alert alert-success">${escapeHtml(successMessage)}</div>`;
     cancelEdit();
     await Promise.all([
       loadLeaveBalance(),
@@ -466,7 +466,7 @@ async function updateLeaveRequest(id) {
       loadLeaveCalendar(),
     ]);
   } catch (error) {
-    alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    alertDiv.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -554,7 +554,7 @@ async function submitLeaveRequestForm() {
       loadLeaveCalendar(),
     ]);
   } catch (error) {
-    alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+    alertDiv.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
   }
 }
 
@@ -568,7 +568,7 @@ async function loadLeaveCalendar() {
     const allRequests = await api.getLeaveRequestsCalendar();
     renderLeaveCalendar(allRequests);
   } catch (error) {
-    container.innerHTML = `<div class="alert alert-danger m-3">${error.message}</div>`;
+    container.innerHTML = `<div class="alert alert-danger m-3">${escapeHtml(error.message)}</div>`;
   }
 }
 

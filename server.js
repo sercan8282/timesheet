@@ -226,7 +226,40 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
 // Security middleware
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Disable for simplicity, enable and configure in production
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+          "'self'",
+          "https://cdn.jsdelivr.net",
+          "'unsafe-inline'", // Needed for inline event handlers and Bootstrap
+        ],
+        styleSrc: [
+          "'self'",
+          "https://cdn.jsdelivr.net",
+          "'unsafe-inline'", // Needed for inline styles
+        ],
+        fontSrc: [
+          "'self'",
+          "https://cdn.jsdelivr.net",
+          "data:",
+        ],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "blob:",
+        ],
+        connectSrc: ["'self'"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // Disable for CDN resources
+    crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
 

@@ -137,7 +137,7 @@
     } catch (error) {
       document.getElementById(
         "menuEditor"
-      ).innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -409,7 +409,7 @@
     } catch (error) {
       document.getElementById(
         "menuEditor"
-      ).innerHTML = `<div class="alert alert-danger">Error saving: ${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">Error saving: ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -1738,7 +1738,7 @@
     } catch (error) {
       document.getElementById(
         "addUserAlert"
-      ).innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -1810,7 +1810,7 @@
     } catch (error) {
       document.getElementById(
         "editUserAlert"
-      ).innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -1852,7 +1852,7 @@
     } catch (error) {
       document.getElementById(
         "addCompanyAlert"
-      ).innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -1899,7 +1899,7 @@
     } catch (error) {
       document.getElementById(
         "editCompanyAlert"
-      ).innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -2459,7 +2459,7 @@
 
       renderAdminUsers(allUsers, adminMfaEnabled);
     } catch (error) {
-      container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+      container.innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -2782,7 +2782,7 @@
         loadAdminUsers();
       }, 2200);
     } catch (error) {
-      alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      alertDiv.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -2826,7 +2826,7 @@
         loadAdminUsers();
       }, 1200);
     } catch (error) {
-      alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      alertDiv.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -2842,7 +2842,7 @@
       allCompanies = await api.getCompanies();
       renderCompaniesManagement(allCompanies);
     } catch (error) {
-      container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+      container.innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -2988,7 +2988,7 @@
       renderAdminSubmissions(currentSubmissions);
     } catch (error) {
       console.error("[ADMIN] Error loading submissions:", error);
-      container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+      container.innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -3776,7 +3776,7 @@
       console.error("[ADMIN] Error loading hours report:", error);
       document.getElementById(
         "hoursReportBody"
-      ).innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -4092,7 +4092,7 @@
     } catch (error) {
       document.getElementById(
         "fleetListWrapper"
-      ).innerHTML = `<div class="alert alert-danger m-2">Error: ${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger m-2">Error: ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -4216,7 +4216,7 @@
       }
     } catch (error) {
       if (fleetLoadingId === id) {
-        detail.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+        detail.innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(error.message)}</div>`;
       }
     } finally {
       if (fleetLoadingId === id) fleetLoadingId = null;
@@ -4445,7 +4445,7 @@
       btn.textContent = originalText;
       document.getElementById(
         "vehicleAlert"
-      ).innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -4556,7 +4556,7 @@
       btn.textContent = originalText;
       document.getElementById(
         "editVehicleAlert"
-      ).innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -4628,7 +4628,7 @@
       btn.textContent = originalText;
       document.getElementById(
         "maintAlert"
-      ).innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -4718,7 +4718,7 @@
       btn.textContent = originalText;
       document.getElementById(
         "editMaintAlert"
-      ).innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -5027,7 +5027,7 @@
     } catch (error) {
       document.getElementById(
         "planningList"
-      ).innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+      ).innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -5545,7 +5545,7 @@
       if (modal) modal.hide();
       await loadPlanningManagement();
     } catch (error) {
-      alertDiv.innerHTML = `<div class=\"alert alert-danger\">${error.message}</div>`;
+      alertDiv.innerHTML = `<div class=\"alert alert-danger\">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -5668,7 +5668,7 @@
       if (modal) modal.hide();
       await loadPlanningManagement();
     } catch (error) {
-      alertDiv.innerHTML = `<div class=\"alert alert-danger\">${error.message}</div>`;
+      alertDiv.innerHTML = `<div class=\"alert alert-danger\">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -5769,7 +5769,7 @@
         btn.textContent = adminTr("delete", "Wissen");
       }
       if (alertDiv) {
-        alertDiv.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        alertDiv.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message)}</div>`;
       } else {
         showToast("Wissen mislukt: " + error.message, "danger");
       }
@@ -5858,7 +5858,7 @@
       if (modal) modal.hide();
       showToast("E-mail verzonden", "success");
     } catch (error) {
-      alertDiv.innerHTML = `<div class=\"alert alert-danger\">${error.message}</div>`;
+      alertDiv.innerHTML = `<div class=\"alert alert-danger\">${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -6059,7 +6059,7 @@
         '<div class="alert alert-success"><i class="bi bi-check-circle"></i> SMTP instellingen opgeslagen!</div>';
       showToast("SMTP instellingen opgeslagen", "success");
     } catch (error) {
-      alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
+      alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${escapeHtml(error.message)}</div>`;
     }
   }
 
@@ -6080,7 +6080,7 @@
       alertDiv.innerHTML = `<div class="alert alert-success"><i class="bi bi-check-circle"></i> ${result.message}</div>`;
       showToast("SMTP verbinding OK", "success");
     } catch (error) {
-      alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
+      alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${escapeHtml(error.message)}</div>`;
       showToast("SMTP verbinding mislukt", "danger");
     }
   }
@@ -6335,7 +6335,7 @@
       }
     } catch (error) {
       console.error("[BRANDING SAVE] Error:", error);
-      alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
+      alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${escapeHtml(error.message)}</div>`;
       showToast("Opslaan mislukt", "danger");
     }
   }
@@ -6360,7 +6360,7 @@
         console.error("Failed to reload branding after CSS save:", error);
       }
     } catch (error) {
-      alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
+      alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${escapeHtml(error.message)}</div>`;
       showToast("Custom CSS opslaan mislukt", "danger");
     }
   }

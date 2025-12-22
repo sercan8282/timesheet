@@ -105,7 +105,7 @@ async function loadWeeklySummary(page = 1) {
         weeklyAvailableYears
           .map(
             (y) =>
-              `<option value="${y}" ${String(y) === String(weeklyFilterYear) ? "selected" : ""}>${y}</option>`
+              `<option value="${escapeHtml(y)}" ${String(y) === String(weeklyFilterYear) ? "selected" : ""}>${escapeHtml(y)}</option>`
           )
           .join("");
     }
@@ -136,12 +136,12 @@ async function loadWeeklySummary(page = 1) {
             : "";
         return `
           <tr>
-            <td>${week.year || "-"}</td>
-            <td>Week ${week.week_number}</td>
-            <td>${week.work_days}</td>
-            <td>${week.total_hours}h</td>
+            <td>${escapeHtml(week.year || "-")}</td>
+            <td>Week ${escapeHtml(week.week_number)}</td>
+            <td>${escapeHtml(week.work_days)}</td>
+            <td>${escapeHtml(week.total_hours)}h</td>
             <td class="${overworkedClass}">
-              ${parseFloat(week.overworked) > 0 ? "+" : ""}${week.overworked}h
+              ${parseFloat(week.overworked) > 0 ? "+" : ""}${escapeHtml(week.overworked)}h
             </td>
           </tr>
         `;
@@ -180,7 +180,7 @@ async function loadWeeklySummary(page = 1) {
         data.pagination.page * data.pagination.limit,
         data.pagination.total
       );
-      metaDiv.innerHTML = `Toon ${start}-${end} van ${data.pagination.total}${
+      metaDiv.textContent = `Toon ${start}-${end} van ${data.pagination.total}${
         weeklyFilterYear ? ` (jaar ${weeklyFilterYear})` : ""
       }${weeklyFilterWeek ? ` (week ${weeklyFilterWeek})` : ""}`;
     }
@@ -191,9 +191,10 @@ async function loadWeeklySummary(page = 1) {
 
 function showWeeklySummaryAlert(message, type) {
   const alertDiv = document.getElementById("weeklySummaryAlert");
+  const safeType = ['danger', 'warning', 'info', 'success'].includes(type) ? type : 'info';
   alertDiv.innerHTML = `
-    <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-      ${message}
+    <div class="alert alert-${safeType} alert-dismissible fade show" role="alert">
+      ${escapeHtml(message)}
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
   `;
