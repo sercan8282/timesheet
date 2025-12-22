@@ -5587,6 +5587,24 @@
             <input type="email" class="form-control" id="emailTo" placeholder="admin@bedrijf.nl">
           </div>
 
+          <hr />
+          <div class="mb-2 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <label class="form-label mb-0">E-mail handtekening</label>
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="signatureEnabled">
+              <label class="form-check-label" for="signatureEnabled">Inschakelen</label>
+            </div>
+          </div>
+          <div class="mb-3">
+            <textarea class="form-control" id="signatureHtml" rows="6" placeholder="Bijv. bedrijfsnaam, adres, logo (HTML toegestaan)"></textarea>
+            <small class="text-muted">Je kunt HTML gebruiken (links, logo, opmaak). De handtekening wordt aan alle uitgaande e-mails toegevoegd.</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Voorbeeld</label>
+            <div id="signaturePreview" class="border rounded p-3 bg-light" style="min-height:60px;"></div>
+          </div>
+
           <div id="smtpAlert"></div>
 
           <div class="d-flex gap-2">
@@ -5614,6 +5632,11 @@
         document.getElementById("emailFrom").value = settings.email_from || "";
         document.getElementById("emailTo").value = settings.email_to || "";
 
+        // Signature
+        document.getElementById("signatureEnabled").checked = !!settings.signature_enabled;
+        document.getElementById("signatureHtml").value = settings.signature_html || "";
+        updateSignaturePreview();
+
         if (settings.auth_type === "oauth2") {
           document.getElementById("oauthTenantId").value =
             settings.oauth_tenant_id || "";
@@ -5631,6 +5654,8 @@
 
     // Wire auth type change
     document.getElementById("smtpAuthType").onchange = toggleOAuthFields;
+    document.getElementById("signatureHtml").addEventListener("input", updateSignaturePreview);
+    document.getElementById("signatureEnabled").addEventListener("change", updateSignaturePreview);
   }
 
   function toggleOAuthFields() {
@@ -5654,6 +5679,8 @@
       email_from: document.getElementById("emailFrom").value.trim(),
       email_to: document.getElementById("emailTo").value.trim(),
       auth_type: authType,
+      signature_enabled: document.getElementById("signatureEnabled").checked ? 1 : 0,
+      signature_html: document.getElementById("signatureHtml").value,
     };
 
     if (authType === "oauth2") {
@@ -5683,6 +5710,13 @@
     } catch (error) {
       alertDiv.innerHTML = `<div class="alert alert-danger"><i class="bi bi-exclamation-triangle"></i> ${error.message}</div>`;
     }
+  }
+
+  function updateSignaturePreview() {
+    const enabled = document.getElementById("signatureEnabled").checked;
+    const html = document.getElementById("signatureHtml").value;
+    const preview = document.getElementById("signaturePreview");
+    preview.innerHTML = enabled && html.trim() ? html : '<span class="text-muted">Geen handtekening actief</span>';
   }
 
   async function testSMTPConnection() {

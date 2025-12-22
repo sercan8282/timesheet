@@ -1607,11 +1607,27 @@ router.post("/invoices/:id/send-email", auth, async (req, res) => {
     // Generate PDF
     const pdfResult = await generateInvoicePDF(req.params.id);
 
-    // Send email
+    // Build email content
     const emailSubject = subject || `Factuur ${invoice.invoice_number}`;
-    const emailMessage =
+    let emailMessage =
       message ||
-      `Beste,\n\nIn de bijlage vindt u factuur ${invoice.invoice_number}.\n\nMet vriendelijke groet`;
+      `Beste,\n\nIn de bijlage vindt u factuur ${invoice.invoice_number}.`;
+
+    // Always strip closing phrases like 'Met vriendelijke groet' or 'Mvg' from the body;
+    // signature will supply the closing.
+    try {
+      const lines = String(emailMessage).replace(/\r/g, "").split("\n");
+      const filtered = lines.filter((ln) => {
+        const s = ln.trim();
+        if (!s) return true; // keep blank lines, we'll collapse later
+        if (/^met\s+vriendelijke\s+groet[,!\.]?$/i.test(s)) return false;
+        if (/^mvg[,!\.]?$/i.test(s)) return false;
+        return true;
+      });
+      emailMessage = filtered.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    } catch (_e) {
+      // ignore
+    }
 
     await sendInvoiceEmail({
       to: recipient_email,

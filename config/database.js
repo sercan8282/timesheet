@@ -2895,10 +2895,34 @@ class Database {
           oauth_client_id TEXT,
           oauth_client_secret TEXT,
           oauth_scope TEXT DEFAULT 'https://outlook.office365.com/.default',
+          signature_enabled INTEGER DEFAULT 0,
+          signature_html TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
+
+      // Ensure signature columns exist on smtp_settings
+      this.db.all(`PRAGMA table_info(smtp_settings)`, [], (err, columns) => {
+        if (!err && Array.isArray(columns)) {
+          const names = columns.map((c) => c.name);
+          const ensure = (name, sql) => {
+            if (!names.includes(name)) {
+              this.db.run(sql, (e) => {
+                if (e) console.error(`Failed to add column ${name} to smtp_settings:`, e.message);
+              });
+            }
+          };
+          ensure(
+            "signature_enabled",
+            "ALTER TABLE smtp_settings ADD COLUMN signature_enabled INTEGER DEFAULT 0"
+          );
+          ensure(
+            "signature_html",
+            "ALTER TABLE smtp_settings ADD COLUMN signature_html TEXT"
+          );
+        }
+      });
 
       // Branding settings (used by public branding endpoint and PDFs)
       this.db.run(

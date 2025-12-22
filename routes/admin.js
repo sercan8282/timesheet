@@ -1330,6 +1330,8 @@ router.post(
     body("oauth_client_id").optional(),
     body("oauth_client_secret").optional(),
     body("oauth_scope").optional(),
+    body("signature_enabled").optional().isInt({ min: 0, max: 1 }),
+    body("signature_html").optional().isString(),
   ],
   async (req, res) => {
     try {
@@ -1351,6 +1353,8 @@ router.post(
         oauth_client_id,
         oauth_client_secret,
         oauth_scope,
+        signature_enabled = 0,
+        signature_html = null,
       } = req.body;
 
       if (auth_type === "oauth2" && (!oauth_tenant_id || !oauth_client_id)) {
@@ -1373,6 +1377,8 @@ router.post(
           "oauth_tenant_id = ?",
           "oauth_client_id = ?",
           "oauth_scope = ?",
+          "signature_enabled = ?",
+          "signature_html = ?",
           "updated_at = CURRENT_TIMESTAMP",
         ];
 
@@ -1387,6 +1393,8 @@ router.post(
           oauth_tenant_id || null,
           oauth_client_id || null,
           oauth_scope || "https://outlook.office365.com/.default",
+          signature_enabled ? 1 : 0,
+          signature_html || null,
         ];
 
         if (smtp_pass) {
@@ -1405,8 +1413,8 @@ router.post(
         );
       } else {
         await db.run(
-          `INSERT INTO smtp_settings (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, email_from, email_to, auth_type, oauth_tenant_id, oauth_client_id, oauth_client_secret, oauth_scope)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO smtp_settings (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, email_from, email_to, auth_type, oauth_tenant_id, oauth_client_id, oauth_client_secret, oauth_scope, signature_enabled, signature_html)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             smtp_host,
             smtp_port,
@@ -1420,6 +1428,8 @@ router.post(
             oauth_client_id || null,
             oauth_client_secret || null,
             oauth_scope || "https://outlook.office365.com/.default",
+            signature_enabled ? 1 : 0,
+            signature_html || null,
           ]
         );
       }
