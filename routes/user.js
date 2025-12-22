@@ -317,6 +317,343 @@ router.post(
   }
 );
 
+// Admin-only: Add timesheet entry for any user
+router.post(
+  "/admin/timesheets",
+  [
+    body("userId").isInt({ min: 1 }).withMessage("Valid user ID is required"),
+    body("date").isISO8601().withMessage("Valid date is required"),
+    body("startTime")
+      .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      .withMessage("Valid start time is required (HH:MM)"),
+    body("endTime")
+      .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      .withMessage("Valid end time is required (HH:MM)"),
+    body("startKm")
+      .isFloat({ min: 0 })
+      .withMessage("Valid start km is required"),
+    body("endKm").isFloat({ min: 0 }).withMessage("Valid end km is required"),
+    body("pauseTime")
+      .optional()
+      .matches(/^([0-9]+):([0-5][0-9])$/)
+      .withMessage("Valid pause time is required (HH:MM)"),
+    body("ritnumber").optional().trim(),
+  ],
+  async (req, res) => {
+    try {
+      // Check admin authorization
+      if (req.user.role !== "admin") {
+        return res
+          .status(403)
+          .json({ error: "Alleen admins kunnen uren voor anderen toevoegen" });
+      }
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      let {
+        userId,
+        date,
+        startTime,
+        endTime,
+        startKm,
+        endKm,
+        pauseTime,
+        ritnumber,
+        companyId,
+      } = req.body;
+
+      // Verify target user exists
+      const targetUser = await db.get("SELECT id, company_id, full_name FROM users WHERE id = ?", [
+        userId,
+      ]);
+      if (!targetUser) {
+        return res.status(404).json({ error: "Gebruiker niet gevonden" });
+      }
+
+      // Use user's company pause if not provided
+      if (!pauseTime) {
+        const userCompany = await db.get(
+          "SELECT pause_time FROM companies WHERE id = ?",
+          [targetUser.company_id]
+        );
+        pauseTime = (userCompany && userCompany.pause_time) || "00:30";
+      }
+
+      try {
+        // Calculate week number
+        const dateObj = new Date(date);
+        const weekNumber = getWeekNumber(dateObj);
+
+        // Calculate total hours
+        const totalHours = calculateTotalHours(startTime, endTime, pauseTime);
+
+        // Calculate total km
+        const totalKm = endKm - startKm;
+
+        const result = await db.run(
+          `INSERT INTO timesheets (user_id, week_number, date, start_time, end_time, start_km, end_km, pause_time, total_hours, total_km, ritnumber, company_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            userId,
+            weekNumber,
+            date,
+            startTime,
+            endTime,
+            startKm,
+            endKm,
+            pauseTime,
+            totalHours,
+            totalKm,
+            ritnumber || "",
+            companyId || targetUser.company_id || null,
+          ]
+        );
+
+        // Auto-create submission so it shows in history/weekly/report
+        try {
+          const tsId = result.id;
+          const weekNumbers = String(weekNumber);
+          await db.run(
+            "INSERT INTO submissions (user_id, user_name, timesheet_ids, status, week_numbers) VALUES (?, ?, ?, ?, ?)",
+            [userId, targetUser.full_name, String(tsId), "skipped", weekNumbers]
+          );
+
+          // Overtime: only based on this submission's timesheets
+          const weekHours = parseFloat(totalHours || 0);
+          const overtime = weekHours - 40;
+          if (overtime > 0) {
+            const existingBalance = await db.get(
+              "SELECT id FROM leave_balances WHERE user_id = ?",
+              [userId]
+            );
+            if (!existingBalance) {
+              await db.run(
+                "INSERT INTO leave_balances (user_id, vacation_hours, overtime_hours) VALUES (?, 216, ?)",
+                [userId, overtime]
+              );
+            } else {
+              await db.run(
+                "UPDATE leave_balances SET overtime_hours = overtime_hours + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+                [overtime, userId]
+              );
+            }
+          }
+        } catch (subErr) {
+          console.error("Failed to create admin submission:", subErr);
+          // Do not fail the main request if submission creation fails
+        }
+
+        res.status(201).json({
+          id: result.id,
+          userId: userId,
+          userName: targetUser.full_name,
+          weekNumber,
+          date,
+          startTime,
+          endTime,
+          startKm,
+          endKm,
+          pauseTime,
+          totalHours,
+          totalKm,
+          ritnumber: ritnumber || "",
+          companyId: companyId || targetUser.company_id || null,
+        });
+      } catch (calcError) {
+        console.error("Error during calculation or insert:", calcError);
+        res
+          .status(500)
+          .json({ error: "Fout bij toevoegen uren: " + calcError.message });
+      }
+    } catch (error) {
+      console.error("Error creating admin timesheet:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
+// Admin-only: Add multiple timesheet entries (batch) for any user
+router.post(
+  "/admin/timesheets/batch",
+  [
+    body("userId").isInt({ min: 1 }).withMessage("Valid user ID is required"),
+    body("entries").isArray({ min: 1 }).withMessage("Entries array is required"),
+    body("entries.*.date").isISO8601().withMessage("Valid date is required"),
+    body("entries.*.startTime")
+      .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      .withMessage("Valid start time is required (HH:MM)"),
+    body("entries.*.endTime")
+      .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      .withMessage("Valid end time is required (HH:MM)"),
+    body("entries.*.startKm")
+      .isFloat({ min: 0 })
+      .withMessage("Valid start km is required"),
+    body("entries.*.endKm").isFloat({ min: 0 }).withMessage("Valid end km is required"),
+    body("entries.*.pauseTime")
+      .optional()
+      .matches(/^([0-9]+):([0-5][0-9])$/)
+      .withMessage("Valid pause time is required (HH:MM)"),
+    body("entries.*.ritnumber").optional().trim(),
+  ],
+  async (req, res) => {
+    try {
+      if (req.user.role !== "admin") {
+        return res
+          .status(403)
+          .json({ error: "Alleen admins kunnen uren voor anderen toevoegen" });
+      }
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
+
+      const { userId, entries } = req.body;
+
+      // Verify target user exists
+      const targetUser = await db.get(
+        "SELECT id, company_id, full_name FROM users WHERE id = ?",
+        [userId]
+      );
+      if (!targetUser) {
+        return res.status(404).json({ error: "Gebruiker niet gevonden" });
+      }
+
+      // Fetch user's company pause once (if any)
+      const userCompany = targetUser.company_id
+        ? await db.get("SELECT pause_time FROM companies WHERE id = ?", [
+            targetUser.company_id,
+          ])
+        : null;
+      const defaultPause = (userCompany && userCompany.pause_time) || "00:30";
+
+      const created = [];
+
+      try {
+        await db.run("BEGIN TRANSACTION");
+
+        for (const item of entries) {
+          const date = item.date;
+          const startTime = item.startTime;
+          const endTime = item.endTime;
+          const startKm = parseFloat(item.startKm);
+          const endKm = parseFloat(item.endKm);
+          const pauseTime = item.pauseTime || defaultPause;
+          const ritnumber = item.ritnumber || "";
+          const companyId = item.companyId || targetUser.company_id || null;
+
+          const weekNumber = getWeekNumber(new Date(date));
+          const totalHours = calculateTotalHours(startTime, endTime, pauseTime);
+          const totalKm = endKm - startKm;
+
+          const result = await db.run(
+            `INSERT INTO timesheets (user_id, week_number, date, start_time, end_time, start_km, end_km, pause_time, total_hours, total_km, ritnumber, company_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              userId,
+              weekNumber,
+              date,
+              startTime,
+              endTime,
+              startKm,
+              endKm,
+              pauseTime,
+              totalHours,
+              totalKm,
+              ritnumber,
+              companyId,
+            ]
+          );
+
+          created.push({
+            id: result.id,
+            userId,
+            userName: targetUser.full_name,
+            weekNumber,
+            date,
+            startTime,
+            endTime,
+            startKm,
+            endKm,
+            pauseTime,
+            totalHours,
+            totalKm,
+            ritnumber,
+            companyId,
+          });
+        }
+
+        await db.run("COMMIT");
+      } catch (txErr) {
+        await db.run("ROLLBACK");
+        console.error("Batch insert failed:", txErr);
+        return res.status(500).json({ error: "Batch insert failed" });
+      }
+      // After successful batch insert, create one submission and update overtime
+      try {
+        const timesheetIds = created.map((c) => c.id);
+        const uniqueWeeks = Array.from(new Set(created.map((c) => c.weekNumber)))
+          .filter((n) => n !== undefined && n !== null)
+          .sort((a, b) => a - b)
+          .join(",");
+
+        await db.run(
+          "INSERT INTO submissions (user_id, user_name, timesheet_ids, status, week_numbers) VALUES (?, ?, ?, ?, ?)",
+          [
+            userId,
+            targetUser.full_name,
+            timesheetIds.join(","),
+            "skipped",
+            uniqueWeeks || null,
+          ]
+        );
+
+        // Overtime across the batch, per-week basis, then summed
+        const weekGroups = {};
+        created.forEach((it) => {
+          if (!weekGroups[it.weekNumber]) weekGroups[it.weekNumber] = 0;
+          weekGroups[it.weekNumber] += parseFloat(it.totalHours || 0);
+        });
+
+        let totalOvertime = 0;
+        Object.values(weekGroups).forEach((hours) => {
+          const ot = hours - 40;
+          if (ot > 0) totalOvertime += ot;
+        });
+
+        if (totalOvertime > 0) {
+          const existingBalance = await db.get(
+            "SELECT id FROM leave_balances WHERE user_id = ?",
+            [userId]
+          );
+          if (!existingBalance) {
+            await db.run(
+              "INSERT INTO leave_balances (user_id, vacation_hours, overtime_hours) VALUES (?, 216, ?)",
+              [userId, totalOvertime]
+            );
+          } else {
+            await db.run(
+              "UPDATE leave_balances SET overtime_hours = overtime_hours + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+              [totalOvertime, userId]
+            );
+          }
+        }
+      } catch (subErr) {
+        console.error("Failed to create admin batch submission:", subErr);
+        // non-fatal for main response
+      }
+
+      res.status(201).json({ count: created.length, items: created });
+    } catch (error) {
+      console.error("Error creating admin timesheets (batch):", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 // Update timesheet entry
 router.put(
   "/timesheets/:id",

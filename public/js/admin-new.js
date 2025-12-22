@@ -2467,6 +2467,9 @@
               <td><span class="badge ${user.role === 'admin' ? 'bg-danger' : 'bg-secondary'}" style="font-size: 0.75rem;">${user.role === 'admin' ? 'Yes' : 'No'}</span></td>
               <td class="text-center d-none d-md-table-cell">
                 <div class="d-flex justify-content-center gap-1">
+                  <button class="btn btn-success btn-sm px-2" onclick="openAddHoursForUserModal(${user.id})" title="Uren toevoegen">
+                    <i class="bi bi-clock-history"></i>
+                  </button>
                   <button class="btn btn-warning btn-sm px-2" onclick="openEditUserModal(${user.id})" title="Edit">
                     <i class="bi bi-pencil"></i>
                   </button>
@@ -2485,6 +2488,9 @@
                 <div class="p-3 bg-light border-top">
                   <h6 class="mb-3">${user.full_name} - ${user.username}</h6>
                   <div class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-success btn-sm px-2 flex-grow-1" onclick="openAddHoursForUserModal(${user.id})">
+                      <i class="bi bi-clock-history"></i> Uren toevoegen
+                    </button>
                     <button class="btn btn-warning btn-sm px-2 flex-grow-1" onclick="openEditUserModal(${user.id})">
                       <i class="bi bi-pencil"></i> Edit
                     </button>
@@ -6221,6 +6227,202 @@
   window.clearPlanningWeek = clearPlanningWeek;
   window.confirmClearPlanningWeek = confirmClearPlanningWeek;
   window.exportPlanningPDF = exportPlanningPDF;
+
+  // ========== ADD HOURS FOR USER (ADMIN) ==========
+  window.openAddHoursForUserModal = function(userId) {
+    const user = allUsers.find(u => u.id === userId);
+    if (!user) {
+      alert('Gebruiker niet gevonden');
+      return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    const modalHtml = `
+      <div class="modal fade" id="addHoursForUserModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-clock-history"></i> Uren toevoegen voor ${user.full_name}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div id="addHoursAlert"></div>
+              <input type="hidden" id="addHoursUserId" value="${userId}">
+
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <div class="small text-muted">
+                  Voeg meerdere regels toe. Velden stapelen op mobiel.
+                </div>
+                <div>
+                  <button class="btn btn-sm btn-outline-primary" id="btnAddRow"><i class="bi bi-plus-circle"></i> Regel toevoegen</button>
+                </div>
+              </div>
+
+              <div id="hoursRows" class="d-flex flex-column gap-3"></div>
+            </div>
+            <div class="modal-footer d-flex flex-wrap gap-2 justify-content-between">
+              <div class="small text-muted" id="rowsCounter"></div>
+              <div class="ms-auto d-flex gap-2">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddHoursForUser()">
+                  <i class="bi bi-check-circle"></i> Regels opslaan
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    let container = document.getElementById('modal-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'modal-container';
+      document.body.appendChild(container);
+    }
+    container.innerHTML = modalHtml;
+
+    const modalEl = document.getElementById('addHoursForUserModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    // Dynamic rows logic
+    let rowIdx = 0;
+    const rowsEl = document.getElementById('hoursRows');
+    const counterEl = document.getElementById('rowsCounter');
+    const defaultDate = today;
+
+    function updateCounter() {
+      const count = rowsEl.querySelectorAll('.hours-row').length;
+      counterEl.textContent = count === 1 ? '1 regel' : `${count} regels`;
+    }
+
+    function addHoursRow(preset = {}) {
+      const idx = rowIdx++;
+      const row = document.createElement('div');
+      row.className = 'hours-row card shadow-sm';
+      row.innerHTML = `
+        <div class="card-body p-2">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+            <div class="fw-semibold">Regel #${idx + 1}</div>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-action="duplicate"><i class="bi bi-files"></i></button>
+              <button type="button" class="btn btn-sm btn-outline-danger" data-action="remove"><i class="bi bi-trash"></i></button>
+            </div>
+          </div>
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-3">
+              <label class="form-label mb-1">Datum *</label>
+              <input type="date" class="form-control" name="date" value="${preset.date || defaultDate}" required>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label mb-1">Start *</label>
+              <input type="time" class="form-control" name="startTime" value="${preset.startTime || '08:00'}" required>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label mb-1">Eind *</label>
+              <input type="time" class="form-control" name="endTime" value="${preset.endTime || '17:00'}" required>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label mb-1">Start KM *</label>
+              <input type="number" step="0.1" class="form-control" name="startKm" value="${preset.startKm ?? 0}" required>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label mb-1">Eind KM *</label>
+              <input type="number" step="0.1" class="form-control" name="endKm" value="${preset.endKm ?? 0}" required>
+            </div>
+            <div class="col-6 col-md-2">
+              <label class="form-label mb-1">Pauze</label>
+              <input type="time" class="form-control" name="pauseTime" value="${preset.pauseTime || '00:30'}">
+            </div>
+            <div class="col-6 col-md-3">
+              <label class="form-label mb-1">Ritnummer</label>
+              <input type="text" class="form-control" name="ritnumber" value="${preset.ritnumber || ''}">
+            </div>
+          </div>
+        </div>
+      `;
+
+      row.querySelector('[data-action="remove"]').onclick = () => {
+        row.remove();
+        updateCounter();
+      };
+      row.querySelector('[data-action="duplicate"]').onclick = () => {
+        const data = collectRow(row);
+        addHoursRow(data);
+      };
+      rowsEl.appendChild(row);
+      updateCounter();
+    }
+
+    function collectRow(row) {
+      return {
+        date: row.querySelector('input[name="date"]').value,
+        startTime: row.querySelector('input[name="startTime"]').value,
+        endTime: row.querySelector('input[name="endTime"]').value,
+        startKm: row.querySelector('input[name="startKm"]').value,
+        endKm: row.querySelector('input[name="endKm"]').value,
+        pauseTime: row.querySelector('input[name="pauseTime"]').value,
+        ritnumber: row.querySelector('input[name="ritnumber"]').value,
+      };
+    }
+
+    function addFirstRows() {
+      // Start with one row prefilled with today
+      addHoursRow({});
+    }
+
+    document.getElementById('btnAddRow').onclick = () => addHoursRow({});
+    addFirstRows();
+  };
+
+  window.submitAddHoursForUser = async function() {
+    const userId = parseInt(document.getElementById('addHoursUserId').value);
+    const alertDiv = document.getElementById('addHoursAlert');
+    const rows = Array.from(document.querySelectorAll('#hoursRows .hours-row'));
+
+    if (!rows.length) {
+      alertDiv.innerHTML = '<div class="alert alert-danger">Voeg minstens 1 regel toe</div>';
+      return;
+    }
+
+    // Collect and validate entries
+    const entries = [];
+    for (const row of rows) {
+      const data = {
+        date: row.querySelector('input[name="date"]').value,
+        startTime: row.querySelector('input[name="startTime"]').value,
+        endTime: row.querySelector('input[name="endTime"]').value,
+        startKm: parseFloat(row.querySelector('input[name="startKm"]').value),
+        endKm: parseFloat(row.querySelector('input[name="endKm"]').value),
+        pauseTime: row.querySelector('input[name="pauseTime"]').value || '00:30',
+        ritnumber: row.querySelector('input[name="ritnumber"]').value || ''
+      };
+
+      if (!data.date || !data.startTime || !data.endTime || isNaN(data.startKm) || isNaN(data.endKm)) {
+        alertDiv.innerHTML = '<div class="alert alert-danger">Vul alle verplichte velden in</div>';
+        return;
+      }
+      entries.push(data);
+    }
+
+    try {
+      if (entries.length === 1) {
+        await api.createTimesheetForUser(userId, entries[0]);
+      } else {
+        await api.createTimesheetsForUserBatch(userId, entries);
+      }
+
+      alertDiv.innerHTML = `<div class="alert alert-success">${entries.length} regel(s) succesvol toegevoegd!</div>`;
+      setTimeout(() => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addHoursForUserModal'));
+        modal.hide();
+      }, 1200);
+    } catch (error) {
+      console.error('Error adding hours:', error);
+      alertDiv.innerHTML = `<div class=\"alert alert-danger\">Fout: ${error.message || 'Onbekende fout'}</div>`;
+    }
+  };
 
   console.log(
     "[ADMIN] Admin module loaded successfully - all functions exported to window"

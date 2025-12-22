@@ -111,6 +111,20 @@ class API {
     });
   }
 
+  async createTimesheetForUser(userId, data) {
+    return this.request("/user/admin/timesheets", {
+      method: "POST",
+      body: JSON.stringify({ userId, ...data }),
+    });
+  }
+
+  async createTimesheetsForUserBatch(userId, entries) {
+    return this.request("/user/admin/timesheets/batch", {
+      method: "POST",
+      body: JSON.stringify({ userId, entries }),
+    });
+  }
+
   async updateTimesheet(id, data) {
     return this.request(`/user/timesheets/${id}`, {
       method: "PUT",
