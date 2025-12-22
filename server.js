@@ -71,11 +71,12 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
       const content = cleanContent(el.content);
       const fontName =
         el.font_weight === "bold" ? "Helvetica-Bold" : "Helvetica";
+      const textAlignH = el.text_align_h || "left";
       doc
         .font(fontName)
         .fontSize(parseInt(el.font_size) || 12)
         .fillColor(el.font_color || "#000000")
-        .text(content, x, y, { width: width - 10 });
+        .text(content, x, y, { width: width - 10, align: textAlignH });
       const textHeight = doc.heightOfString(content, { width: width - 10 });
       return y + textHeight + 10;
     };
@@ -114,6 +115,26 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
       return y;
     };
 
+    // Estimate column height to anchor footer at the bottom for print alignment
+    const measureColumnHeight = (elements) => {
+      let height = 0;
+      elements.forEach((el) => {
+        if (el.image_path) {
+          const imgWidth = Math.min(colWidth - 10, parseInt(el.image_width, 10) || 150);
+          const imgHeight = parseInt(el.image_height, 10) || imgWidth;
+          height += imgHeight + 10;
+        } else if (el.content) {
+          const content = cleanContent(el.content);
+          const fontName = el.font_weight === "bold" ? "Helvetica-Bold" : "Helvetica";
+          const fontSize = parseInt(el.font_size, 10) || 12;
+          doc.font(fontName).fontSize(fontSize);
+          const h = doc.heightOfString(content, { width: colWidth - 10 });
+          height += h + 10;
+        }
+      });
+      return height;
+    };
+
     // Render header
     doc.fontSize(16).text("TEMPLATE PREVIEW", 50, 50);
     doc
@@ -124,6 +145,7 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
     // Group elements by layout type
     const topCols = [[], [], []];
     const addrCols = [[], [], []];
+    const footerCols = [[], [], []];
 
     templateElements.forEach((el) => {
       if (el.element_type === "title") return; // skip title elements in preview
@@ -133,6 +155,9 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
       else if (el.element_type === "address_left") addrCols[0].push(el);
       else if (el.element_type === "address_center") addrCols[1].push(el);
       else if (el.element_type === "address_right") addrCols[2].push(el);
+      else if (el.element_type === "footer_left") footerCols[0].push(el);
+      else if (el.element_type === "footer_center") footerCols[1].push(el);
+      else if (el.element_type === "footer_right") footerCols[2].push(el);
     });
 
     // Render top columns preview
@@ -160,6 +185,29 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
     addrY[0] = renderColumn(addrCols[0], colX[0], addrY[0]);
     addrY[1] = renderColumn(addrCols[1], colX[1], addrY[1]);
     addrY[2] = renderColumn(addrCols[2], colX[2], addrY[2]);
+    yPos = Math.max(...addrY) + 30;
+
+    // Render footer section (3-column only) anchored near page bottom
+    const hasFooterColumns = footerCols[0].length > 0 || footerCols[1].length > 0 || footerCols[2].length > 0;
+
+    if (hasFooterColumns) {
+      const bottomMargin = 50;
+      const footerHeights = footerCols.map((col) => measureColumnHeight(col));
+      const footerHeight = Math.max(...footerHeights, 0);
+      const targetFooterY = doc.page.height - bottomMargin - footerHeight;
+
+      if (yPos > targetFooterY) {
+        doc.addPage();
+        yPos = 50;
+      }
+
+      const startY = Math.max(yPos + 20, targetFooterY);
+      const footerY = [startY, startY, startY];
+      footerY[0] = renderColumn(footerCols[0], colX[0], footerY[0]);
+      footerY[1] = renderColumn(footerCols[1], colX[1], footerY[1]);
+      footerY[2] = renderColumn(footerCols[2], colX[2], footerY[2]);
+      yPos = Math.max(...footerY);
+    }
 
     // Send PDF
     res.setHeader("Content-Type", "application/pdf");

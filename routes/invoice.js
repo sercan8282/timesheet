@@ -74,6 +74,32 @@ const uploadPdf = multer({
   },
 });
 
+// Storage for font uploads (TTF/OTF)
+const fontStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, "../public/uploads/fonts");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, "font-" + uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const uploadFont = multer({
+  storage: fontStorage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+  fileFilter: (req, file, cb) => {
+    const allowed = [".ttf", ".otf"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new Error("Alleen TTF of OTF lettertype-bestanden zijn toegestaan"));
+  },
+});
+
 // ============================================
 // IMPORT TEMPLATES (PDF Parser Templates)
 // ============================================
@@ -354,6 +380,13 @@ router.post("/templates", auth, async (req, res) => {
       km_rate,
       dot_rate,
       dot_rate_is_percent,
+      default_font_family,
+      table_header_bg,
+      table_header_text,
+      table_row_bg1,
+      table_row_bg2,
+      table_border_color,
+      table_text_color,
     } = req.body;
 
     // If setting as default, unset other defaults
@@ -362,7 +395,7 @@ router.post("/templates", auth, async (req, res) => {
     }
 
     const result = await db.run(
-      "INSERT INTO invoice_templates (name, description, is_default, hourly_rate, km_rate, dot_rate, dot_rate_is_percent) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO invoice_templates (name, description, is_default, hourly_rate, km_rate, dot_rate, dot_rate_is_percent, default_font_family, table_header_bg, table_header_text, table_row_bg1, table_row_bg2, table_border_color, table_text_color) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       [
         name,
         description || null,
@@ -371,6 +404,13 @@ router.post("/templates", auth, async (req, res) => {
         km_rate || 0,
         dot_rate || 0,
         dot_rate_is_percent ? 1 : 0,
+        default_font_family || "Helvetica",
+        table_header_bg || "#0080ff",
+        table_header_text || "#ffffff",
+        table_row_bg1 || "#f4f8ff",
+        table_row_bg2 || "#e7f2ff",
+        table_border_color || "#c7ddff",
+        table_text_color || "#000000",
       ]
     );
 
@@ -397,6 +437,13 @@ router.put("/templates/:id", auth, async (req, res) => {
       km_rate,
       dot_rate,
       dot_rate_is_percent,
+      default_font_family,
+      table_header_bg,
+      table_header_text,
+      table_row_bg1,
+      table_row_bg2,
+      table_border_color,
+      table_text_color,
     } = req.body;
 
     // If setting as default, unset other defaults
@@ -408,7 +455,7 @@ router.put("/templates/:id", auth, async (req, res) => {
     }
 
     await db.run(
-      "UPDATE invoice_templates SET name = ?, description = ?, is_default = ?, hourly_rate = ?, km_rate = ?, dot_rate = ?, dot_rate_is_percent = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      "UPDATE invoice_templates SET name = ?, description = ?, is_default = ?, hourly_rate = ?, km_rate = ?, dot_rate = ?, dot_rate_is_percent = ?, default_font_family = ?, table_header_bg = ?, table_header_text = ?, table_row_bg1 = ?, table_row_bg2 = ?, table_border_color = ?, table_text_color = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
       [
         name,
         description || null,
@@ -417,6 +464,13 @@ router.put("/templates/:id", auth, async (req, res) => {
         km_rate || 0,
         dot_rate || 0,
         dot_rate_is_percent ? 1 : 0,
+        default_font_family || "Helvetica",
+        table_header_bg || "#0080ff",
+        table_header_text || "#ffffff",
+        table_row_bg1 || "#f4f8ff",
+        table_row_bg2 || "#e7f2ff",
+        table_border_color || "#c7ddff",
+        table_text_color || "#000000",
         req.params.id,
       ]
     );
@@ -476,6 +530,38 @@ router.delete("/templates/:id", auth, async (req, res) => {
 // TEMPLATE ELEMENTS
 // ============================================
 
+// Fonts library endpoints
+router.get("/fonts", auth, async (req, res) => {
+  try {
+    const fonts = await db.all(
+      "SELECT id, family, weight, file_path FROM invoice_fonts ORDER BY family ASC, weight ASC"
+    );
+    res.json(fonts);
+  } catch (e) {
+    console.error("Error fetching fonts:", e);
+    res.status(500).json({ error: "Fout bij ophalen lettertypes" });
+  }
+});
+
+router.post("/fonts", auth, uploadFont.single("font"), async (req, res) => {
+  try {
+    const { family, weight } = req.body;
+    if (!req.file) return res.status(400).json({ error: "Upload een TTF/OTF bestand" });
+    if (!family) return res.status(400).json({ error: "Geef een lettertype naam (family) op" });
+    const w = weight === "bold" ? "bold" : "normal";
+    const file_path = "/uploads/fonts/" + req.file.filename;
+    const result = await db.run(
+      "INSERT INTO invoice_fonts (family, weight, file_path) VALUES (?, ?, ?)",
+      [family, w, file_path]
+    );
+    const created = await db.get("SELECT * FROM invoice_fonts WHERE id = ?", [result.id]);
+    res.status(201).json(created);
+  } catch (e) {
+    console.error("Error uploading font:", e);
+    res.status(500).json({ error: "Fout bij uploaden van lettertype" });
+  }
+});
+
 // Add element to template
 router.post(
   "/templates/:templateId/elements",
@@ -492,10 +578,12 @@ router.post(
         font_size,
         font_color,
         font_weight,
+        font_family,
         image_align,
         image_width,
         image_height,
         calculation_formula,
+        text_align_h,
       } = req.body;
 
       let image_path = null;
@@ -506,8 +594,8 @@ router.post(
       const result = await db.run(
         `INSERT INTO invoice_template_elements 
          (template_id, element_type, label, content, image_path, position_order, 
-          font_size, font_color, font_weight, image_align, image_width, image_height, calculation_formula) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          font_size, font_color, font_weight, font_family, image_align, image_width, image_height, calculation_formula, text_align_h) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           templateId,
           element_type,
@@ -518,10 +606,12 @@ router.post(
           font_size || 14,
           font_color || "#000000",
           font_weight || "normal",
-            image_align || "left",
-            image_width || 150,
-            image_height || 0,
+          font_family || null,
+          image_align || "left",
+          image_width || 150,
+          image_height || 0,
           calculation_formula || null,
+          text_align_h || "left",
         ]
       );
 
@@ -554,10 +644,12 @@ router.put(
         font_size,
         font_color,
         font_weight,
+        font_family,
         image_align,
         image_width,
         image_height,
         calculation_formula,
+        text_align_h,
       } = req.body;
 
       // Get current element
@@ -590,7 +682,7 @@ router.put(
       await db.run(
         `UPDATE invoice_template_elements 
        SET element_type = ?, label = ?, content = ?, image_path = ?, position_order = ?, 
-           font_size = ?, font_color = ?, font_weight = ?, image_align = ?, image_width = ?, image_height = ?, calculation_formula = ?,
+           font_size = ?, font_color = ?, font_weight = ?, font_family = ?, image_align = ?, image_width = ?, image_height = ?, calculation_formula = ?, text_align_h = ?,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
         [
@@ -602,10 +694,12 @@ router.put(
           font_size || 14,
           font_color || "#000000",
           font_weight || "normal",
+          font_family || currentElement.font_family || null,
           image_align || currentElement.image_align || "left",
           image_width || currentElement.image_width || 150,
           image_height || currentElement.image_height || 0,
           calculation_formula || null,
+          text_align_h || currentElement.text_align_h || "left",
           elementId,
         ]
       );

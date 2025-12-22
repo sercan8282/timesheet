@@ -871,6 +871,24 @@ class API {
     });
   }
 
+  // Invoice Fonts
+  async getInvoiceFonts() {
+    return this.request("/admin/invoices/fonts");
+  }
+
+  async uploadInvoiceFont(formData) {
+    const response = await fetch(`${API_BASE_URL}/admin/invoices/fonts`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+      },
+      body: formData,
+    });
+    const data = await response.json().catch(() => ({ error: "Server error" }));
+    if (!response.ok) throw new Error(data.error || "Upload mislukt");
+    return data;
+  }
+
   // Template Elements
   async addTemplateElement(templateId, formData) {
     const response = await fetch(
