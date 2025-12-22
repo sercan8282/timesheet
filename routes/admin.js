@@ -8,6 +8,7 @@ const crypto = require("crypto");
 const { testSMTPConnection, sendEmail } = require("../utils/email");
 const { generatePDF } = require("../utils/pdf");
 const { generateXLSX } = require("../utils/excel");
+const { encryptPassword, decryptPassword } = require("../utils/encryption");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -1466,8 +1467,8 @@ router.post(
         ];
 
         if (smtp_pass) {
-          updates.splice(4, 0, "smtp_pass = ?");
-          values.splice(4, 0, smtp_pass);
+          updates.splice(4, 0, "smtp_pass_encrypted = ?");
+          values.splice(4, 0, encryptPassword(smtp_pass));
         }
 
         if (oauth_client_secret) {
@@ -1481,14 +1482,14 @@ router.post(
         );
       } else {
         await db.run(
-          `INSERT INTO smtp_settings (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, email_from, email_to, auth_type, oauth_tenant_id, oauth_client_id, oauth_client_secret, oauth_scope, signature_enabled, signature_html)
+          `INSERT INTO smtp_settings (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass_encrypted, email_from, email_to, auth_type, oauth_tenant_id, oauth_client_id, oauth_client_secret, oauth_scope, signature_enabled, signature_html)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             smtp_host,
             smtp_port,
             smtp_secure ? 1 : 0,
             smtp_user,
-            smtp_pass || "",
+            encryptPassword(smtp_pass || ""),
             email_from,
             email_to,
             auth_type,
