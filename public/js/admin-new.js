@@ -16,6 +16,8 @@
   let allLeaveRequests = [];
   let filteredLeaveRequests = [];
   let leaveRequestsPage = 1;
+  let leaveBalancesPageSize = 10;
+  let leaveRequestsPageSize = 50;
 
   // Translation helper with safe fallback
   function adminTr(key, fallback) {
@@ -811,7 +813,7 @@
       return;
     }
 
-    const itemsPerPage = 10;
+    const itemsPerPage = leaveBalancesPageSize;
     const totalPages = Math.ceil(items.length / itemsPerPage);
     const startIdx = (page - 1) * itemsPerPage;
     const endIdx = startIdx + itemsPerPage;
@@ -837,10 +839,18 @@
 
     // Pagination controls
     let paginationHtml = '';
-    if (totalPages > 1) {
+    if (totalPages > 0) {
       paginationHtml = `
         <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light">
-          <small class="text-muted">${items.length} gebruikers</small>
+          <div class="d-flex align-items-center gap-2">
+            <small class="text-muted">${items.length ? `${startIdx + 1}-${Math.min(endIdx, items.length)} van ${items.length}` : 'Geen gebruikers'}</small>
+            <div class="d-flex align-items-center gap-1">
+              <label class="form-label small mb-0">Rijen/pagina</label>
+              <select id="leaveBalancesPageSize" class="form-select form-select-sm w-auto">
+                ${[5,10,20,50,100].map(sz => `<option value="${sz}" ${sz === leaveBalancesPageSize ? 'selected' : ''}>${sz}</option>`).join('')}
+              </select>
+            </div>
+          </div>
           <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-secondary" id="leaveBalancesPrev" ${page === 1 ? 'disabled' : ''}>
               <i class="bi bi-chevron-left"></i>
@@ -887,6 +897,15 @@
       }
     }
 
+    const sizeSel = document.getElementById('leaveBalancesPageSize');
+    if (sizeSel) {
+      sizeSel.onchange = () => {
+        leaveBalancesPageSize = parseInt(sizeSel.value, 10) || 10;
+        leaveBalancesPage = 1;
+        renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
+      };
+    }
+
     wrapper.querySelectorAll(".save-leave").forEach((btn) => {
       btn.onclick = async (e) => {
         const tr = e.target.closest("tr");
@@ -918,7 +937,7 @@
       return;
     }
 
-    const itemsPerPage = 10;
+    const itemsPerPage = leaveRequestsPageSize;
     const totalPages = Math.ceil(requests.length / itemsPerPage);
     const startIdx = (page - 1) * itemsPerPage;
     const endIdx = startIdx + itemsPerPage;
@@ -956,10 +975,18 @@
 
     // Pagination controls
     let paginationHtml = '';
-    if (totalPages > 1) {
+    if (totalPages > 0) {
       paginationHtml = `
         <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light">
-          <small class="text-muted">${requests.length} aanvragen</small>
+          <div class="d-flex align-items-center gap-2">
+            <small class="text-muted">${requests.length ? `${startIdx + 1}-${Math.min(endIdx, requests.length)} van ${requests.length}` : 'Geen aanvragen'}</small>
+            <div class="d-flex align-items-center gap-1">
+              <label class="form-label small mb-0">Rijen/pagina</label>
+              <select id="leaveRequestsPageSize" class="form-select form-select-sm w-auto">
+                ${[10,20,50,100].map(sz => `<option value="${sz}" ${sz === leaveRequestsPageSize ? 'selected' : ''}>${sz}</option>`).join('')}
+              </select>
+            </div>
+          </div>
           <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-secondary" id="leaveRequestsPrev" ${page === 1 ? 'disabled' : ''}>
               <i class="bi bi-chevron-left"></i>
@@ -1006,6 +1033,15 @@
           renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
         };
       }
+    }
+
+    const sizeSelReq = document.getElementById('leaveRequestsPageSize');
+    if (sizeSelReq) {
+      sizeSelReq.onchange = () => {
+        leaveRequestsPageSize = parseInt(sizeSelReq.value, 10) || 50;
+        leaveRequestsPage = 1;
+        renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
+      };
     }
   }
 
@@ -2927,6 +2963,13 @@
 
   // ========== PLACEHOLDER TABS ==========
 
+  let submissionFilterYear = null;
+  let submissionFilterWeek = null;
+  let submissionFilterCompany = null;
+  let submissionFilterUser = "";
+  let submissionCurrentPage = 1;
+  let submissionsPageSize = 30;
+
   async function loadAdminSubmissions() {
     const container = document.getElementById("adminContent");
     if (!container) return;
@@ -2934,13 +2977,189 @@
       '<div class="text-center"><div class="spinner-border"></div></div>';
 
     try {
-      currentSubmissions = await api.getAdminSubmissions();
+      // Build query with optional year filter (week is client-side only)
+      let url = "/admin/submissions";
+      if (submissionFilterYear) {
+        url += `?year=${submissionFilterYear}`;
+      }
+      currentSubmissions = await api.request(url);
       console.log("[ADMIN] Submissions loaded:", currentSubmissions);
+      submissionCurrentPage = 1; // Reset to first page when loading
       renderAdminSubmissions(currentSubmissions);
     } catch (error) {
       console.error("[ADMIN] Error loading submissions:", error);
       container.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
     }
+  }
+
+  function filterSubmissionsByUser(searchTerm) {
+    console.log("[FILTER] User search:", searchTerm);
+    submissionFilterUser = searchTerm.toLowerCase();
+    submissionCurrentPage = 1; // Reset to first page
+    updateSubmissionsTableOnly(currentSubmissions);
+  }
+
+  function filterSubmissionsByWeek(weekNumber) {
+    console.log("[FILTER] Week filter:", weekNumber);
+    submissionFilterWeek = weekNumber || null;
+    submissionCurrentPage = 1; // Reset to first page
+    updateSubmissionsTableOnly(currentSubmissions);
+  }
+
+  function filterSubmissionsByCompany(company) {
+    submissionFilterCompany = company || null;
+    submissionCurrentPage = 1;
+    updateSubmissionsTableOnly(currentSubmissions);
+  }
+
+  function updateSubmissionsTableOnly(submissions) {
+    const container = document.getElementById("adminContent");
+    if (!container) return;
+
+    // Apply user search filter
+    let filteredSubmissions = submissions;
+    if (submissionFilterUser) {
+      filteredSubmissions = submissions.filter((s) => {
+        const fullName = (s.full_name || "").toLowerCase();
+        const username = (s.username || "").toLowerCase();
+        const company = (s.company_name || "").toLowerCase();
+        return (
+          fullName.includes(submissionFilterUser) ||
+          username.includes(submissionFilterUser) ||
+          company.includes(submissionFilterUser)
+        );
+      });
+    }
+
+    // Apply week filter
+    if (submissionFilterWeek) {
+      filteredSubmissions = filteredSubmissions.filter((s) => {
+        if (!s.week_numbers) return false;
+        const weeks = s.week_numbers.split(",").map((w) => w.trim());
+        return weeks.includes(submissionFilterWeek);
+      });
+    }
+
+    // Apply company filter
+    if (submissionFilterCompany) {
+      filteredSubmissions = filteredSubmissions.filter((s) => {
+        return (s.company_name || "").trim() === submissionFilterCompany;
+      });
+    }
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredSubmissions.length / submissionsPageSize);
+    const start = (submissionCurrentPage - 1) * submissionsPageSize;
+    const end = start + submissionsPageSize;
+    const pagedSubmissions = filteredSubmissions.slice(start, end);
+
+    // Update the summary and table content only
+    const summaryEl = container.querySelector('[data-role="submission-summary"]');
+    if (summaryEl) {
+      summaryEl.innerHTML = submissionFilterUser || submissionFilterYear || submissionFilterCompany || submissionFilterWeek
+        ? `Showing ${pagedSubmissions.length} of ${filteredSubmissions.length} submissions${submissionFilterUser ? ` (search)` : ""}${submissionFilterYear ? ` (year ${submissionFilterYear})` : ""}${submissionFilterCompany ? ` (company ${submissionFilterCompany})` : ""}${submissionFilterWeek ? ` (week ${submissionFilterWeek})` : ""}`
+        : "";
+    }
+
+    // Update desktop table
+    const desktopTbody = container.querySelector('.table tbody');
+    if (desktopTbody) {
+      desktopTbody.innerHTML = pagedSubmissions
+        .map((submission) => {
+          let weekStr = "-";
+          if (submission.week_numbers) {
+            const weeks = submission.week_numbers.split(",").map((w) => `W${w.trim()}`);
+            weekStr = weeks.join(", ");
+          }
+          let submittedStr = "-";
+          if (submission.submission_date) {
+            submittedStr = new Date(submission.submission_date).toLocaleDateString("nl-NL");
+          }
+          return `
+            <tr>
+              <td>${submission.id}</td>
+              <td>${submission.full_name || submission.username || "-"}</td>
+              <td>${submission.company_name || "-"}</td>
+              <td>${weekStr}</td>
+              <td><strong>${
+                submission.total_hours
+                  ? parseFloat(submission.total_hours).toFixed(2)
+                  : "0.00"
+              }</strong></td>
+              <td>
+                <span class="badge ${getSubmissionStatusBadge(submission.status)}">
+                  ${submission.status || "pending"}
+                </span>
+              </td>
+              <td>${submittedStr}</td>
+              <td>
+                <button class="btn btn-sm btn-info" onclick="viewSubmissionDetails(${submission.id})" title="View details">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-warning" onclick="editSubmissionHours(${submission.id})" title="Edit hours">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="emailSubmission(${submission.id})" title="Send email">
+                  <i class="bi bi-envelope"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteSubmission(${submission.id})" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+    // Update pagination
+    updateSubmissionsPagination(filteredSubmissions, pagedSubmissions);
+  }
+
+  function updateSubmissionsPagination(filteredSubmissions, pagedSubmissions) {
+    const container = document.getElementById("adminContent");
+    const totalPages = Math.ceil(filteredSubmissions.length / submissionsPageSize);
+    const start = (submissionCurrentPage - 1) * submissionsPageSize;
+    const end = start + submissionsPageSize;
+
+    const paginationContainer = container.querySelector('[data-role="pagination-controls"]');
+    if (paginationContainer && totalPages > 0) {
+      paginationContainer.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="d-flex align-items-center gap-2">
+            <div class="text-muted small">Showing ${start + 1} to ${Math.min(end, filteredSubmissions.length)} of ${filteredSubmissions.length} submissions</div>
+            <div class="d-flex align-items-center gap-1">
+              <label class="form-label small mb-0">Rows/page</label>
+              <select id="submissionsPageSize" class="form-select form-select-sm w-auto" onchange="changeSubmissionsPageSize(this.value)">
+                ${[10,20,30,50,100].map(sz => `<option value="${sz}" ${sz === submissionsPageSize ? 'selected' : ''}>${sz}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <nav>
+            <ul class="pagination mb-0">
+              ${submissionCurrentPage > 1 ? `<li class="page-item"><a class="page-link" href="#" onclick="changeSubmissionPage(1); return false;">First</a></li>` : `<li class="page-item disabled"><span class="page-link">First</span></li>`}
+              ${submissionCurrentPage > 1 ? `<li class="page-item"><a class="page-link" href="#" onclick="changeSubmissionPage(${submissionCurrentPage - 1}); return false;">Previous</a></li>` : `<li class="page-item disabled"><span class="page-link">Previous</span></li>`}
+              ${Array.from({ length: totalPages }, (_, i) => i + 1)
+                .map(
+                  (pageNum) =>
+                    pageNum === submissionCurrentPage
+                      ? `<li class="page-item active"><span class="page-link">${pageNum}</span></li>`
+                      : `<li class="page-item"><a class="page-link" href="#" onclick="changeSubmissionPage(${pageNum}); return false;">${pageNum}</a></li>`
+                )
+                .join("")}
+              ${submissionCurrentPage < totalPages ? `<li class="page-item"><a class="page-link" href="#" onclick="changeSubmissionPage(${submissionCurrentPage + 1}); return false;">Next</a></li>` : `<li class="page-item disabled"><span class="page-link">Next</span></li>`}
+              ${submissionCurrentPage < totalPages ? `<li class="page-item"><a class="page-link" href="#" onclick="changeSubmissionPage(${totalPages}); return false;">Last</a></li>` : `<li class="page-item disabled"><span class="page-link">Last</span></li>`}
+            </ul>
+          </nav>
+        </div>
+      `;
+    }
+  }
+
+  function changeSubmissionsPageSize(size) {
+    submissionsPageSize = parseInt(size, 10) || 30;
+    submissionCurrentPage = 1;
+    updateSubmissionsTableOnly(currentSubmissions);
   }
 
   function renderAdminSubmissions(submissions) {
@@ -2952,7 +3171,56 @@
       return;
     }
 
+    // Collect unique years from submissions for year filter
+    const yearsSet = new Set();
+    submissions.forEach((s) => {
+      if (s.submission_date) {
+        const year = new Date(s.submission_date).getFullYear();
+        yearsSet.add(year);
+      }
+    });
+    const years = Array.from(yearsSet).sort((a, b) => b - a);
+
+    // Collect unique companies from submissions for company filter
+    const companySet = new Set();
+    submissions.forEach((s) => {
+      const name = (s.company_name || "").trim();
+      if (name) companySet.add(name);
+    });
+    const companies = Array.from(companySet).sort((a, b) => a.localeCompare(b, 'nl'));
+
+    // Build filters HTML (one time, with data-role for targeting)
+    const filtersHtml = `
+      <div class="row g-3 mb-3" data-role="filter-controls">
+        <div class="col-md-3">
+          <label class="form-label">Zoek op gebruiker/bedrijf</label>
+          <input type="text" id="submissionUserSearch" class="form-control" placeholder="Zoek op naam, gebruikersnaam of bedrijf..." value="${submissionFilterUser}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Filter by Year</label>
+          <select id="submissionYearFilter" class="form-select" onchange="filterSubmissionsByYear(this.value)">
+            <option value="">All Years</option>
+            ${years.map((y) => `<option value="${y}" ${submissionFilterYear === String(y) ? "selected" : ""}>${y}</option>`).join("")}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Filter by Company</label>
+          <select id="submissionCompanyFilter" class="form-select">
+            <option value="">All Companies</option>
+            ${companies.map((c) => `<option value="${c}" ${submissionFilterCompany === c ? "selected" : ""}>${c}</option>`).join("")}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Filter by Week</label>
+          <input type="text" id="submissionWeekFilter" class="form-control" placeholder="Voer weeknummer in (bijv. 1, 2, 52)..." value="${submissionFilterWeek || ""}">
+        </div>
+      </div>
+      <div class="text-muted small mb-2" data-role="submission-summary"></div>
+    `;
+
+    // Set initial HTML with filters and empty table structure
     container.innerHTML = `
+    ${filtersHtml}
     <div class="table-responsive d-none d-md-block">
       <table class="table table-striped table-hover">
         <thead class="table-dark">
@@ -2968,175 +3236,53 @@
           </tr>
         </thead>
         <tbody>
-          ${submissions
-            .map((submission) => {
-              let weekStr = "-";
-              if (submission.week_numbers) {
-                const weeks = submission.week_numbers
-                  .split(",")
-                  .map((w) => `W${w.trim()}`);
-                weekStr = weeks.join(", ");
-              }
-
-              let submittedStr = "-";
-              if (submission.submission_date) {
-                submittedStr = new Date(
-                  submission.submission_date
-                ).toLocaleDateString("nl-NL");
-              }
-
-              return `
-            <tr>
-              <td>${submission.id}</td>
-              <td>${submission.full_name || submission.username || "-"}</td>
-              <td>${submission.company_name || "-"}</td>
-              <td>${weekStr}</td>
-              <td><strong>${
-                submission.total_hours
-                  ? parseFloat(submission.total_hours).toFixed(2)
-                  : "0.00"
-              }</strong></td>
-              <td>
-                <span class="badge ${getSubmissionStatusBadge(
-                  submission.status
-                )}">
-                  ${submission.status || "pending"}
-                </span>
-              </td>
-              <td>${submittedStr}</td>
-              <td>
-                <button class="btn btn-sm btn-info" onclick="viewSubmissionDetails(${
-                  submission.id
-                })" title="View details">
-                  <i class="bi bi-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-warning" onclick="editSubmissionHours(${
-                  submission.id
-                })" title="Edit hours">
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button class="btn btn-sm btn-primary" onclick="emailSubmission(${
-                  submission.id
-                })" title="Send email">
-                  <i class="bi bi-envelope"></i>
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteSubmission(${
-                  submission.id
-                })" title="Delete">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </td>
-            </tr>
-            `;
-            })
-            .join("")}
         </tbody>
       </table>
     </div>
-
-    <div class="d-md-none">
-      <table class="table table-striped table-hover table-sm">
-        <thead class="table-dark">
-          <tr>
-            <th style="width: 20px;"></th>
-            <th>User</th>
-            <th>Company</th>
-            <th>Hours</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${submissions
-            .map((submission) => {
-              let weekStr = "-";
-              if (submission.week_numbers) {
-                const weeks = submission.week_numbers
-                  .split(",")
-                  .map((w) => `W${w.trim()}`);
-                weekStr = weeks.join(", ");
-              }
-
-              let submittedStr = "-";
-              if (submission.submission_date) {
-                submittedStr = new Date(
-                  submission.submission_date
-                ).toLocaleDateString("nl-NL");
-              }
-
-              return `
-            <tr class="submission-row" data-submission-id="${submission.id}">
-              <td class="text-center" style="cursor: pointer; padding: 0.4rem 0.3rem;">
-                <i class="bi bi-chevron-down toggle-details" onclick="toggleSubmissionDetails(${submission.id})" style="font-size: 0.8rem;"></i>
-              </td>
-              <td><small><strong>${submission.full_name || submission.username || "-"}</strong></small></td>
-              <td><small>${submission.company_name || "-"}</small></td>
-              <td><small><strong>${
-                submission.total_hours
-                  ? parseFloat(submission.total_hours).toFixed(2)
-                  : "0.00"
-              }</strong></small></td>
-            </tr>
-            <tr class="submission-details-row d-none" id="details-submission-${submission.id}">
-              <td colspan="4" style="padding: 0;">
-                <div class="p-3 bg-light border-top">
-                  <h6 class="mb-3">${submission.full_name || submission.username || "-"}</h6>
-                  <div class="row mb-3">
-                    <div class="col-6">
-                      <label class="form-label text-muted small">ID</label>
-                      <p class="small">${submission.id}</p>
-                    </div>
-                    <div class="col-6">
-                      <label class="form-label text-muted small">Weeknummers</label>
-                      <p class="small">${weekStr}</p>
-                    </div>
-                  </div>
-                  <div class="row mb-3">
-                    <div class="col-6">
-                      <label class="form-label text-muted small">Status</label>
-                      <p class="small">
-                        <span class="badge ${getSubmissionStatusBadge(submission.status)}">
-                          ${submission.status || "pending"}
-                        </span>
-                      </p>
-                    </div>
-                    <div class="col-6">
-                      <label class="form-label text-muted small">Submitted</label>
-                      <p class="small">${submittedStr}</p>
-                    </div>
-                  </div>
-                  <div class="d-grid gap-2">
-                    <button class="btn btn-info btn-sm" onclick="viewSubmissionDetails(${submission.id})">
-                      <i class="bi bi-eye"></i> View Details
-                    </button>
-                    <button class="btn btn-warning btn-sm" onclick="editSubmissionHours(${submission.id})">
-                      <i class="bi bi-pencil"></i> Edit Hours
-                    </button>
-                    <button class="btn btn-primary btn-sm" onclick="emailSubmission(${submission.id})">
-                      <i class="bi bi-envelope"></i> Send Email
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteSubmission(${submission.id})">
-                      <i class="bi bi-trash"></i> Delete
-                    </button>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            `;
-            })
-            .join("")}
-        </tbody>
-      </table>
-    </div>
+    <div class="d-md-none" data-role="mobile-list"></div>
   `;
 
-    // Attach event listeners for toggle details
-    const detailsRows = container.querySelectorAll('.submission-row');
-    detailsRows.forEach(row => {
-      row.addEventListener('click', function(e) {
-        if (e.target.closest('.toggle-details')) return;
-        const submissionId = this.getAttribute('data-submission-id');
-        toggleSubmissionDetails(submissionId);
+    // NOW attach event listeners BEFORE calling updateSubmissionsTableOnly
+    const searchInput = container.querySelector('#submissionUserSearch');
+    if (searchInput) {
+      searchInput.addEventListener('keyup', function(e) {
+        filterSubmissionsByUser(this.value);
       });
-    });
+    }
+
+    const weekInput = container.querySelector('#submissionWeekFilter');
+    if (weekInput) {
+      weekInput.addEventListener('keyup', function(e) {
+        filterSubmissionsByWeek(this.value);
+      });
+    }
+
+    const companySelect = container.querySelector('#submissionCompanyFilter');
+    if (companySelect) {
+      companySelect.addEventListener('change', function() {
+        filterSubmissionsByCompany(this.value);
+      });
+    }
+
+    // Finally, populate the table with filtered data
+    updateSubmissionsTableOnly(submissions);
+  }
+
+  function changeSubmissionPage(pageNum) {
+    submissionCurrentPage = pageNum;
+    updateSubmissionsTableOnly(currentSubmissions);
+  }
+
+  function filterSubmissionsByYear(year) {
+    submissionFilterYear = year || null;
+    loadAdminSubmissions();
+  }
+
+  function filterSubmissionsByWeek(week) {
+    console.log("[FILTER] Week filter:", week);
+    submissionFilterWeek = week || null;
+    submissionCurrentPage = 1; // Reset to first page
+    updateSubmissionsTableOnly(currentSubmissions);
   }
 
   function toggleSubmissionDetails(submissionId) {
@@ -3586,6 +3732,15 @@
     return "-";
   }
 
+  // Hours Report state
+  let hoursFilterYear = null;
+  let hoursFilterWeek = "";
+  let hoursFilterUser = "";
+  let hoursFilterCompany = null;
+  let hoursCurrentPage = 1;
+  let hoursPageSize = 20;
+  let currentHoursReport = [];
+
   async function loadHoursReport() {
     const container = document.getElementById("adminContent");
     container.innerHTML = `
@@ -3606,30 +3761,73 @@
     document.getElementById("refreshHoursReport").onclick = loadHoursReport;
 
     try {
-      const report = await api.getHoursReport();
+      // Fetch with optional year filter; user filter is client-side
+      const report = await api.getHoursReport({ year: hoursFilterYear || "" });
+      currentHoursReport = report || [];
 
-      if (!report || report.length === 0) {
+      if (!currentHoursReport.length) {
         document.getElementById("hoursReportBody").innerHTML =
           '<div class="alert alert-info">No data found</div>';
         return;
       }
 
-      const rows = report
-        .map(
-          (row) => `
-      <tr>
-        <td>${row.full_name || "-"}</td>
-        <td>${row.week_number ?? "-"}</td>
-        <td>${row.work_days ?? 0}</td>
-        <td>${parseFloat(row.total_hours || 0).toFixed(2)}</td>
-        <td>${parseFloat(row.total_km || 0).toFixed(2)}</td>
-        <td>${parseFloat(row.overworked || 0).toFixed(2)}</td>
-      </tr>
-    `
-        )
-        .join("");
+      renderHoursReport(currentHoursReport);
+    } catch (error) {
+      console.error("[ADMIN] Error loading hours report:", error);
+      document.getElementById(
+        "hoursReportBody"
+      ).innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    }
+  }
 
-      document.getElementById("hoursReportBody").innerHTML = `
+  function renderHoursReport(report) {
+    const body = document.getElementById("hoursReportBody");
+
+    // Collect unique years from report
+    const yearsSet = new Set();
+    report.forEach((r) => {
+      if (r.year) yearsSet.add(parseInt(r.year, 10));
+    });
+    const years = Array.from(yearsSet).sort((a, b) => b - a);
+
+    // Collect unique companies from report
+    const companySet = new Set();
+    report.forEach((r) => {
+      const name = (r.company_name || '').trim();
+      if (name) companySet.add(name);
+    });
+    const companies = Array.from(companySet).sort((a, b) => a.localeCompare(b, 'nl'));
+
+    const filtersHtml = `
+      <div class="row g-3 mb-3" data-role="hours-filter-controls">
+        <div class="col-md-3">
+          <label class="form-label">Zoek op gebruiker</label>
+          <input type="text" id="hoursUserSearch" class="form-control" placeholder="Zoek op naam..." value="${hoursFilterUser}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Filter by Year</label>
+          <select id="hoursYearFilter" class="form-select">
+            <option value="">All Years</option>
+            ${years.map((y) => `<option value="${y}" ${hoursFilterYear === String(y) ? "selected" : ""}>${y}</option>`).join("")}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Filter by Company</label>
+          <select id="hoursCompanyFilter" class="form-select">
+            <option value="">All Companies</option>
+            ${companies.map((c) => `<option value="${c}" ${hoursFilterCompany === c ? "selected" : ""}>${c}</option>`).join("")}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Filter by Week</label>
+          <input type="text" id="hoursWeekFilter" class="form-control" placeholder="Voer weeknummer in (bijv. 1, 2, 52)..." value="${hoursFilterWeek}">
+        </div>
+      </div>
+      <div class="text-muted small mb-2" data-role="hours-summary"></div>
+    `;
+
+    body.innerHTML = `
+      ${filtersHtml}
       <div class="table-responsive">
         <table class="table table-striped table-hover">
           <thead class="table-dark">
@@ -3642,18 +3840,151 @@
               <th>Overworked</th>
             </tr>
           </thead>
-          <tbody>
-            ${rows}
-          </tbody>
+          <tbody></tbody>
         </table>
       </div>
+      <div data-role="hours-pagination" class="mt-3"></div>
     `;
-    } catch (error) {
-      console.error("[ADMIN] Error loading hours report:", error);
-      document.getElementById(
-        "hoursReportBody"
-      ).innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+
+    // Attach listeners without re-rendering filters
+    const userInput = body.querySelector('#hoursUserSearch');
+    if (userInput) {
+      userInput.addEventListener('keyup', () => {
+        hoursFilterUser = userInput.value.trim().toLowerCase();
+        hoursCurrentPage = 1;
+        updateHoursReportTableOnly(currentHoursReport);
+      });
     }
+
+    const weekInput = body.querySelector('#hoursWeekFilter');
+    if (weekInput) {
+      weekInput.addEventListener('keyup', () => {
+        hoursFilterWeek = weekInput.value.trim();
+        hoursCurrentPage = 1;
+        updateHoursReportTableOnly(currentHoursReport);
+      });
+    }
+
+    const yearSelect = body.querySelector('#hoursYearFilter');
+    if (yearSelect) {
+      yearSelect.addEventListener('change', async () => {
+        hoursFilterYear = yearSelect.value || null;
+        hoursCurrentPage = 1;
+        // Reload from server with year filter; keep filters visible
+        try {
+          const report = await api.getHoursReport({ year: hoursFilterYear || "" });
+          currentHoursReport = report || [];
+          // Do not rebuild filters; just update table/summary/pagination
+          updateHoursReportTableOnly(currentHoursReport);
+        } catch (e) {
+          console.error('[ADMIN] Error reloading hours by year:', e);
+        }
+      });
+    }
+
+    const companySelect = body.querySelector('#hoursCompanyFilter');
+    if (companySelect) {
+      companySelect.addEventListener('change', () => {
+        hoursFilterCompany = companySelect.value || null;
+        hoursCurrentPage = 1;
+        updateHoursReportTableOnly(currentHoursReport);
+      });
+    }
+
+    // Initial draw
+    updateHoursReportTableOnly(report);
+  }
+
+  function updateHoursReportTableOnly(report) {
+    const body = document.getElementById('hoursReportBody');
+    if (!body) return;
+
+    // Apply client-side filters for user and week
+    let rows = report;
+    if (hoursFilterUser) {
+      rows = rows.filter(r => (r.full_name || '').toLowerCase().includes(hoursFilterUser));
+    }
+    if (hoursFilterWeek) {
+      rows = rows.filter(r => String(r.week_number || '').trim() === String(hoursFilterWeek).trim());
+    }
+    if (hoursFilterCompany) {
+      rows = rows.filter(r => (r.company_name || '').trim() === hoursFilterCompany);
+    }
+
+    // Pagination
+    const totalPages = Math.ceil(rows.length / hoursPageSize) || 1;
+    if (hoursCurrentPage > totalPages) hoursCurrentPage = totalPages;
+    const start = (hoursCurrentPage - 1) * hoursPageSize;
+    const end = start + hoursPageSize;
+    const pageRows = rows.slice(start, end);
+
+    // Update summary
+    const summary = body.querySelector('[data-role="hours-summary"]');
+    if (summary) {
+      summary.innerHTML = (hoursFilterUser || hoursFilterYear || hoursFilterCompany || hoursFilterWeek)
+        ? `Showing ${pageRows.length} of ${rows.length} rows${hoursFilterUser ? ' (search)' : ''}${hoursFilterYear ? ` (year ${hoursFilterYear})` : ''}${hoursFilterCompany ? ` (company ${hoursFilterCompany})` : ''}${hoursFilterWeek ? ` (week ${hoursFilterWeek})` : ''}`
+        : '';
+    }
+
+    // Update table body
+    const tbody = body.querySelector('table tbody');
+    if (tbody) {
+      tbody.innerHTML = pageRows.map(row => `
+        <tr>
+          <td>${row.full_name || '-'}</td>
+          <td>${row.week_number ?? '-'}</td>
+          <td>${row.work_days ?? 0}</td>
+          <td>${parseFloat(row.total_hours || 0).toFixed(2)}</td>
+          <td>${parseFloat(row.total_km || 0).toFixed(2)}</td>
+          <td>${parseFloat(row.overworked || 0).toFixed(2)}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Update pagination controls
+    const pag = body.querySelector('[data-role="hours-pagination"]');
+    if (pag) {
+      if (totalPages <= 1) {
+        pag.innerHTML = '';
+      } else {
+        const pageLinks = Array.from({ length: totalPages }, (_, i) => i + 1)
+          .map(pageNum => pageNum === hoursCurrentPage
+            ? `<li class="page-item active"><span class="page-link">${pageNum}</span></li>`
+            : `<li class="page-item"><a class="page-link" href="#" onclick="changeHoursPage(${pageNum}); return false;">${pageNum}</a></li>`)
+          .join('');
+        pag.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+              <div class="text-muted small">Showing ${start + 1} to ${Math.min(end, rows.length)} of ${rows.length}</div>
+              <div class="d-flex align-items-center gap-1">
+                <label class="form-label small mb-0">Rows/page</label>
+                <select id="hoursPageSize" class="form-select form-select-sm w-auto" onchange="changeHoursPageSize(this.value)">
+                  ${[10,20,30,50,100].map(sz => `<option value="${sz}" ${sz === hoursPageSize ? 'selected' : ''}>${sz}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+            <nav><ul class="pagination mb-0">
+              ${hoursCurrentPage > 1 ? `<li class="page-item"><a class="page-link" href="#" onclick="changeHoursPage(1); return false;">First</a></li>` : `<li class="page-item disabled"><span class="page-link">First</span></li>`}
+              ${hoursCurrentPage > 1 ? `<li class="page-item"><a class="page-link" href="#" onclick="changeHoursPage(${hoursCurrentPage - 1}); return false;">Previous</a></li>` : `<li class="page-item disabled"><span class="page-link">Previous</span></li>`}
+              ${pageLinks}
+              ${hoursCurrentPage < totalPages ? `<li class="page-item"><a class="page-link" href="#" onclick="changeHoursPage(${hoursCurrentPage + 1}); return false;">Next</a></li>` : `<li class="page-item disabled"><span class="page-link">Next</span></li>`}
+              ${hoursCurrentPage < totalPages ? `<li class="page-item"><a class="page-link" href="#" onclick="changeHoursPage(${totalPages}); return false;">Last</a></li>` : `<li class="page-item disabled"><span class="page-link">Last</span></li>`}
+            </ul></nav>
+          </div>
+        `;
+      }
+    }
+  }
+
+  function changeHoursPage(pageNum) {
+    hoursCurrentPage = pageNum;
+    updateHoursReportTableOnly(currentHoursReport);
+  }
+
+  function changeHoursPageSize(size) {
+    hoursPageSize = parseInt(size, 10) || 20;
+    hoursCurrentPage = 1;
+    updateHoursReportTableOnly(currentHoursReport);
   }
 
 
@@ -3690,8 +4021,18 @@
           <div class="card-body p-0" style="max-height: 520px; overflow-y: auto;" id="fleetListWrapper">
             <div class="text-center py-4"><div class="spinner-border"></div></div>
           </div>
-          <div class="card-footer d-flex justify-content-between align-items-center">
-            <small id="fleetCount" class="text-muted"></small>
+          <div class="card-footer d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <small id="fleetCount" class="text-muted"></small>
+              <div class="d-flex align-items-center gap-1">
+                <label class="form-label small mb-0">Rijen/pagina</label>
+                <select id="fleetPageSizeSelect" class="form-select form-select-sm w-auto">
+                  ${[10, 20, 50, 100]
+                    .map((sz) => `<option value="${sz}" ${sz === 20 ? "selected" : ""}>${sz}</option>`)
+                    .join("")}
+                </select>
+              </div>
+            </div>
             <div class="btn-group btn-group-sm">
               <button class="btn btn-outline-secondary" id="fleetPrev">Vorige</button>
               <span class="btn btn-outline-secondary disabled" id="fleetPageInfo" style="pointer-events:none;"></span>
@@ -3728,6 +4069,16 @@
         renderFleetList();
       };
 
+      const sizeSelect = document.getElementById("fleetPageSizeSelect");
+      if (sizeSelect) {
+        sizeSelect.value = String(fleetPageSize);
+        sizeSelect.onchange = () => {
+          fleetPageSize = parseInt(sizeSelect.value, 10) || 20;
+          fleetPage = 1;
+          renderFleetList();
+        };
+      }
+
       document.getElementById("fleetPrev").onclick = () => {
         if (fleetPage > 1) {
           fleetPage -= 1;
@@ -3750,7 +4101,7 @@
   let selectedVehicleId = null;
   let fleetLoadingId = null;
   let fleetPage = 1;
-  const fleetPageSize = 20;
+  let fleetPageSize = 20;
   let fleetSearchTerm = "";
 
   function renderFleetList() {

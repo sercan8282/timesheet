@@ -5,15 +5,28 @@ function renderHistory() {
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h5 class="mb-0"><i class="bi bi-clock-history"></i> <span data-i18n="ui:history.title">Submission History</span></h5>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <h5 class="mb-0"><i class="bi bi-clock-history"></i> <span data-i18n="ui:history.title">Submission History</span></h5>
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="form-label mb-0" for="historyYearFilter"><span data-i18n="ui:history.year">Year</span></label>
+                                    <select id="historyYearFilter" class="form-select form-select-sm" style="width: auto"></select>
+                                    <label class="form-label mb-0" for="historyWeekFilter"><span data-i18n="ui:history.week">Week</span></label>
+                                    <input id="historyWeekFilter" type="number" min="1" max="53" class="form-control form-control-sm" style="width: 90px" placeholder="e.g. 12">
+                                    <label class="form-label mb-0" for="companyFilter"><span data-i18n="ui:history.company">Company</span></label>
+                                    <select class="form-select form-select-sm" id="companyFilter" onchange="filterHistoryByCompany()" style="width: auto">
+                                        <option value="" data-i18n="ui:history.all_companies">All Companies</option>
+                                    </select>
+                                    <label class="form-label mb-0" for="historyPageSize"><span data-i18n="ui:history.page_size">Per page</span></label>
+                                    <select id="historyPageSize" class="form-select form-select-sm" onchange="changeHistoryPageSize()" style="width: auto">
+                                        <option value="10">10</option>
+                                        <option value="25" selected>25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                         <div class="card-body">
-                            <div class="mb-3">
-                                <label for="companyFilter" class="form-label" data-i18n="ui:history.filter_company">Filter by Company:</label>
-                                <select class="form-select" id="companyFilter" onchange="filterHistoryByCompany()">
-                                    <option value="" data-i18n="ui:history.all_companies">All Companies</option>
-                                </select>
-                            </div>
                             <div id="historyContent">
                                 <div class="text-center">
                                     <div class="spinner-border text-primary" role="status">
@@ -21,6 +34,8 @@ function renderHistory() {
                                     </div>
                                 </div>
                             </div>
+                            <div id="historyPagination" class="d-flex justify-content-center mt-3"></div>
+                            <div id="historyMeta" class="text-muted small mt-2"></div>
                         </div>
                     </div>
                 </div>
@@ -35,32 +50,69 @@ let historyData = {
   filteredSubmissions: [],
   selectedCompanyFilter: "",
   currentImportTimesheets: [],
+  yearFilter: "",
+  weekFilter: "",
+  availableYears: [],
+  currentPage: 1,
+  pageSize: 25,
 };
 
 function filterHistoryByCompany() {
   const filterSelect = document.getElementById("companyFilter");
   historyData.selectedCompanyFilter = filterSelect.value;
+  applyHistoryFilters();
+}
 
-  if (historyData.selectedCompanyFilter === "") {
-    historyData.filteredSubmissions = historyData.allSubmissions;
-  } else {
-    historyData.filteredSubmissions = historyData.allSubmissions.filter(
-      (sub) => {
-        // Check if any timesheet in this submission has the selected company
-        return (
-          sub.timesheetDetails &&
-          sub.timesheetDetails.some(
-            (ts) =>
-              (ts.company_id || null) ===
-              (historyData.selectedCompanyFilter
-                ? parseInt(historyData.selectedCompanyFilter)
-                : null)
-          )
-        );
-      }
-    );
+function changeHistoryPageSize() {
+  const sizeSelect = document.getElementById("historyPageSize");
+  historyData.pageSize = parseInt(sizeSelect.value);
+  historyData.currentPage = 1;
+  renderSubmissions(historyData.filteredSubmissions);
+}
+
+function loadHistoryPage(page) {
+  historyData.currentPage = page;
+  renderSubmissions(historyData.filteredSubmissions);
+}
+
+function applyHistoryFilters() {
+  historyData.currentPage = 1;
+  let filtered = historyData.allSubmissions;
+
+  // Filter by year
+  if (historyData.yearFilter) {
+    filtered = filtered.filter((sub) => {
+      if (!sub.timesheetDetails || sub.timesheetDetails.length === 0) return false;
+      return sub.timesheetDetails.some((ts) => {
+        const year = ts.year || new Date(ts.week_start_date).getFullYear();
+        return String(year) === String(historyData.yearFilter);
+      });
+    });
   }
 
+  // Filter by week
+  if (historyData.weekFilter) {
+    const weekNum = parseInt(historyData.weekFilter);
+    filtered = filtered.filter((sub) => {
+      if (!sub.timesheetDetails || sub.timesheetDetails.length === 0) return false;
+      return sub.timesheetDetails.some((ts) => parseInt(ts.week_number) === weekNum);
+    });
+  }
+
+  // Filter by company
+  if (historyData.selectedCompanyFilter) {
+    filtered = filtered.filter((sub) => {
+      return (
+        sub.timesheetDetails &&
+        sub.timesheetDetails.some(
+          (ts) =>
+            (ts.company_id || null) === parseInt(historyData.selectedCompanyFilter)
+        )
+      );
+    });
+  }
+
+  historyData.filteredSubmissions = filtered;
   renderSubmissions(historyData.filteredSubmissions);
 }
 
@@ -71,6 +123,41 @@ async function initHistory() {
     // Store all submissions for filtering
     historyData.allSubmissions = submissions;
     historyData.filteredSubmissions = submissions;
+    historyData.yearFilter = "";
+    historyData.weekFilter = "";
+
+    // Collect available years
+    const yearsSet = new Set();
+    for (const sub of submissions) {
+      if (sub.timesheetDetails) {
+        sub.timesheetDetails.forEach((ts) => {
+          const year = ts.year || new Date(ts.week_start_date).getFullYear();
+          yearsSet.add(year);
+        });
+      }
+    }
+    historyData.availableYears = Array.from(yearsSet).sort((a, b) => b - a);
+
+    // Populate year filter
+    const yearSelect = document.getElementById("historyYearFilter");
+    if (yearSelect) {
+      yearSelect.innerHTML = '<option value="">Alle jaren</option>' +
+        historyData.availableYears.map((y) => `<option value="${y}">${y}</option>`).join("");
+      
+      yearSelect.onchange = () => {
+        historyData.yearFilter = yearSelect.value || "";
+        applyHistoryFilters();
+      };
+    }
+
+    // Week filter
+    const weekInput = document.getElementById("historyWeekFilter");
+    if (weekInput) {
+      weekInput.oninput = () => {
+        historyData.weekFilter = weekInput.value.trim();
+        applyHistoryFilters();
+      };
+    }
 
     // Populate company filter
     const companies = new Set();
@@ -126,6 +213,8 @@ function getWeekDateRange(weekNumber, year) {
 
 async function renderSubmissions(submissions) {
   const container = document.getElementById("historyContent");
+  const paginationDiv = document.getElementById("historyPagination");
+  const metaDiv = document.getElementById("historyMeta");
 
   // Debug: log what backend returns to diagnose missing names
   console.log("Submissions payload:", submissions);
@@ -136,13 +225,21 @@ async function renderSubmissions(submissions) {
                 <i class="bi bi-info-circle"></i> No submissions yet
             </div>
         `;
+    if (paginationDiv) paginationDiv.innerHTML = "";
+    if (metaDiv) metaDiv.innerHTML = "";
     return;
   }
+
+  // Client-side pagination
+  const totalPages = Math.ceil(submissions.length / historyData.pageSize);
+  const start = (historyData.currentPage - 1) * historyData.pageSize;
+  const end = start + historyData.pageSize;
+  const paginatedSubmissions = submissions.slice(start, end);
 
   // Build HTML with collapsible submissions
   let html = '<div class="accordion" id="submissionsAccordion">';
 
-  for (const sub of submissions) {
+  for (const sub of paginatedSubmissions) {
     if (!sub.timesheet_ids) {
       console.warn("Submission has no timesheet_ids:", sub.id);
       continue;
@@ -290,6 +387,44 @@ async function renderSubmissions(submissions) {
 
   html += "</div>";
   container.innerHTML = html;
+
+  // Render pagination
+  if (paginationDiv && totalPages > 1) {
+    paginationDiv.innerHTML = `
+      <nav>
+        <ul class="pagination">
+          <li class="page-item ${historyData.currentPage === 1 ? "disabled" : ""}">
+            <a class="page-link" href="#" onclick="loadHistoryPage(${historyData.currentPage - 1}); return false;">Previous</a>
+          </li>
+          ${Array.from({ length: totalPages }, (_, i) => i + 1)
+            .map(
+              (p) => `
+                <li class="page-item ${p === historyData.currentPage ? "active" : ""}">
+                  <a class="page-link" href="#" onclick="loadHistoryPage(${p}); return false;">${p}</a>
+                </li>
+              `
+            )
+            .join("")}
+          <li class="page-item ${historyData.currentPage === totalPages ? "disabled" : ""}">
+            <a class="page-link" href="#" onclick="loadHistoryPage(${historyData.currentPage + 1}); return false;">Next</a>
+          </li>
+        </ul>
+      </nav>
+    `;
+  } else if (paginationDiv) {
+    paginationDiv.innerHTML = "";
+  }
+
+  // Render meta
+  if (metaDiv) {
+    const metaStart = start + 1;
+    const metaEnd = Math.min(end, submissions.length);
+    metaDiv.innerHTML = `Toon ${metaStart}-${metaEnd} van ${submissions.length}${
+      historyData.yearFilter ? ` (jaar ${historyData.yearFilter})` : ""
+    }${historyData.weekFilter ? ` (week ${historyData.weekFilter})` : ""}${
+      historyData.selectedCompanyFilter ? ` (gefilterd op bedrijf)` : ""
+    }`;
+  }
 }
 
 function renderSubmissionTimesheets(timesheets, submissionId) {
