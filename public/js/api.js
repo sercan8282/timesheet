@@ -871,6 +871,17 @@ class API {
     });
   }
 
+  async exportInvoiceTemplate(id) {
+    return this.request(`/admin/invoices/templates/${id}/export`);
+  }
+
+  async importInvoiceTemplate(payload) {
+    return this.request(`/admin/invoices/templates/import`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  }
+
   // Invoice Fonts
   async getInvoiceFonts() {
     return this.request("/admin/invoices/fonts");
