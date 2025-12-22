@@ -728,10 +728,11 @@ router.put(
   }
 );
 
-// Get all submissions (admin can see all)
+// Get all submissions (admin can see all) - optionally filter by year
 router.get("/submissions", async (req, res) => {
   try {
-    const submissions = await db.all(`
+    const { year } = req.query; // Optional year filter (e.g., 2024)
+    let query = `
             SELECT s.*, u.username, u.full_name, c.name AS company_name,
               (SELECT COALESCE(SUM(CAST(t.total_hours AS REAL)), 0)
           FROM timesheets t
@@ -739,8 +740,18 @@ router.get("/submissions", async (req, res) => {
       FROM submissions s
       JOIN users u ON s.user_id = u.id
       LEFT JOIN companies c ON u.company_id = c.id
-      ORDER BY s.submission_date DESC
-    `);
+    `;
+    
+    const params = [];
+    
+    if (year) {
+      query += ` WHERE CAST(strftime('%Y', s.submission_date) AS INTEGER) = ?`;
+      params.push(year);
+    }
+    
+    query += ` ORDER BY s.submission_date DESC`;
+    
+    const submissions = await db.all(query, params);
 
     res.json(submissions);
   } catch (error) {
@@ -1983,21 +1994,25 @@ router.delete("/fleet/maintenance/:id", async (req, res) => {
   }
 });
 
-// Get hours report for all users or specific user
+// Get hours report for all users or specific user (optional year filter)
 router.get("/hours-report", async (req, res) => {
   try {
     const userId = req.query.userId;
+    const year = req.query.year; // Optional: filter by year of timesheet date
 
     let query = `
       SELECT 
         u.id as user_id,
         u.full_name,
+        c.name as company_name,
         t.week_number,
+        CAST(strftime('%Y', t.date) AS INTEGER) as year,
         COUNT(*) as work_days,
         SUM(CAST(t.total_hours AS REAL)) as total_hours,
         SUM(CAST(t.total_km AS REAL)) as total_km
       FROM users u
       LEFT JOIN timesheets t ON u.id = t.user_id
+      LEFT JOIN companies c ON u.company_id = c.id
       LEFT JOIN submissions s ON (',' || s.timesheet_ids || ',') LIKE ('%,' || t.id || ',%')
       WHERE 1=1 AND s.id IS NOT NULL
     `;
@@ -2007,10 +2022,14 @@ router.get("/hours-report", async (req, res) => {
       query += " AND u.id = ?";
       params.push(userId);
     }
+    if (year) {
+      query += " AND CAST(strftime('%Y', t.date) AS INTEGER) = ?";
+      params.push(year);
+    }
 
     query += `
-      GROUP BY u.id, u.full_name, t.week_number
-      ORDER BY u.full_name, t.week_number DESC
+      GROUP BY u.id, u.full_name, c.name, t.week_number, year
+      ORDER BY u.full_name, year DESC, t.week_number DESC
     `;
 
     const results = await db.all(query, params);

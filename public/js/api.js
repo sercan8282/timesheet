@@ -367,10 +367,12 @@ class API {
     return this.request("/admin/submissions");
   }
 
-  async getHoursReport(userId = "") {
-    return this.request(
-      `/admin/hours-report${userId ? "?userId=" + userId : ""}`
-    );
+  async getHoursReport({ userId = "", year = "" } = {}) {
+    const params = new URLSearchParams();
+    if (userId) params.append("userId", userId);
+    if (year) params.append("year", year);
+    const qs = params.toString();
+    return this.request(`/admin/hours-report${qs ? `?${qs}` : ""}`);
   }
 
   async getLeaveBalances() {
