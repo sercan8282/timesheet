@@ -1570,12 +1570,12 @@ const invoiceManager = {
               <div class="col-auto">
                 <button class="btn btn-sm btn-outline-primary" onclick="invoiceManager.editElement(${
                   el.id
-                })">
+                })" title="Bewerken">
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-sm btn-outline-danger" onclick="invoiceManager.deleteElement(${
                   el.id
-                })">
+                })" title="Verwijderen">
                   <i class="bi bi-trash"></i>
                 </button>
               </div>
@@ -1608,9 +1608,30 @@ const invoiceManager = {
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label">Element Type</label>
-                <input type="text" class="form-control" value="${
-                  element.element_type
-                }" disabled>
+                <select class="form-select" id="edit-element-type">
+                  <optgroup label="Bovenste Sectie (3 kolommen)">
+                    <option value="top_left" ${element.element_type === "top_left" ? "selected" : ""}>Boven Links</option>
+                    <option value="top_center" ${element.element_type === "top_center" ? "selected" : ""}>Boven Midden</option>
+                    <option value="top_right" ${element.element_type === "top_right" ? "selected" : ""}>Boven Rechts</option>
+                  </optgroup>
+                  <optgroup label="Adres Sectie (3 kolommen)">
+                    <option value="address_left" ${element.element_type === "address_left" ? "selected" : ""}>Adres Links</option>
+                    <option value="address_center" ${element.element_type === "address_center" ? "selected" : ""}>Adres Midden</option>
+                    <option value="address_right" ${element.element_type === "address_right" ? "selected" : ""}>Adres Rechts</option>
+                  </optgroup>
+                  <optgroup label="Body Sectie">
+                    <option value="image" ${element.element_type === "image" ? "selected" : ""}>Afbeelding (body)</option>
+                    <option value="text" ${element.element_type === "text" ? "selected" : ""}>Tekst (body)</option>
+                    <option value="title" ${element.element_type === "title" ? "selected" : ""}>Titel (body)</option>
+                    <option value="sender" ${element.element_type === "sender" ? "selected" : ""}>Afzender (body)</option>
+                  </optgroup>
+                  <optgroup label="Berekende Velden">
+                    <option value="line_item" ${element.element_type === "line_item" ? "selected" : ""}>Regel Item</option>
+                    <option value="subtotal" ${element.element_type === "subtotal" ? "selected" : ""}>Subtotaal</option>
+                    <option value="vat" ${element.element_type === "vat" ? "selected" : ""}>BTW</option>
+                    <option value="total" ${element.element_type === "total" ? "selected" : ""}>Totaal</option>
+                  </optgroup>
+                </select>
               </div>
               <div class="mb-3">
                 <label class="form-label">Label / Omschrijving</label>
@@ -1626,17 +1647,37 @@ const invoiceManager = {
               </div>
               
               ${
-                element.element_type === "image"
+                element.element_type === "image" || 
+                (element.element_type.startsWith("top_") && element.image_path) ||
+                (element.element_type.startsWith("address_") && element.image_path)
                   ? `
                 <div class="mb-3">
                   <label class="form-label">Afbeelding</label>
                   ${
                     element.image_path
-                      ? `<img src="${element.image_path}" style="max-width: 200px; max-height: 100px; display: block; margin-bottom: 10px;">`
+                      ? `<div><img src="${element.image_path}" style="max-width: 200px; max-height: 150px; display: block; margin-bottom: 10px;"></div>`
                       : ""
                   }
                   <input type="file" class="form-control" id="edit-element-image" accept="image/*">
-                  <small class="form-text text-muted">Laat leeg om huidige afbeelding te behouden</small>
+                  <small class="form-text text-muted">Upload een nieuwe afbeelding om te vervangen (optioneel)</small>
+                </div>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Plaatsing</label>
+                      <select class="form-select" id="edit-element-image-align">
+                        <option value="left" ${element.image_align === "left" ? "selected" : ""}>Links</option>
+                        <option value="center" ${element.image_align === "center" ? "selected" : ""}>Midden</option>
+                        <option value="right" ${element.image_align === "right" ? "selected" : ""}>Rechts</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Breedte (px)</label>
+                      <input type="number" class="form-control" id="edit-element-image-width" value="${element.image_width || 150}" min="50" max="600">
+                    </div>
+                  </div>
                 </div>
               `
                   : `
@@ -1720,41 +1761,40 @@ const invoiceManager = {
 
     const label = document.getElementById("edit-element-label").value;
     const order = document.getElementById("edit-element-order").value;
+    const newElementType = document.getElementById("edit-element-type").value;
 
     const formData = new FormData();
     formData.append("label", label);
     formData.append("position_order", order);
+    formData.append("element_type", newElementType);
 
-    if (element.element_type === "image") {
-      const imageFile = document.getElementById("edit-element-image").files[0];
+    if (element.element_type === "image" || 
+        (element.element_type.startsWith("top_") && element.image_path) ||
+        (element.element_type.startsWith("address_") && element.image_path)) {
+      const imageFile = document.getElementById("edit-element-image")?.files[0];
       if (imageFile) {
         formData.append("image", imageFile);
       }
-      const section = document.getElementById("edit-element-section")?.value || element.element_type || "image";
-      formData.append("element_type", section);
-      const imageAlign = document.getElementById("edit-element-image-align").value;
-      const imageWidth = document.getElementById("edit-element-image-width").value;
+      const imageAlign = document.getElementById("edit-element-image-align")?.value;
+      const imageWidth = document.getElementById("edit-element-image-width")?.value;
       formData.append("image_align", imageAlign || element.image_align || "left");
       formData.append("image_width", imageWidth || element.image_width || 150);
     } else {
-      const content = document.getElementById("edit-element-content").value;
-      const fontSize = document.getElementById("edit-element-font-size").value;
-      const fontColor = document.getElementById(
-        "edit-element-font-color"
-      ).value;
-      const fontWeight = document.getElementById(
-        "edit-element-font-weight"
-      ).value;
+      const content = document.getElementById("edit-element-content")?.value;
+      const fontSize = document.getElementById("edit-element-font-size")?.value;
+      const fontColor = document.getElementById("edit-element-font-color")?.value;
+      const fontWeight = document.getElementById("edit-element-font-weight")?.value;
 
-      if (!content) {
-        showToast("Tekst inhoud is verplicht", "error");
-        return;
+      if (content !== undefined && content !== null) {
+        if (!content.trim()) {
+          showToast("Tekst inhoud is verplicht", "error");
+          return;
+        }
+        formData.append("content", content);
+        formData.append("font_size", fontSize || 14);
+        formData.append("font_color", fontColor || "#000000");
+        formData.append("font_weight", fontWeight || "normal");
       }
-
-      formData.append("content", content);
-      formData.append("font_size", fontSize);
-      formData.append("font_color", fontColor);
-      formData.append("font_weight", fontWeight);
     }
 
     try {
