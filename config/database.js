@@ -3031,6 +3031,9 @@ class Database {
           content TEXT,
           image_path TEXT,
           position_order INTEGER DEFAULT 0,
+          image_align TEXT DEFAULT 'left',
+          image_width INTEGER DEFAULT 150,
+          image_height INTEGER DEFAULT 0,
           font_size INTEGER DEFAULT 14,
           font_color TEXT DEFAULT '#000000',
           font_weight TEXT DEFAULT 'normal',
@@ -3040,6 +3043,61 @@ class Database {
           FOREIGN KEY (template_id) REFERENCES invoice_templates(id) ON DELETE CASCADE
         )
       `);
+
+      this.db.all(
+        `PRAGMA table_info(invoice_template_elements)`,
+        [],
+        (err, columns) => {
+          if (!err && columns) {
+            const columnNames = columns.map((c) => c.name);
+
+            if (!columnNames.includes("image_align")) {
+              this.db.run(
+                "ALTER TABLE invoice_template_elements ADD COLUMN image_align TEXT DEFAULT 'left'",
+                (alterErr) => {
+                  if (alterErr && !alterErr.message.includes("duplicate column")) {
+                    console.error("Error adding image_align to invoice_template_elements:", alterErr);
+                  } else {
+                    console.log(
+                      "✓ Added image_align column to invoice_template_elements"
+                    );
+                  }
+                }
+              );
+            }
+
+            if (!columnNames.includes("image_width")) {
+              this.db.run(
+                "ALTER TABLE invoice_template_elements ADD COLUMN image_width INTEGER DEFAULT 150",
+                (alterErr) => {
+                  if (alterErr && !alterErr.message.includes("duplicate column")) {
+                    console.error("Error adding image_width to invoice_template_elements:", alterErr);
+                  } else {
+                    console.log(
+                      "✓ Added image_width column to invoice_template_elements"
+                    );
+                  }
+                }
+              );
+            }
+
+            if (!columnNames.includes("image_height")) {
+              this.db.run(
+                "ALTER TABLE invoice_template_elements ADD COLUMN image_height INTEGER DEFAULT 0",
+                (alterErr) => {
+                  if (alterErr && !alterErr.message.includes("duplicate column")) {
+                    console.error("Error adding image_height to invoice_template_elements:", alterErr);
+                  } else {
+                    console.log(
+                      "✓ Added image_height column to invoice_template_elements"
+                    );
+                  }
+                }
+              );
+            }
+          }
+        }
+      );
 
       // Import templates (for PDF extraction parsers)
       this.db.run(`

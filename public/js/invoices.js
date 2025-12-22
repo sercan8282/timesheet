@@ -1191,13 +1191,21 @@ const invoiceManager = {
         const previewEl = document.querySelector(selector);
         if (previewEl) {
           const label = el.label || el.element_type;
-          const content = el.content
-            ? el.content.substring(0, 20) +
-              (el.content.length > 20 ? "..." : "")
-            : "";
-          previewEl.innerHTML += `<div style="margin: 5px 0; padding: 4px; background: #f0f0f0; border-radius: 2px; font-weight: 500;">${label}${
-            content ? ": " + content : ""
-          }</div>`;
+          if (el.image_path) {
+            previewEl.innerHTML += `
+              <div style="margin: 5px 0; padding: 4px; background: #f0f0f0; border-radius: 2px;">
+                <div style="font-weight: 500">${label}</div>
+                <img src="${el.image_path}" alt="image" style="max-width: 120px; max-height: 80px; display: block; margin-top: 4px;" />
+              </div>
+            `;
+          } else {
+            const content = el.content
+              ? el.content.substring(0, 40) + (el.content.length > 40 ? "..." : "")
+              : "";
+            previewEl.innerHTML += `<div style="margin: 5px 0; padding: 4px; background: #f0f0f0; border-radius: 2px; font-weight: 500;">${label}${
+              content ? ": " + content : ""
+            }</div>`;
+          }
         }
       }
     });
@@ -1312,6 +1320,41 @@ const invoiceManager = {
           <label class="form-label">Afbeelding *</label>
           <input type="file" class="form-control" id="element-image" accept="image/*">
         </div>
+        <div class="mb-3">
+          <label class="form-label">Plaats sectie</label>
+          <select class="form-select" id="element-image-section">
+            <option value="image" selected>Onder (body)</option>
+            <option value="top_left">Boven Links</option>
+            <option value="top_center">Boven Midden</option>
+            <option value="top_right">Boven Rechts</option>
+            <option value="address_left">Adres Links</option>
+            <option value="address_center">Adres Midden</option>
+            <option value="address_right">Adres Rechts</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Plaatsing</label>
+          <select class="form-select" id="element-image-align">
+            <option value="left">Links</option>
+            <option value="center">Midden</option>
+            <option value="right">Rechts</option>
+          </select>
+        </div>
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Breedte (px)</label>
+              <input type="number" class="form-control" id="element-image-width" value="150" min="50" max="800">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Hoogte (px)</label>
+              <input type="number" class="form-control" id="element-image-height" value="0" min="0" max="800">
+              <small class="text-muted">0 = automatisch</small>
+            </div>
+          </div>
+        </div>
       `
       );
     } else {
@@ -1376,11 +1419,49 @@ const invoiceManager = {
 
   async addElement() {
     const templateId = this.currentTemplate.id;
-    const type = document.getElementById("element-type").value;
+    const originalType = document.getElementById("element-type").value;
+    let type = originalType;
     const label = document.getElementById("element-label").value;
     const order = document.getElementById("element-order").value;
 
     const formData = new FormData();
+    // If the user selected "Afbeelding", we treat it specially and do not require text content
+    if (originalType === "image") {
+      const section = document.getElementById("element-image-section")?.value || "image";
+      type = section; // element_type becomes the chosen section or 'image' for body
+      formData.append("element_type", type);
+      formData.append("label", label);
+      formData.append("position_order", order);
+
+      const imageFile = document.getElementById("element-image")?.files?.[0];
+      if (!imageFile) {
+        showToast(t("ui", "invoice.select_image"), "error");
+        return;
+      }
+      formData.append("image", imageFile);
+
+      const alignEl = document.getElementById("element-image-align");
+      const widthEl = document.getElementById("element-image-width");
+      const imageAlign = alignEl ? alignEl.value : "left";
+      const imageWidth = widthEl ? widthEl.value : 150;
+      formData.append("image_align", imageAlign || "left");
+      formData.append("image_width", imageWidth || 150);
+
+      try {
+        await api.addTemplateElement(templateId, formData);
+        showToast(t("ui", "invoice.element_added"), "success");
+        await this.editTemplate(templateId);
+      } catch (error) {
+        console.error("Error adding element:", error);
+        showToast(
+          `${t("ui", "invoice.element_add_failed")}: ${error.message}`,
+          "error"
+        );
+      }
+      return; // prevent falling through to text handling
+    }
+
+    // Default path: non-image elements
     formData.append("element_type", type);
     formData.append("label", label);
     formData.append("position_order", order);
@@ -1405,6 +1486,11 @@ const invoiceManager = {
       formData.append("font_size", fontSize);
       formData.append("font_color", fontColor);
       formData.append("font_weight", fontWeight);
+      // Optional image for layout/text sections (e.g., logo in top columns)
+      const imageFileOptional = document.getElementById("element-image")?.files?.[0];
+      if (imageFileOptional) {
+        formData.append("image", imageFileOptional);
+      }
     } else if (type === "sender" || type === "title") {
       const content = document.getElementById("element-content").value;
       const fontSize = document.getElementById("element-font-size").value;
@@ -1427,6 +1513,12 @@ const invoiceManager = {
         return;
       }
       formData.append("image", imageFile);
+      const alignEl = document.getElementById("element-image-align");
+      const widthEl = document.getElementById("element-image-width");
+      const imageAlign = alignEl ? alignEl.value : "left";
+      const imageWidth = widthEl ? widthEl.value : 150;
+      formData.append("image_align", imageAlign || "left");
+      formData.append("image_width", imageWidth || 150);
     }
 
     try {
@@ -1464,7 +1556,11 @@ const invoiceManager = {
           el.element_type.startsWith("top_") ||
           el.element_type.startsWith("address_")
         ) {
-          preview = `<p style="font-size: ${el.font_size}px; color: ${el.font_color}; font-weight: ${el.font_weight};">${el.content}</p>`;
+          if (el.image_path) {
+            preview = `<img src="${el.image_path}" alt="Template image" style="max-width: 200px; max-height: 100px;">`;
+          } else {
+            preview = `<p style="font-size: ${el.font_size}px; color: ${el.font_color}; font-weight: ${el.font_weight};">${el.content}</p>`;
+          }
         } else if (el.element_type === "image" && el.image_path) {
           preview = `<img src="${el.image_path}" alt="Template image" style="max-width: 200px; max-height: 100px;">`;
         } else {
@@ -1485,12 +1581,12 @@ const invoiceManager = {
               <div class="col-auto">
                 <button class="btn btn-sm btn-outline-primary" onclick="invoiceManager.editElement(${
                   el.id
-                })">
+                })" title="Bewerken">
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-sm btn-outline-danger" onclick="invoiceManager.deleteElement(${
                   el.id
-                })">
+                })" title="Verwijderen">
                   <i class="bi bi-trash"></i>
                 </button>
               </div>
@@ -1523,9 +1619,30 @@ const invoiceManager = {
             <div class="modal-body">
               <div class="mb-3">
                 <label class="form-label">Element Type</label>
-                <input type="text" class="form-control" value="${
-                  element.element_type
-                }" disabled>
+                <select class="form-select" id="edit-element-type">
+                  <optgroup label="Bovenste Sectie (3 kolommen)">
+                    <option value="top_left" ${element.element_type === "top_left" ? "selected" : ""}>Boven Links</option>
+                    <option value="top_center" ${element.element_type === "top_center" ? "selected" : ""}>Boven Midden</option>
+                    <option value="top_right" ${element.element_type === "top_right" ? "selected" : ""}>Boven Rechts</option>
+                  </optgroup>
+                  <optgroup label="Adres Sectie (3 kolommen)">
+                    <option value="address_left" ${element.element_type === "address_left" ? "selected" : ""}>Adres Links</option>
+                    <option value="address_center" ${element.element_type === "address_center" ? "selected" : ""}>Adres Midden</option>
+                    <option value="address_right" ${element.element_type === "address_right" ? "selected" : ""}>Adres Rechts</option>
+                  </optgroup>
+                  <optgroup label="Body Sectie">
+                    <option value="image" ${element.element_type === "image" ? "selected" : ""}>Afbeelding (body)</option>
+                    <option value="text" ${element.element_type === "text" ? "selected" : ""}>Tekst (body)</option>
+                    <option value="title" ${element.element_type === "title" ? "selected" : ""}>Titel (body)</option>
+                    <option value="sender" ${element.element_type === "sender" ? "selected" : ""}>Afzender (body)</option>
+                  </optgroup>
+                  <optgroup label="Berekende Velden">
+                    <option value="line_item" ${element.element_type === "line_item" ? "selected" : ""}>Regel Item</option>
+                    <option value="subtotal" ${element.element_type === "subtotal" ? "selected" : ""}>Subtotaal</option>
+                    <option value="vat" ${element.element_type === "vat" ? "selected" : ""}>BTW</option>
+                    <option value="total" ${element.element_type === "total" ? "selected" : ""}>Totaal</option>
+                  </optgroup>
+                </select>
               </div>
               <div class="mb-3">
                 <label class="form-label">Label / Omschrijving</label>
@@ -1541,17 +1658,42 @@ const invoiceManager = {
               </div>
               
               ${
-                element.element_type === "image"
+                element.element_type === "image" || 
+                (element.element_type.startsWith("top_") && element.image_path) ||
+                (element.element_type.startsWith("address_") && element.image_path)
                   ? `
                 <div class="mb-3">
                   <label class="form-label">Afbeelding</label>
                   ${
                     element.image_path
-                      ? `<img src="${element.image_path}" style="max-width: 200px; max-height: 100px; display: block; margin-bottom: 10px;">`
+                      ? `<div><img src="${element.image_path}" style="max-width: 200px; max-height: 150px; display: block; margin-bottom: 10px;"></div>`
                       : ""
                   }
                   <input type="file" class="form-control" id="edit-element-image" accept="image/*">
-                  <small class="form-text text-muted">Laat leeg om huidige afbeelding te behouden</small>
+                  <small class="form-text text-muted">Upload een nieuwe afbeelding om te vervangen (optioneel)</small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Plaatsing</label>
+                  <select class="form-select" id="edit-element-image-align">
+                    <option value="left" ${element.image_align === "left" ? "selected" : ""}>Links</option>
+                    <option value="center" ${element.image_align === "center" ? "selected" : ""}>Midden</option>
+                    <option value="right" ${element.image_align === "right" ? "selected" : ""}>Rechts</option>
+                  </select>
+                </div>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Breedte (px)</label>
+                      <input type="number" class="form-control" id="edit-element-image-width" value="${element.image_width || 150}" min="50" max="800">
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label class="form-label">Hoogte (px)</label>
+                      <input type="number" class="form-control" id="edit-element-image-height" value="${element.image_height || 0}" min="0" max="800">
+                      <small class="text-muted">0 = automatisch (behoudt aspect ratio)</small>
+                    </div>
+                  </div>
                 </div>
               `
                   : `
@@ -1635,35 +1777,42 @@ const invoiceManager = {
 
     const label = document.getElementById("edit-element-label").value;
     const order = document.getElementById("edit-element-order").value;
+    const newElementType = document.getElementById("edit-element-type").value;
 
     const formData = new FormData();
     formData.append("label", label);
     formData.append("position_order", order);
+    formData.append("element_type", newElementType);
 
-    if (element.element_type === "image") {
-      const imageFile = document.getElementById("edit-element-image").files[0];
+    if (element.element_type === "image" || 
+        (element.element_type.startsWith("top_") && element.image_path) ||
+        (element.element_type.startsWith("address_") && element.image_path)) {
+      const imageFile = document.getElementById("edit-element-image")?.files[0];
       if (imageFile) {
         formData.append("image", imageFile);
       }
+      const imageAlign = document.getElementById("edit-element-image-align")?.value;
+      const imageWidth = document.getElementById("edit-element-image-width")?.value;
+      const imageHeight = document.getElementById("edit-element-image-height")?.value;
+      formData.append("image_align", imageAlign || element.image_align || "left");
+      formData.append("image_width", imageWidth || element.image_width || 150);
+      formData.append("image_height", imageHeight || element.image_height || 0);
     } else {
-      const content = document.getElementById("edit-element-content").value;
-      const fontSize = document.getElementById("edit-element-font-size").value;
-      const fontColor = document.getElementById(
-        "edit-element-font-color"
-      ).value;
-      const fontWeight = document.getElementById(
-        "edit-element-font-weight"
-      ).value;
+      const content = document.getElementById("edit-element-content")?.value;
+      const fontSize = document.getElementById("edit-element-font-size")?.value;
+      const fontColor = document.getElementById("edit-element-font-color")?.value;
+      const fontWeight = document.getElementById("edit-element-font-weight")?.value;
 
-      if (!content) {
-        showToast("Tekst inhoud is verplicht", "error");
-        return;
+      if (content !== undefined && content !== null) {
+        if (!content.trim()) {
+          showToast("Tekst inhoud is verplicht", "error");
+          return;
+        }
+        formData.append("content", content);
+        formData.append("font_size", fontSize || 14);
+        formData.append("font_color", fontColor || "#000000");
+        formData.append("font_weight", fontWeight || "normal");
       }
-
-      formData.append("content", content);
-      formData.append("font_size", fontSize);
-      formData.append("font_color", fontColor);
-      formData.append("font_weight", fontWeight);
     }
 
     try {

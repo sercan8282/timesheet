@@ -492,6 +492,9 @@ router.post(
         font_size,
         font_color,
         font_weight,
+        image_align,
+        image_width,
+        image_height,
         calculation_formula,
       } = req.body;
 
@@ -502,9 +505,9 @@ router.post(
 
       const result = await db.run(
         `INSERT INTO invoice_template_elements 
-       (template_id, element_type, label, content, image_path, position_order, 
-        font_size, font_color, font_weight, calculation_formula) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (template_id, element_type, label, content, image_path, position_order, 
+          font_size, font_color, font_weight, image_align, image_width, image_height, calculation_formula) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           templateId,
           element_type,
@@ -515,6 +518,9 @@ router.post(
           font_size || 14,
           font_color || "#000000",
           font_weight || "normal",
+            image_align || "left",
+            image_width || 150,
+            image_height || 0,
           calculation_formula || null,
         ]
       );
@@ -541,12 +547,16 @@ router.put(
     try {
       const { elementId } = req.params;
       const {
+        element_type,
         label,
         content,
         position_order,
         font_size,
         font_color,
         font_weight,
+        image_align,
+        image_width,
+        image_height,
         calculation_formula,
       } = req.body;
 
@@ -579,11 +589,12 @@ router.put(
 
       await db.run(
         `UPDATE invoice_template_elements 
-       SET label = ?, content = ?, image_path = ?, position_order = ?, 
-           font_size = ?, font_color = ?, font_weight = ?, calculation_formula = ?,
+       SET element_type = ?, label = ?, content = ?, image_path = ?, position_order = ?, 
+           font_size = ?, font_color = ?, font_weight = ?, image_align = ?, image_width = ?, image_height = ?, calculation_formula = ?,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
         [
+          element_type || currentElement.element_type,
           label || null,
           content || null,
           image_path,
@@ -591,6 +602,9 @@ router.put(
           font_size || 14,
           font_color || "#000000",
           font_weight || "normal",
+          image_align || currentElement.image_align || "left",
+          image_width || currentElement.image_width || 150,
+          image_height || currentElement.image_height || 0,
           calculation_formula || null,
           elementId,
         ]

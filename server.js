@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 const bodyParser = require("body-parser");
 const path = require("path");
+const fs = require("fs");
 
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
@@ -79,14 +80,34 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
       return y + textHeight + 10;
     };
 
+    const renderImageBlock = (el, x, y, width) => {
+      const relPath = (el.image_path || "").replace(/^\/+/, "");
+      const imagePath = path.join(__dirname, "public", relPath);
+      if (el.image_path && fs.existsSync(imagePath)) {
+        try {
+          const imgWidth = Math.min(width - 10, parseInt(el.image_width, 10) || 150);
+          const imgHeight = parseInt(el.image_height, 10) || 0;
+          const options = { width: imgWidth };
+          if (imgHeight > 0) {
+            options.height = imgHeight;
+          }
+          doc.image(imagePath, x, y, options);
+          // Calculate actual height used
+          const actualHeight = imgHeight > 0 ? imgHeight : imgWidth; // Approximate if auto
+          return y + actualHeight + 10;
+        } catch (err) {
+          console.error("Error adding preview image:", err);
+        }
+      }
+      return y;
+    };
+
     const renderColumn = (elements, x, yStart) => {
       let y = yStart;
       for (const el of elements) {
         if (el.image_path) {
-          // preview currently text-only, ignore images
-          continue;
-        }
-        if (el.content) {
+          y = renderImageBlock(el, x, y, colWidth);
+        } else if (el.content) {
           y = renderTextBlock(el, x, y, colWidth);
         }
       }
