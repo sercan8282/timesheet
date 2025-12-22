@@ -142,7 +142,7 @@ async function initHistory() {
     const yearSelect = document.getElementById("historyYearFilter");
     if (yearSelect) {
       yearSelect.innerHTML = '<option value="">Alle jaren</option>' +
-        historyData.availableYears.map((y) => `<option value="${y}">${y}</option>`).join("");
+        historyData.availableYears.map((y) => `<option value="${escapeHtml(y)}">${escapeHtml(y)}</option>`).join("");
       
       yearSelect.onchange = () => {
         historyData.yearFilter = yearSelect.value || "";
@@ -188,7 +188,7 @@ async function initHistory() {
   } catch (error) {
     document.getElementById("historyContent").innerHTML = `
             <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle"></i> ${error.message}
+                <i class="bi bi-exclamation-triangle"></i> ${escapeHtml(error.message)}
             </div>
         `;
   }
@@ -419,7 +419,7 @@ async function renderSubmissions(submissions) {
   if (metaDiv) {
     const metaStart = start + 1;
     const metaEnd = Math.min(end, submissions.length);
-    metaDiv.innerHTML = `Toon ${metaStart}-${metaEnd} van ${submissions.length}${
+    metaDiv.textContent = `Toon ${metaStart}-${metaEnd} van ${submissions.length}${
       historyData.yearFilter ? ` (jaar ${historyData.yearFilter})` : ""
     }${historyData.weekFilter ? ` (week ${historyData.weekFilter})` : ""}${
       historyData.selectedCompanyFilter ? ` (gefilterd op bedrijf)` : ""
