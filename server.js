@@ -86,8 +86,15 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
       if (el.image_path && fs.existsSync(imagePath)) {
         try {
           const imgWidth = Math.min(width - 10, parseInt(el.image_width, 10) || 150);
-          doc.image(imagePath, x, y, { width: imgWidth });
-          return y + imgWidth + 10;
+          const imgHeight = parseInt(el.image_height, 10) || 0;
+          const options = { width: imgWidth };
+          if (imgHeight > 0) {
+            options.height = imgHeight;
+          }
+          doc.image(imagePath, x, y, options);
+          // Calculate actual height used
+          const actualHeight = imgHeight > 0 ? imgHeight : imgWidth; // Approximate if auto
+          return y + actualHeight + 10;
         } catch (err) {
           console.error("Error adding preview image:", err);
         }

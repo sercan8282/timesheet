@@ -3033,6 +3033,7 @@ class Database {
           position_order INTEGER DEFAULT 0,
           image_align TEXT DEFAULT 'left',
           image_width INTEGER DEFAULT 150,
+          image_height INTEGER DEFAULT 0,
           font_size INTEGER DEFAULT 14,
           font_color TEXT DEFAULT '#000000',
           font_weight TEXT DEFAULT 'normal',
@@ -3074,6 +3075,21 @@ class Database {
                   } else {
                     console.log(
                       "✓ Added image_width column to invoice_template_elements"
+                    );
+                  }
+                }
+              );
+            }
+
+            if (!columnNames.includes("image_height")) {
+              this.db.run(
+                "ALTER TABLE invoice_template_elements ADD COLUMN image_height INTEGER DEFAULT 0",
+                (alterErr) => {
+                  if (alterErr && !alterErr.message.includes("duplicate column")) {
+                    console.error("Error adding image_height to invoice_template_elements:", alterErr);
+                  } else {
+                    console.log(
+                      "✓ Added image_height column to invoice_template_elements"
                     );
                   }
                 }

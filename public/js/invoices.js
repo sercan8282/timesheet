@@ -1340,9 +1340,20 @@ const invoiceManager = {
             <option value="right">Rechts</option>
           </select>
         </div>
-        <div class="mb-3">
-          <label class="form-label">Breedte (px)</label>
-          <input type="number" class="form-control" id="element-image-width" value="150" min="50" max="600">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Breedte (px)</label>
+              <input type="number" class="form-control" id="element-image-width" value="150" min="50" max="800">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+              <label class="form-label">Hoogte (px)</label>
+              <input type="number" class="form-control" id="element-image-height" value="0" min="0" max="800">
+              <small class="text-muted">0 = automatisch</small>
+            </div>
+          </div>
         </div>
       `
       );
@@ -1661,21 +1672,26 @@ const invoiceManager = {
                   <input type="file" class="form-control" id="edit-element-image" accept="image/*">
                   <small class="form-text text-muted">Upload een nieuwe afbeelding om te vervangen (optioneel)</small>
                 </div>
+                <div class="mb-3">
+                  <label class="form-label">Plaatsing</label>
+                  <select class="form-select" id="edit-element-image-align">
+                    <option value="left" ${element.image_align === "left" ? "selected" : ""}>Links</option>
+                    <option value="center" ${element.image_align === "center" ? "selected" : ""}>Midden</option>
+                    <option value="right" ${element.image_align === "right" ? "selected" : ""}>Rechts</option>
+                  </select>
+                </div>
                 <div class="row">
                   <div class="col-md-6">
                     <div class="mb-3">
-                      <label class="form-label">Plaatsing</label>
-                      <select class="form-select" id="edit-element-image-align">
-                        <option value="left" ${element.image_align === "left" ? "selected" : ""}>Links</option>
-                        <option value="center" ${element.image_align === "center" ? "selected" : ""}>Midden</option>
-                        <option value="right" ${element.image_align === "right" ? "selected" : ""}>Rechts</option>
-                      </select>
+                      <label class="form-label">Breedte (px)</label>
+                      <input type="number" class="form-control" id="edit-element-image-width" value="${element.image_width || 150}" min="50" max="800">
                     </div>
                   </div>
                   <div class="col-md-6">
                     <div class="mb-3">
-                      <label class="form-label">Breedte (px)</label>
-                      <input type="number" class="form-control" id="edit-element-image-width" value="${element.image_width || 150}" min="50" max="600">
+                      <label class="form-label">Hoogte (px)</label>
+                      <input type="number" class="form-control" id="edit-element-image-height" value="${element.image_height || 0}" min="0" max="800">
+                      <small class="text-muted">0 = automatisch (behoudt aspect ratio)</small>
                     </div>
                   </div>
                 </div>
@@ -1777,8 +1793,10 @@ const invoiceManager = {
       }
       const imageAlign = document.getElementById("edit-element-image-align")?.value;
       const imageWidth = document.getElementById("edit-element-image-width")?.value;
+      const imageHeight = document.getElementById("edit-element-image-height")?.value;
       formData.append("image_align", imageAlign || element.image_align || "left");
       formData.append("image_width", imageWidth || element.image_width || 150);
+      formData.append("image_height", imageHeight || element.image_height || 0);
     } else {
       const content = document.getElementById("edit-element-content")?.value;
       const fontSize = document.getElementById("edit-element-font-size")?.value;

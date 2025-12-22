@@ -85,9 +85,15 @@ async function generateInvoicePDF(invoiceId) {
       const imagePath = path.join(__dirname, "../public", relPath);
       if (fs.existsSync(imagePath)) {
         try {
-          const imgWidth = Math.min(width - 10, 150);
-          doc.image(imagePath, x, y, { width: imgWidth });
-          return y + imgWidth + 10;
+          const imgWidth = Math.min(width - 10, parseInt(el.image_width, 10) || 150);
+          const imgHeight = parseInt(el.image_height, 10) || 0;
+          const options = { width: imgWidth };
+          if (imgHeight > 0) {
+            options.height = imgHeight;
+          }
+          doc.image(imagePath, x, y, options);
+          const actualHeight = imgHeight > 0 ? imgHeight : imgWidth;
+          return y + actualHeight + 10;
         } catch (err) {
           console.error("Error adding template image:", err);
         }
@@ -242,6 +248,7 @@ async function generateInvoicePDF(invoiceId) {
         if (fs.existsSync(imagePath)) {
           try {
             const imgWidth = parseInt(element.image_width, 10) || 150;
+            const imgHeight = parseInt(element.image_height, 10) || 0;
             const margin = 50;
             const pageWidth = doc.page.width;
             let x = margin;
@@ -252,8 +259,13 @@ async function generateInvoicePDF(invoiceId) {
               x = pageWidth - margin - imgWidth;
             }
 
-            doc.image(imagePath, x, yPosition, { width: imgWidth });
-            yPosition += imgWidth + 10;
+            const options = { width: imgWidth };
+            if (imgHeight > 0) {
+              options.height = imgHeight;
+            }
+            doc.image(imagePath, x, yPosition, options);
+            const actualHeight = imgHeight > 0 ? imgHeight : imgWidth;
+            yPosition += actualHeight + 10;
           } catch (err) {
             console.error("Error adding template image:", err);
           }
