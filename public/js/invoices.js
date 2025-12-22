@@ -3944,8 +3944,7 @@ const invoiceManager = {
                   <textarea class="form-control" id="email-message" rows="5">Beste,
 
 In de bijlage vindt u factuur ${invoice.invoice_number}.
-
-Met vriendelijke groet</textarea>
+</textarea>
                 </div>
               </div>
               <div class="modal-footer">

@@ -195,6 +195,40 @@ async function buildTransporter(settings) {
   return transporter;
 }
 
+function stripHtml(html) {
+  if (!html) return "";
+  return html.replace(/<style[\s\S]*?<\/style>/gi, "").replace(/<script[\s\S]*?<\/script>/gi, "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function htmlToPlainText(html) {
+  if (!html) return "";
+  let s = String(html);
+  // Normalize common HTML line breaks to newlines
+  s = s.replace(/\r/g, "");
+  s = s.replace(/<\s*br\s*\/?\s*>/gi, "\n");
+  s = s.replace(/<\s*\/p\s*>/gi, "\n");
+  s = s.replace(/<\s*\/div\s*>/gi, "\n");
+  // Remove scripts/styles
+  s = s.replace(/<style[\s\S]*?<\/style>/gi, "");
+  s = s.replace(/<script[\s\S]*?<\/script>/gi, "");
+  // Strip remaining tags
+  s = s.replace(/<[^>]+>/g, "");
+  // Decode a few common entities
+  s = s.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  // Collapse 3+ newlines to 2, trim trailing spaces
+  s = s.replace(/[ \t]+$/gm, "").replace(/\n{3,}/g, "\n\n");
+  return s.trim();
+}
+
 async function sendEmail(options) {
   try {
     const settings = await db.get("SELECT * FROM smtp_settings LIMIT 1");
@@ -229,6 +263,31 @@ async function sendEmail(options) {
         html: options.html,
         attachments: options.attachments || [],
       };
+    }
+
+    // Append signature if enabled
+    if (settings.signature_enabled) {
+      const sigRaw = settings.signature_html || "";
+      if (sigRaw && sigRaw.trim()) {
+        const divider = '<hr style="border:none;border-top:1px solid #ddd;margin:12px 0;" />';
+        // Determine if signature looks like HTML; if not, escape and convert newlines to <br>
+        const looksHtml = /<[^>]+>/.test(sigRaw);
+        const sigHtmlProcessed = looksHtml
+          ? sigRaw.replace(/\r?\n/g, "<br>")
+          : escapeHtml(sigRaw).replace(/\r?\n/g, "<br>");
+
+        if (mailOptions.html) {
+          mailOptions.html = `${mailOptions.html}${divider}${sigHtmlProcessed}`;
+        } else if (mailOptions.text) {
+          // Create a minimal HTML version from text and append signature
+          const safeText = (mailOptions.text || "").replace(/\n/g, "<br>");
+          mailOptions.html = `${safeText}${divider}${sigHtmlProcessed}`;
+          // Also extend text with a plain signature fallback, preserving lines
+          const sigPlain = looksHtml ? htmlToPlainText(sigRaw) : sigRaw.replace(/\r/g, "");
+          const plainSig = `\n\n-- \n${sigPlain}`;
+          mailOptions.text = `${mailOptions.text}${plainSig}`;
+        }
+      }
     }
 
     const info = await transporter.sendMail(mailOptions);

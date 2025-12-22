@@ -63,6 +63,15 @@
 			"type": "shell",
 			"command": "npm install",
 			"group": "build"
+		},
+		{
+			"label": "Restart Server Clean",
+			"type": "shell",
+			"command": "powershell -ExecutionPolicy Bypass -File scripts/restart-clean.ps1",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
 		}
 	]
 }
