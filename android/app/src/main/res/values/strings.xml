@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Timesheet</string>
+    <string name="title_activity_main">Timesheet</string>
+    <string name="package_name">site.urenregistratie.app</string>
+    <string name="custom_url_scheme">site.urenregistratie.app</string>
+</resources>

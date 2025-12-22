@@ -9,7 +9,17 @@
     "init-db": "node scripts/init-db.js",
     "reset-db": "node scripts/reset-database.js",
     "export-translations": "node scripts/export-translations.js",
-    "import-translations": "node scripts/import-translations.js"
+    "import-translations": "node scripts/import-translations.js",
+    "cap:install": "npm install @capacitor/core @capacitor/cli @capacitor/android @capacitor/ios",
+    "cap:init": "npx cap init",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "build:android": "npx cap copy android && npx cap sync android",
+    "build:ios": "npx cap copy ios && npx cap sync ios",
+    "mobile:setup": "npm run cap:install && npm run cap:init && npm run cap:add:android"
   },
   "keywords": [
     "timesheet",
