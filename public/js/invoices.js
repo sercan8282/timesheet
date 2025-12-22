@@ -2559,10 +2559,8 @@ const invoiceManager = {
         </div>
       `;
 
-      // Vul klantnaam automatisch in met de template naam van de geselecteerde template
-      setTimeout(() => {
-        this.onTemplateSelected();
-      }, 0);
+      // Add one default line item
+      this.addLineItem();
     } catch (error) {
       console.error("Error showing create invoice:", error);
       showToast(t("ui", "invoice.prepare_failed"), "error");
@@ -3426,20 +3424,8 @@ const invoiceManager = {
   },
 
   async onTemplateSelected() {
-    try {
-      const templateId = document.getElementById("invoice-template").value;
-      const template = this.templates.find((t) => t.id == templateId);
-
-      if (!template) return;
-
-      // Vul klantnaam automatisch in met template naam
-      const customerNameInput = document.getElementById("customer-name");
-      if (customerNameInput) {
-        customerNameInput.value = template.name;
-      }
-    } catch (error) {
-      console.error("Error on template selected:", error);
-    }
+    // This can be used to update preview or fetch template data
+    // Currently just a placeholder for future enhancements
   },
 
   async fillCustomerFromTemplate() {
