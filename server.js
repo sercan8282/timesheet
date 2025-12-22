@@ -289,8 +289,18 @@ const limiter = rateLimit({
 
 app.use("/api/", limiter);
 
-// CORS
-app.use(cors());
+// CORS - Allow Capacitor mobile app origins
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'https://urenregistratie.site',
+    'capacitor://localhost',
+    'http://localhost',
+    'ionic://localhost'
+  ],
+  credentials: true
+};
+app.use(cors(corsOptions));
 
 // Body parser
 app.use(bodyParser.json());
