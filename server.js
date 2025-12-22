@@ -234,6 +234,10 @@ app.use(
           "https://cdn.jsdelivr.net",
           "'unsafe-inline'", // Needed for inline event handlers and Bootstrap
         ],
+        scriptSrcAttr: [
+          "'self'",
+          "'unsafe-inline'", // Needed for inline event handlers like onclick
+        ],
         styleSrc: [
           "'self'",
           "https://cdn.jsdelivr.net",
