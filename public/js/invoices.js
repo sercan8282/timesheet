@@ -61,6 +61,9 @@ const invoiceManager = {
           <div class="d-flex justify-content-between align-items-center">
             <span><strong><span id="selected-count">0</span></strong> <span data-i18n="ui:invoices_selected">facturen geselecteerd</span></span>
             <div>
+              <button class="btn btn-sm btn-primary me-2" onclick="invoiceManager.showBulkEmailModal()">
+                <i class="bi bi-send"></i> E-mail geselecteerde
+              </button>
               <button class="btn btn-sm btn-danger" onclick="invoiceManager.bulkDelete()">
                 <i class="bi bi-trash"></i> <span data-i18n="ui:delete_selected">Verwijder geselecteerde</span>
               </button>
@@ -4006,6 +4009,182 @@ In de bijlage vindt u factuur ${invoice.invoice_number}.
         "error"
       );
     }
+  },
+
+  getSelectedInvoiceIds() {
+    const nodes = document.querySelectorAll(".invoice-checkbox:checked");
+    return Array.from(nodes).map((n) => n.value);
+  },
+
+  showBulkEmailModal() {
+    const ids = this.getSelectedInvoiceIds();
+    if (!ids || ids.length === 0) {
+      showToast("Selecteer eerst één of meer facturen", "error");
+      return;
+    }
+
+    const selected = ids
+      .map((id) => {
+        const inv = this.invoices.find((i) => String(i.id) === String(id));
+        return inv
+          ? { id: inv.id, invoice_number: inv.invoice_number, status: inv.status }
+          : { id, invoice_number: "(onbekend)", status: "" };
+      })
+      .slice(0, 200); // safety cap for modal size
+
+    const rows = selected
+      .map(
+        (r, idx) => `
+        <tr>
+          <td class="text-muted">${idx + 1}</td>
+          <td><span class="badge bg-light text-dark">${r.invoice_number || r.id}</span></td>
+          <td>${r.status || ""}</td>
+        </tr>`
+      )
+      .join("");
+
+    const modalHtml = `
+      <div class="modal fade" id="bulkEmailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-send"></i> Facturen e-mailen (${selected.length})</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Onderwerp (placeholder {invoice_number} toegestaan)</label>
+                  <input type="text" class="form-control" id="bulk-email-subject" value="Factuur {invoice_number}">
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Ontvanger</label>
+                  <input type="email" class="form-control" id="bulk-email-recipient" placeholder="klant@example.com">
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Bericht (placeholder {invoice_number} toegestaan)</label>
+                <textarea class="form-control" id="bulk-email-message" rows="5">Beste,
+
+In de bijlage vindt u factuur {invoice_number}.</textarea>
+                <div class="form-text">De e-mail handtekening wordt automatisch toegevoegd.</div>
+              </div>
+              <div class="table-responsive border rounded mb-3">
+                <table class="table table-sm align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Factuur</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
+
+              <div id="bulk-email-progress" class="d-none">
+                <div class="progress mb-2">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div class="small text-muted" data-role="progress-text">0/${selected.length} verzonden</div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
+              <button type="button" class="btn btn-primary" data-role="bulk-email-start">
+                <i class="bi bi-send"></i> Verzenden
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    // Remove old modal
+    const existing = document.getElementById("bulkEmailModal");
+    if (existing) existing.remove();
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+    const modalEl = document.getElementById("bulkEmailModal");
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+
+    const recipientInput = modalEl.querySelector("#bulk-email-recipient");
+    const startBtn = modalEl.querySelector('[data-role="bulk-email-start"]');
+    const progressWrap = modalEl.querySelector('#bulk-email-progress');
+    const progressBar = modalEl.querySelector('.progress-bar');
+    const progressText = modalEl.querySelector('[data-role="progress-text"]');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    startBtn.addEventListener("click", async () => {
+      const subjectTpl = modalEl.querySelector('#bulk-email-subject').value.trim();
+      const msgTpl = modalEl.querySelector('#bulk-email-message').value.trim();
+      const oneRecipient = recipientInput.value.trim();
+
+      if (!subjectTpl) {
+        showToast("Vul een onderwerp in", "error");
+        return;
+      }
+      if (!msgTpl) {
+        showToast("Vul een bericht in", "error");
+        return;
+      }
+      if (!oneRecipient) {
+        showToast("Vul een e-mailadres in", "error");
+        return;
+      }
+      if (!emailRegex.test(oneRecipient)) {
+        showToast("Ongeldig e-mailadres", "error");
+        return;
+      }
+
+      // Lock UI
+      startBtn.disabled = true;
+      recipientInput.disabled = true;
+      progressWrap.classList.remove('d-none');
+
+      let sent = 0;
+      let failed = 0;
+
+      for (const item of selected) {
+        const to = oneRecipient;
+        const subject = subjectTpl.replaceAll('{invoice_number}', item.invoice_number || String(item.id));
+        const message = msgTpl.replaceAll('{invoice_number}', item.invoice_number || String(item.id));
+        try {
+          await api.sendInvoiceEmail(item.id, {
+            recipient_email: to,
+            subject,
+            message,
+          });
+          sent++;
+        } catch (e) {
+          console.error("Bulk email error for", item.id, e);
+          failed++;
+        }
+        const pct = Math.round(((sent + failed) / selected.length) * 100);
+        if (progressBar) progressBar.style.width = pct + '%';
+        if (progressText) progressText.textContent = `${sent + failed}/${selected.length} verwerkt`;
+      }
+
+      if (failed === 0) {
+        showToast(`Alle ${sent} e-mails verzonden`, "success");
+      } else if (sent === 0) {
+        showToast("Verzenden mislukt voor alle geselecteerde facturen", "error");
+      } else {
+        showToast(`${sent} verzonden, ${failed} mislukt`, "warning");
+      }
+
+      // Refresh list to reflect 'sent' statuses
+      try {
+        await this.loadData();
+        this.renderInvoiceList();
+      } catch (_) {}
+
+      // Close modal
+      const m = bootstrap.Modal.getInstance(modalEl);
+      if (m) m.hide();
+      modalEl.remove();
+    });
   },
 
   async deleteInvoice(invoiceId) {
