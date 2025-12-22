@@ -2833,24 +2833,42 @@
             </div>
             <div class="modal-body">
               <div id="resetPasswordAlert"></div>
-              <p class="text-muted">Voer jouw eigen MFA-code ter bevestiging en kies een nieuw wachtwoord of genereer een tijdelijk wachtwoord.</p>
-              <div class="mb-3">
-                <label class="form-label">Admin MFA code</label>
-                <input type="text" class="form-control text-center" id="resetPasswordMfaToken" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+              
+              <!-- Step 1: Password input -->
+              <div id="resetPasswordStep1">
+                <p class="text-muted">Kies een nieuw wachtwoord of genereer een tijdelijk wachtwoord.</p>
+                <div class="mb-3">
+                  <label class="form-label">Nieuw wachtwoord (optioneel)</label>
+                  <input type="text" class="form-control" id="resetPasswordNew" placeholder="Laat leeg om tijdelijk wachtwoord te genereren">
+                  <div class="form-text">Laat leeg om automatisch een tijdelijk wachtwoord te genereren en (optioneel) naar de gebruiker te e-mailen.</div>
+                </div>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="resetPasswordShow" checked>
+                  <label class="form-check-label" for="resetPasswordShow">Toon tijdelijk wachtwoord na reset</label>
+                </div>
               </div>
-              <div class="mb-3">
-                <label class="form-label">Nieuw wachtwoord (optioneel)</label>
-                <input type="text" class="form-control" id="resetPasswordNew" placeholder="Laat leeg om tijdelijk wachtwoord te genereren">
-                <div class="form-text">Laat leeg om automatisch een tijdelijk wachtwoord te genereren en (optioneel) naar de gebruiker te e-mailen.</div>
-              </div>
-              <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="resetPasswordShow" checked>
-                <label class="form-check-label" for="resetPasswordShow">Toon tijdelijk wachtwoord na reset</label>
+              
+              <!-- Step 2: MFA verification (hidden initially) -->
+              <div id="resetPasswordStep2" style="display: none;">
+                <p class="text-muted">Voer jouw eigen MFA-code ter bevestiging in.</p>
+                <div class="mb-3">
+                  <label class="form-label">Admin MFA code</label>
+                  <input type="text" class="form-control text-center" id="resetPasswordMfaToken" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+                </div>
+                <div class="mb-3">
+                  <small class="text-muted">Wachtwoord: <strong id="resetPasswordPreview">***</strong></small>
+                </div>
               </div>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
-              <button type="button" class="btn btn-primary" onclick="submitResetPassword()">
+              <button type="button" class="btn btn-secondary" id="resetPasswordBackBtn" style="display: none;" onclick="resetPasswordGoBack()">
+                <i class="bi bi-arrow-left"></i> Terug
+              </button>
+              <button type="button" class="btn btn-primary" id="resetPasswordNextBtn" onclick="resetPasswordGoNext()">
+                Volgende <i class="bi bi-arrow-right"></i>
+              </button>
+              <button type="button" class="btn btn-primary" id="resetPasswordSubmitBtn" style="display: none;" onclick="submitResetPassword()">
                 <i class="bi bi-key"></i> Reset wachtwoord
               </button>
             </div>
@@ -2869,6 +2887,13 @@
     document.getElementById("resetPasswordMfaToken").value = "";
     document.getElementById("resetPasswordNew").value = "";
     document.getElementById("resetPasswordShow").checked = true;
+    
+    // Reset to step 1
+    document.getElementById("resetPasswordStep1").style.display = "block";
+    document.getElementById("resetPasswordStep2").style.display = "none";
+    document.getElementById("resetPasswordNextBtn").style.display = "inline-block";
+    document.getElementById("resetPasswordSubmitBtn").style.display = "none";
+    document.getElementById("resetPasswordBackBtn").style.display = "none";
 
     const modalEl = document.getElementById("resetPasswordModal");
     modalEl.querySelector(
@@ -2876,6 +2901,37 @@
     ).innerHTML = `<i class="bi bi-key"></i> Reset wachtwoord voor <strong>${username}</strong>`;
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
+  }
+
+  function resetPasswordGoNext() {
+    const newPassword = document.getElementById("resetPasswordNew").value;
+    const passwordPreview = newPassword.trim() 
+      ? newPassword 
+      : "(automatisch gegenereerd)";
+    
+    // Show preview
+    document.getElementById("resetPasswordPreview").textContent = passwordPreview;
+    
+    // Switch to step 2
+    document.getElementById("resetPasswordStep1").style.display = "none";
+    document.getElementById("resetPasswordStep2").style.display = "block";
+    document.getElementById("resetPasswordNextBtn").style.display = "none";
+    document.getElementById("resetPasswordSubmitBtn").style.display = "inline-block";
+    document.getElementById("resetPasswordBackBtn").style.display = "inline-block";
+    
+    // Focus on MFA input
+    setTimeout(() => {
+      document.getElementById("resetPasswordMfaToken").focus();
+    }, 100);
+  }
+
+  function resetPasswordGoBack() {
+    document.getElementById("resetPasswordAlert").innerHTML = "";
+    document.getElementById("resetPasswordStep1").style.display = "block";
+    document.getElementById("resetPasswordStep2").style.display = "none";
+    document.getElementById("resetPasswordNextBtn").style.display = "inline-block";
+    document.getElementById("resetPasswordSubmitBtn").style.display = "none";
+    document.getElementById("resetPasswordBackBtn").style.display = "none";
   }
 
   async function submitResetPassword() {
@@ -6617,6 +6673,8 @@
   window.openResetMfaModal = openResetMfaModal;
   window.submitResetMfa = submitResetMfa;
   window.openResetPasswordModal = openResetPasswordModal;
+  window.resetPasswordGoNext = resetPasswordGoNext;
+  window.resetPasswordGoBack = resetPasswordGoBack;
   window.submitResetPassword = submitResetPassword;
   window.showGeneratePlanningByVehiclesModal =
     showGeneratePlanningByVehiclesModal;

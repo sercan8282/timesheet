@@ -70,7 +70,10 @@ renderElementForm(type) {
       </div>
       <div class="mb-3">
         <label class="form-label">Tekstkleur</label>
-        <input type="color" class="form-control form-control-color" id="element-font-color" value="#000000">
+        <div class="input-group">
+          <input type="color" class="form-control form-control-color" id="element-font-color" value="#000000" style="max-width: 60px;">
+          <input type="text" class="form-control" id="element-font-color-text" value="#000000" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#000000">
+        </div>
       </div>
       <div class="mb-3">
         <label class="form-label">Tekstgewicht</label>

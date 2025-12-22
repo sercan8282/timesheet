@@ -2294,33 +2294,6 @@ router.post("/users/:id/reset-password", async (req, res) => {
     const { id } = req.params;
     const { newPassword, showPassword, mfaToken } = req.body;
 
-    if (!mfaToken) {
-      return res.status(400).json({ error: "Admin MFA token is required" });
-    }
-
-    // Verify admin's own MFA
-    const admin = await db.get(
-      "SELECT mfa_enabled, mfa_secret FROM users WHERE id = ?",
-      [req.user.id]
-    );
-
-    if (!admin || !admin.mfa_enabled || !admin.mfa_secret) {
-      return res
-        .status(403)
-        .json({ error: "Admin MFA must be enabled to reset user passwords" });
-    }
-
-    const verified = speakeasy.totp.verify({
-      secret: admin.mfa_secret,
-      encoding: "base32",
-      token: mfaToken,
-      window: 2,
-    });
-
-    if (!verified) {
-      return res.status(401).json({ error: "Invalid admin MFA token" });
-    }
-
     // Check if target user exists. Some older DBs may not have an `email` column,
     // so check table info first and only select `email` when present.
     const tableInfo = await db.all("PRAGMA table_info('users')");
@@ -2350,6 +2323,33 @@ router.post("/users/:id/reset-password", async (req, res) => {
       return res
         .status(400)
         .json({ error: "Password must be at least 6 characters" });
+    }
+
+    // NOW verify admin's own MFA (after password is validated)
+    if (!mfaToken) {
+      return res.status(400).json({ error: "Admin MFA token is required" });
+    }
+
+    const admin = await db.get(
+      "SELECT mfa_enabled, mfa_secret FROM users WHERE id = ?",
+      [req.user.id]
+    );
+
+    if (!admin || !admin.mfa_enabled || !admin.mfa_secret) {
+      return res
+        .status(403)
+        .json({ error: "Admin MFA must be enabled to reset user passwords" });
+    }
+
+    const verified = speakeasy.totp.verify({
+      secret: admin.mfa_secret,
+      encoding: "base32",
+      token: mfaToken,
+      window: 2,
+    });
+
+    if (!verified) {
+      return res.status(401).json({ error: "Invalid admin MFA token" });
     }
 
     // Hash and update
