@@ -2921,6 +2921,10 @@ class Database {
             "signature_html",
             "ALTER TABLE smtp_settings ADD COLUMN signature_html TEXT"
           );
+          ensure(
+            "smtp_pass_encrypted",
+            "ALTER TABLE smtp_settings ADD COLUMN smtp_pass_encrypted TEXT"
+          );
         }
       });
 

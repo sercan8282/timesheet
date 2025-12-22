@@ -1,6 +1,7 @@
 const https = require("https");
 const nodemailer = require("nodemailer");
 const db = require("../config/database");
+const { decryptPassword } = require("./encryption");
 const url = require("url");
 
 function isOAuth(settings) {
@@ -171,8 +172,14 @@ async function buildTransporter(settings) {
   console.log("[SMTP DEBUG] Basic Auth - Port:", settings.smtp_port);
   console.log("[SMTP DEBUG] Basic Auth - Secure:", useSecure);
   console.log("[SMTP DEBUG] Basic Auth - User:", settings.smtp_user);
-  console.log("[SMTP DEBUG] Basic Auth - Pass length:", settings.smtp_pass ? settings.smtp_pass.length : "empty");
-  console.log("[SMTP DEBUG] Basic Auth - Pass value:", settings.smtp_pass);
+  
+  // Decrypt password if it's encrypted
+  const decryptedPass = settings.smtp_pass_encrypted 
+    ? decryptPassword(settings.smtp_pass_encrypted)
+    : settings.smtp_pass;
+  
+  console.log("[SMTP DEBUG] Basic Auth - Pass length:", decryptedPass ? decryptedPass.length : "empty");
+  console.log("[SMTP DEBUG] Basic Auth - Pass value:", decryptedPass);
   console.log("[SMTP DEBUG] Basic Auth - requireTLS:", !useSecure);
 
   const transporter = nodemailer.createTransport({
@@ -181,7 +188,7 @@ async function buildTransporter(settings) {
     secure: useSecure,
     auth: {
       user: settings.smtp_user,
-      pass: settings.smtp_pass,
+      pass: decryptedPass,
     },
     requireTLS: !useSecure,
     tls: {
