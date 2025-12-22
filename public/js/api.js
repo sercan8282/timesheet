@@ -142,8 +142,12 @@ class API {
     return this.request("/user/submissions");
   }
 
-  async getWeeklySummary(page = 1) {
-    return this.request(`/user/weekly-summary?page=${page}`);
+  async getWeeklySummary({ page = 1, year = "", week = "" } = {}) {
+    const params = new URLSearchParams();
+    params.set("page", page);
+    if (year) params.set("year", year);
+    if (week) params.set("week", week);
+    return this.request(`/user/weekly-summary?${params.toString()}`);
   }
 
   async getLeaveBalance() {

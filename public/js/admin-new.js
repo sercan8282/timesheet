@@ -16,6 +16,8 @@
   let allLeaveRequests = [];
   let filteredLeaveRequests = [];
   let leaveRequestsPage = 1;
+  let leaveBalancesPageSize = 10;
+  let leaveRequestsPageSize = 50;
 
   // Translation helper with safe fallback
   function adminTr(key, fallback) {
@@ -811,7 +813,7 @@
       return;
     }
 
-    const itemsPerPage = 10;
+    const itemsPerPage = leaveBalancesPageSize;
     const totalPages = Math.ceil(items.length / itemsPerPage);
     const startIdx = (page - 1) * itemsPerPage;
     const endIdx = startIdx + itemsPerPage;
@@ -837,10 +839,18 @@
 
     // Pagination controls
     let paginationHtml = '';
-    if (totalPages > 1) {
+    if (totalPages > 0) {
       paginationHtml = `
         <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light">
-          <small class="text-muted">${items.length} gebruikers</small>
+          <div class="d-flex align-items-center gap-2">
+            <small class="text-muted">${items.length ? `${startIdx + 1}-${Math.min(endIdx, items.length)} van ${items.length}` : 'Geen gebruikers'}</small>
+            <div class="d-flex align-items-center gap-1">
+              <label class="form-label small mb-0">Rijen/pagina</label>
+              <select id="leaveBalancesPageSize" class="form-select form-select-sm w-auto">
+                ${[5,10,20,50,100].map(sz => `<option value="${sz}" ${sz === leaveBalancesPageSize ? 'selected' : ''}>${sz}</option>`).join('')}
+              </select>
+            </div>
+          </div>
           <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-secondary" id="leaveBalancesPrev" ${page === 1 ? 'disabled' : ''}>
               <i class="bi bi-chevron-left"></i>
@@ -887,6 +897,15 @@
       }
     }
 
+    const sizeSel = document.getElementById('leaveBalancesPageSize');
+    if (sizeSel) {
+      sizeSel.onchange = () => {
+        leaveBalancesPageSize = parseInt(sizeSel.value, 10) || 10;
+        leaveBalancesPage = 1;
+        renderLeaveBalancesTable(filteredLeaveBalances, leaveBalancesPage);
+      };
+    }
+
     wrapper.querySelectorAll(".save-leave").forEach((btn) => {
       btn.onclick = async (e) => {
         const tr = e.target.closest("tr");
@@ -918,7 +937,7 @@
       return;
     }
 
-    const itemsPerPage = 10;
+    const itemsPerPage = leaveRequestsPageSize;
     const totalPages = Math.ceil(requests.length / itemsPerPage);
     const startIdx = (page - 1) * itemsPerPage;
     const endIdx = startIdx + itemsPerPage;
@@ -956,10 +975,18 @@
 
     // Pagination controls
     let paginationHtml = '';
-    if (totalPages > 1) {
+    if (totalPages > 0) {
       paginationHtml = `
         <div class="d-flex justify-content-between align-items-center p-2 border-top bg-light">
-          <small class="text-muted">${requests.length} aanvragen</small>
+          <div class="d-flex align-items-center gap-2">
+            <small class="text-muted">${requests.length ? `${startIdx + 1}-${Math.min(endIdx, requests.length)} van ${requests.length}` : 'Geen aanvragen'}</small>
+            <div class="d-flex align-items-center gap-1">
+              <label class="form-label small mb-0">Rijen/pagina</label>
+              <select id="leaveRequestsPageSize" class="form-select form-select-sm w-auto">
+                ${[10,20,50,100].map(sz => `<option value="${sz}" ${sz === leaveRequestsPageSize ? 'selected' : ''}>${sz}</option>`).join('')}
+              </select>
+            </div>
+          </div>
           <div class="btn-group btn-group-sm">
             <button class="btn btn-outline-secondary" id="leaveRequestsPrev" ${page === 1 ? 'disabled' : ''}>
               <i class="bi bi-chevron-left"></i>
@@ -1006,6 +1033,15 @@
           renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
         };
       }
+    }
+
+    const sizeSelReq = document.getElementById('leaveRequestsPageSize');
+    if (sizeSelReq) {
+      sizeSelReq.onchange = () => {
+        leaveRequestsPageSize = parseInt(sizeSelReq.value, 10) || 50;
+        leaveRequestsPage = 1;
+        renderLeaveRequestsTable(filteredLeaveRequests, leaveRequestsPage);
+      };
     }
   }
 
@@ -2932,7 +2968,7 @@
   let submissionFilterCompany = null;
   let submissionFilterUser = "";
   let submissionCurrentPage = 1;
-  const SUBMISSIONS_PER_PAGE = 30;
+  let submissionsPageSize = 30;
 
   async function loadAdminSubmissions() {
     const container = document.getElementById("adminContent");
@@ -3012,9 +3048,9 @@
     }
 
     // Calculate pagination
-    const totalPages = Math.ceil(filteredSubmissions.length / SUBMISSIONS_PER_PAGE);
-    const start = (submissionCurrentPage - 1) * SUBMISSIONS_PER_PAGE;
-    const end = start + SUBMISSIONS_PER_PAGE;
+    const totalPages = Math.ceil(filteredSubmissions.length / submissionsPageSize);
+    const start = (submissionCurrentPage - 1) * submissionsPageSize;
+    const end = start + submissionsPageSize;
     const pagedSubmissions = filteredSubmissions.slice(start, end);
 
     // Update the summary and table content only
@@ -3082,15 +3118,23 @@
 
   function updateSubmissionsPagination(filteredSubmissions, pagedSubmissions) {
     const container = document.getElementById("adminContent");
-    const totalPages = Math.ceil(filteredSubmissions.length / SUBMISSIONS_PER_PAGE);
-    const start = (submissionCurrentPage - 1) * SUBMISSIONS_PER_PAGE;
-    const end = start + SUBMISSIONS_PER_PAGE;
+    const totalPages = Math.ceil(filteredSubmissions.length / submissionsPageSize);
+    const start = (submissionCurrentPage - 1) * submissionsPageSize;
+    const end = start + submissionsPageSize;
 
     const paginationContainer = container.querySelector('[data-role="pagination-controls"]');
-    if (paginationContainer && totalPages > 1) {
+    if (paginationContainer && totalPages > 0) {
       paginationContainer.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mt-3">
-          <div class="text-muted small">Showing ${start + 1} to ${Math.min(end, filteredSubmissions.length)} of ${filteredSubmissions.length} submissions</div>
+          <div class="d-flex align-items-center gap-2">
+            <div class="text-muted small">Showing ${start + 1} to ${Math.min(end, filteredSubmissions.length)} of ${filteredSubmissions.length} submissions</div>
+            <div class="d-flex align-items-center gap-1">
+              <label class="form-label small mb-0">Rows/page</label>
+              <select id="submissionsPageSize" class="form-select form-select-sm w-auto" onchange="changeSubmissionsPageSize(this.value)">
+                ${[10,20,30,50,100].map(sz => `<option value="${sz}" ${sz === submissionsPageSize ? 'selected' : ''}>${sz}</option>`).join('')}
+              </select>
+            </div>
+          </div>
           <nav>
             <ul class="pagination mb-0">
               ${submissionCurrentPage > 1 ? `<li class="page-item"><a class="page-link" href="#" onclick="changeSubmissionPage(1); return false;">First</a></li>` : `<li class="page-item disabled"><span class="page-link">First</span></li>`}
@@ -3110,6 +3154,12 @@
         </div>
       `;
     }
+  }
+
+  function changeSubmissionsPageSize(size) {
+    submissionsPageSize = parseInt(size, 10) || 30;
+    submissionCurrentPage = 1;
+    updateSubmissionsTableOnly(currentSubmissions);
   }
 
   function renderAdminSubmissions(submissions) {
@@ -3688,7 +3738,7 @@
   let hoursFilterUser = "";
   let hoursFilterCompany = null;
   let hoursCurrentPage = 1;
-  const HOURS_PER_PAGE = 30;
+  let hoursPageSize = 20;
   let currentHoursReport = [];
 
   async function loadHoursReport() {
@@ -3862,10 +3912,10 @@
     }
 
     // Pagination
-    const totalPages = Math.ceil(rows.length / HOURS_PER_PAGE) || 1;
+    const totalPages = Math.ceil(rows.length / hoursPageSize) || 1;
     if (hoursCurrentPage > totalPages) hoursCurrentPage = totalPages;
-    const start = (hoursCurrentPage - 1) * HOURS_PER_PAGE;
-    const end = start + HOURS_PER_PAGE;
+    const start = (hoursCurrentPage - 1) * hoursPageSize;
+    const end = start + hoursPageSize;
     const pageRows = rows.slice(start, end);
 
     // Update summary
@@ -3904,7 +3954,15 @@
           .join('');
         pag.innerHTML = `
           <div class="d-flex justify-content-between align-items-center">
-            <div class="text-muted small">Showing ${start + 1} to ${Math.min(end, rows.length)} of ${rows.length}</div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="text-muted small">Showing ${start + 1} to ${Math.min(end, rows.length)} of ${rows.length}</div>
+              <div class="d-flex align-items-center gap-1">
+                <label class="form-label small mb-0">Rows/page</label>
+                <select id="hoursPageSize" class="form-select form-select-sm w-auto" onchange="changeHoursPageSize(this.value)">
+                  ${[10,20,30,50,100].map(sz => `<option value="${sz}" ${sz === hoursPageSize ? 'selected' : ''}>${sz}</option>`).join('')}
+                </select>
+              </div>
+            </div>
             <nav><ul class="pagination mb-0">
               ${hoursCurrentPage > 1 ? `<li class="page-item"><a class="page-link" href="#" onclick="changeHoursPage(1); return false;">First</a></li>` : `<li class="page-item disabled"><span class="page-link">First</span></li>`}
               ${hoursCurrentPage > 1 ? `<li class="page-item"><a class="page-link" href="#" onclick="changeHoursPage(${hoursCurrentPage - 1}); return false;">Previous</a></li>` : `<li class="page-item disabled"><span class="page-link">Previous</span></li>`}
@@ -3920,6 +3978,12 @@
 
   function changeHoursPage(pageNum) {
     hoursCurrentPage = pageNum;
+    updateHoursReportTableOnly(currentHoursReport);
+  }
+
+  function changeHoursPageSize(size) {
+    hoursPageSize = parseInt(size, 10) || 20;
+    hoursCurrentPage = 1;
     updateHoursReportTableOnly(currentHoursReport);
   }
 
@@ -3957,8 +4021,18 @@
           <div class="card-body p-0" style="max-height: 520px; overflow-y: auto;" id="fleetListWrapper">
             <div class="text-center py-4"><div class="spinner-border"></div></div>
           </div>
-          <div class="card-footer d-flex justify-content-between align-items-center">
-            <small id="fleetCount" class="text-muted"></small>
+          <div class="card-footer d-flex justify-content-between align-items-center gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <small id="fleetCount" class="text-muted"></small>
+              <div class="d-flex align-items-center gap-1">
+                <label class="form-label small mb-0">Rijen/pagina</label>
+                <select id="fleetPageSizeSelect" class="form-select form-select-sm w-auto">
+                  ${[10, 20, 50, 100]
+                    .map((sz) => `<option value="${sz}" ${sz === 20 ? "selected" : ""}>${sz}</option>`)
+                    .join("")}
+                </select>
+              </div>
+            </div>
             <div class="btn-group btn-group-sm">
               <button class="btn btn-outline-secondary" id="fleetPrev">Vorige</button>
               <span class="btn btn-outline-secondary disabled" id="fleetPageInfo" style="pointer-events:none;"></span>
@@ -3995,6 +4069,16 @@
         renderFleetList();
       };
 
+      const sizeSelect = document.getElementById("fleetPageSizeSelect");
+      if (sizeSelect) {
+        sizeSelect.value = String(fleetPageSize);
+        sizeSelect.onchange = () => {
+          fleetPageSize = parseInt(sizeSelect.value, 10) || 20;
+          fleetPage = 1;
+          renderFleetList();
+        };
+      }
+
       document.getElementById("fleetPrev").onclick = () => {
         if (fleetPage > 1) {
           fleetPage -= 1;
@@ -4017,7 +4101,7 @@
   let selectedVehicleId = null;
   let fleetLoadingId = null;
   let fleetPage = 1;
-  const fleetPageSize = 20;
+  let fleetPageSize = 20;
   let fleetSearchTerm = "";
 
   function renderFleetList() {

@@ -1104,36 +1104,65 @@ router.delete("/leave/requests/:id", async (req, res) => {
 router.get("/weekly-summary", async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = 10;
+    const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
+    const yearFilter = (req.query.year || "").trim();
+    const weekFilter = (req.query.week || "").trim();
 
-    // Get weekly summary data - only count submitted timesheets
+    const whereClauses = ["t.user_id = ?"];
+    const params = [req.user.id];
+
+    if (yearFilter) {
+      whereClauses.push("strftime('%Y', t.date) = ?");
+      params.push(yearFilter);
+    }
+    if (weekFilter) {
+      whereClauses.push("t.week_number = ?");
+      params.push(weekFilter);
+    }
+
+    const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
     const weeklySummary = await db.all(
       `
       SELECT 
+        strftime('%Y', t.date) as year,
         t.week_number,
         COUNT(*) as work_days,
         SUM(CAST(t.total_hours AS REAL)) as total_hours
       FROM timesheets t
       INNER JOIN submissions s ON (',' || s.timesheet_ids || ',') LIKE ('%,' || t.id || ',%')
-      WHERE t.user_id = ?
-      GROUP BY t.week_number
-      ORDER BY t.week_number DESC
+      ${whereSql}
+      GROUP BY year, t.week_number
+      ORDER BY year DESC, t.week_number DESC
       LIMIT ? OFFSET ?
     `,
-      [req.user.id, limit, offset]
+      [...params, limit, offset]
     );
 
-    // Get total count for pagination
     const totalResult = await db.get(
       `
-      SELECT COUNT(DISTINCT t.week_number) as total
+      SELECT COUNT(*) as total FROM (
+        SELECT DISTINCT strftime('%Y', t.date) as year, t.week_number
+        FROM timesheets t
+        INNER JOIN submissions s ON (',' || s.timesheet_ids || ',') LIKE ('%,' || t.id || ',%')
+        ${whereSql}
+      ) as counts
+    `,
+      params
+    );
+
+    const yearsRows = await db.all(
+      `
+      SELECT DISTINCT strftime('%Y', t.date) as year
       FROM timesheets t
       INNER JOIN submissions s ON (',' || s.timesheet_ids || ',') LIKE ('%,' || t.id || ',%')
       WHERE t.user_id = ?
+      ORDER BY year DESC
     `,
       [req.user.id]
     );
+    const years = (yearsRows || []).map((r) => r.year);
 
     // Calculate overworked hours (assuming 40 hours per week is standard)
     const summary = weeklySummary.map((week) => ({
@@ -1150,6 +1179,7 @@ router.get("/weekly-summary", async (req, res) => {
         total: totalResult.total,
         totalPages: Math.ceil(totalResult.total / limit),
       },
+      years,
     });
   } catch (error) {
     console.error("Error fetching weekly summary:", error);
