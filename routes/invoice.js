@@ -1094,6 +1094,7 @@ router.post("/invoices", auth, async (req, res) => {
 
     // Add line items
     let totalKm = 0;
+    let totalHours = 0;
     if (line_items && Array.isArray(line_items)) {
       for (let i = 0; i < line_items.length; i++) {
         const item = line_items[i];
@@ -1108,9 +1109,12 @@ router.post("/invoices", auth, async (req, res) => {
           item_rate: item.item_rate,
         });
 
-        // Sum up kilometers for total
+        // Sum up kilometers and hours for totals
         if (item.item_km) {
           totalKm += parseFloat(item.item_km);
+        }
+        if (item.item_hours) {
+          totalHours += parseFloat(item.item_hours);
         }
 
         await db.run(
@@ -1141,6 +1145,30 @@ router.post("/invoices", auth, async (req, res) => {
       let totalLinesAmount = 0;
       let nextPosition = line_items.length;
 
+      // Add total hours line if there are any hours
+      if (totalHours > 0) {
+        await db.run(
+          `INSERT INTO invoice_line_items 
+             (invoice_id, description, quantity, unit_price, line_total, position_order, item_hours, is_total_row, total_row_type)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            invoiceId,
+            "Totaal Uren",
+            1,
+            0,
+            0,
+            nextPosition,
+            totalHours,
+            1, // Mark as total row
+            "hours_total",
+          ]
+        );
+        console.log(
+          `[Invoice ${invoiceId}] Added Hours total line: ${totalHours} uur`
+        );
+        nextPosition++;
+      }
+
       // Add total kilometers line if there are any kilometers and km_rate is set
       if (totalKm > 0 && template && template.km_rate) {
         const kmRate = parseFloat(template.km_rate);
@@ -1157,7 +1185,7 @@ router.post("/invoices", auth, async (req, res) => {
             kmLineTotal.toFixed(2),
             kmLineTotal.toFixed(2),
             nextPosition,
-            totalKm,
+            Math.round(totalKm),
             kmRate, // Add km_rate to item_rate column
             1, // Mark as total row
             "km_total",

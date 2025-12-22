@@ -418,7 +418,7 @@ async function generateInvoicePDF(invoiceId) {
     }
 
     if (item.item_km !== null && item.item_km !== undefined) {
-      doc.text(Number(item.item_km).toFixed(2), tableLeft + tableWidth * col3, textY, {
+      doc.text(Number(item.item_km).toFixed(0), tableLeft + tableWidth * col3, textY, {
         width: tableWidth * 0.08,
         align: "right",
       });
