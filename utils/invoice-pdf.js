@@ -220,22 +220,7 @@ async function generateInvoicePDF(invoiceId) {
   topY[2] = renderColumn(topCols[2], colX[2], topY[2]);
   const afterTopY = Math.max(...topY) + 20;
 
-  // Address defaults
-  if (
-    addrCols[0].length === 0 &&
-    (invoice.customer_name || invoice.customer_address)
-  ) {
-    let addr = invoice.customer_name ? `${invoice.customer_name}\n` : "";
-    if (invoice.customer_address) addr += invoice.customer_address;
-    addrCols[0].push({
-      element_type: "text",
-      content: addr.trim(),
-      font_size: 10,
-      font_color: "#000000",
-      font_weight: "normal",
-      label: "Factuuradres",
-    });
-  }
+  // Address defaults removed: template bepaalt wat er getoond wordt, geen auto customer fallback
 
   if (addrCols[2].length === 0) {
     const senderContent = [branding?.company_name, branding?.tagline]
