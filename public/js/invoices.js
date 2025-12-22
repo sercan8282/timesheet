@@ -905,29 +905,47 @@ const invoiceManager = {
                 <div class="row g-3 mb-3">
                   <div class="col-md-4">
                     <label class="form-label">Header achtergrond</label>
-                    <input type="color" class="form-control form-control-color" id="template-table-header-bg" value="#0080ff">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="template-table-header-bg" value="#0080ff" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="template-table-header-bg-text" value="#0080ff" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#0080ff">
+                    </div>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label">Header tekst</label>
-                    <input type="color" class="form-control form-control-color" id="template-table-header-text" value="#ffffff">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="template-table-header-text" value="#ffffff" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="template-table-header-text-text" value="#ffffff" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#ffffff">
+                    </div>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label">Rij 1 achtergrond</label>
-                    <input type="color" class="form-control form-control-color" id="template-table-row-bg1" value="#f4f8ff">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="template-table-row-bg1" value="#f4f8ff" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="template-table-row-bg1-text" value="#f4f8ff" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#f4f8ff">
+                    </div>
                   </div>
                 </div>
                 <div class="row g-3 mb-3">
                   <div class="col-md-4">
                     <label class="form-label">Rij 2 achtergrond</label>
-                    <input type="color" class="form-control form-control-color" id="template-table-row-bg2" value="#e7f2ff">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="template-table-row-bg2" value="#e7f2ff" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="template-table-row-bg2-text" value="#e7f2ff" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#e7f2ff">
+                    </div>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label">Randkleur</label>
-                    <input type="color" class="form-control form-control-color" id="template-table-border-color" value="#c7ddff">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="template-table-border-color" value="#c7ddff" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="template-table-border-color-text" value="#c7ddff" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#c7ddff">
+                    </div>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label">Tekstkleur</label>
-                    <input type="color" class="form-control form-control-color" id="template-table-text-color" value="#000000">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="template-table-text-color" value="#000000" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="template-table-text-color-text" value="#000000" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#000000">
+                    </div>
                   </div>
                 </div>
                 <div class="mb-3 form-check">
@@ -958,6 +976,38 @@ const invoiceManager = {
         </div>
       </div>
     `;
+    
+    // Sync color picker and text input
+    setTimeout(() => {
+      const colorFields = [
+        'template-table-header-bg',
+        'template-table-header-text',
+        'template-table-row-bg1',
+        'template-table-row-bg2',
+        'template-table-border-color',
+        'template-table-text-color'
+      ];
+      
+      colorFields.forEach(fieldId => {
+        const colorInput = document.getElementById(fieldId);
+        const textInput = document.getElementById(fieldId + '-text');
+        
+        if (colorInput && textInput) {
+          // Sync color picker -> text input
+          colorInput.addEventListener('input', (e) => {
+            textInput.value = e.target.value;
+          });
+          
+          // Sync text input -> color picker
+          textInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+              colorInput.value = value;
+            }
+          });
+        }
+      });
+    }, 100);
   },
 
   async saveTemplate() {
@@ -978,17 +1028,17 @@ const invoiceManager = {
     const default_font_family =
       document.getElementById("template-font-family").value || "Helvetica";
     const table_header_bg =
-      document.getElementById("template-table-header-bg").value || "#0080ff";
+      document.getElementById("template-table-header-bg-text").value || "#0080ff";
     const table_header_text =
-      document.getElementById("template-table-header-text").value || "#ffffff";
+      document.getElementById("template-table-header-text-text").value || "#ffffff";
     const table_row_bg1 =
-      document.getElementById("template-table-row-bg1").value || "#f4f8ff";
+      document.getElementById("template-table-row-bg1-text").value || "#f4f8ff";
     const table_row_bg2 =
-      document.getElementById("template-table-row-bg2").value || "#e7f2ff";
+      document.getElementById("template-table-row-bg2-text").value || "#e7f2ff";
     const table_border_color =
-      document.getElementById("template-table-border-color").value || "#c7ddff";
+      document.getElementById("template-table-border-color-text").value || "#c7ddff";
     const table_text_color =
-      document.getElementById("template-table-text-color").value || "#000000";
+      document.getElementById("template-table-text-color-text").value || "#000000";
 
     if (!name) {
       showToast(t("ui", "invoice.template_name_required"), "error");
@@ -1035,6 +1085,38 @@ const invoiceManager = {
         this.fonts = [];
       }
       this.renderTemplateEditor();
+      
+      // Sync color pickers with text inputs for edit template
+      setTimeout(() => {
+        const colorFields = [
+          'edit-template-table-header-bg',
+          'edit-template-table-header-text',
+          'edit-template-table-row-bg1',
+          'edit-template-table-row-bg2',
+          'edit-template-table-border-color',
+          'edit-template-table-text-color'
+        ];
+        
+        colorFields.forEach(fieldId => {
+          const colorInput = document.getElementById(fieldId);
+          const textInput = document.getElementById(fieldId + '-text');
+          
+          if (colorInput && textInput) {
+            // Sync color picker -> text input
+            colorInput.addEventListener('input', (e) => {
+              textInput.value = e.target.value;
+            });
+            
+            // Sync text input -> color picker
+            textInput.addEventListener('input', (e) => {
+              const value = e.target.value.trim();
+              if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+                colorInput.value = value;
+              }
+            });
+          }
+        });
+      }, 100);
     } catch (error) {
       console.error("Error loading template:", error);
       showToast(t("ui", "invoice.template_load_failed"), "error");
@@ -1137,41 +1219,71 @@ const invoiceManager = {
                 <div class="row g-3 mb-3">
                   <div class="col-md-4">
                     <label class="form-label">Header achtergrond</label>
-                    <input type="color" class="form-control form-control-color" id="edit-template-table-header-bg" value="${
-                      template.table_header_bg || "#0080ff"
-                    }">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="edit-template-table-header-bg" value="${
+                        template.table_header_bg || "#0080ff"
+                      }" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="edit-template-table-header-bg-text" value="${
+                        template.table_header_bg || "#0080ff"
+                      }" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#0080ff">
+                    </div>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label">Header tekst</label>
-                    <input type="color" class="form-control form-control-color" id="edit-template-table-header-text" value="${
-                      template.table_header_text || "#ffffff"
-                    }">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="edit-template-table-header-text" value="${
+                        template.table_header_text || "#ffffff"
+                      }" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="edit-template-table-header-text-text" value="${
+                        template.table_header_text || "#ffffff"
+                      }" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#ffffff">
+                    </div>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label">Rij 1 achtergrond</label>
-                    <input type="color" class="form-control form-control-color" id="edit-template-table-row-bg1" value="${
-                      template.table_row_bg1 || "#f4f8ff"
-                    }">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="edit-template-table-row-bg1" value="${
+                        template.table_row_bg1 || "#f4f8ff"
+                      }" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="edit-template-table-row-bg1-text" value="${
+                        template.table_row_bg1 || "#f4f8ff"
+                      }" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#f4f8ff">
+                    </div>
                   </div>
                 </div>
                 <div class="row g-3 mb-3">
                   <div class="col-md-4">
                     <label class="form-label">Rij 2 achtergrond</label>
-                    <input type="color" class="form-control form-control-color" id="edit-template-table-row-bg2" value="${
-                      template.table_row_bg2 || "#e7f2ff"
-                    }">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="edit-template-table-row-bg2" value="${
+                        template.table_row_bg2 || "#e7f2ff"
+                      }" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="edit-template-table-row-bg2-text" value="${
+                        template.table_row_bg2 || "#e7f2ff"
+                      }" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#e7f2ff">
+                    </div>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label">Randkleur</label>
-                    <input type="color" class="form-control form-control-color" id="edit-template-table-border-color" value="${
-                      template.table_border_color || "#c7ddff"
-                    }">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="edit-template-table-border-color" value="${
+                        template.table_border_color || "#c7ddff"
+                      }" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="edit-template-table-border-color-text" value="${
+                        template.table_border_color || "#c7ddff"
+                      }" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#c7ddff">
+                    </div>
                   </div>
                   <div class="col-md-4">
                     <label class="form-label">Tekstkleur</label>
-                    <input type="color" class="form-control form-control-color" id="edit-template-table-text-color" value="${
-                      template.table_text_color || "#000000"
-                    }">
+                    <div class="input-group">
+                      <input type="color" class="form-control form-control-color" id="edit-template-table-text-color" value="${
+                        template.table_text_color || "#000000"
+                      }" style="max-width: 60px;">
+                      <input type="text" class="form-control" id="edit-template-table-text-color-text" value="${
+                        template.table_text_color || "#000000"
+                      }" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#000000">
+                    </div>
                   </div>
                 </div>
                 <div class="d-flex gap-2">
@@ -1587,7 +1699,10 @@ const invoiceManager = {
         </div>
         <div class="mb-3">
           <label class="form-label">Tekstkleur</label>
-          <input type="color" class="form-control form-control-color" id="element-font-color" value="#000000">
+          <div class="input-group">
+            <input type="color" class="form-control form-control-color" id="element-font-color" value="#000000" style="max-width: 60px;">
+            <input type="text" class="form-control" id="element-font-color-text" value="#000000" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#000000">
+          </div>
         </div>
         <div class="mb-3">
           <label class="form-label">Lettertype</label>
@@ -1681,17 +1796,17 @@ const invoiceManager = {
     const default_font_family =
       document.getElementById("edit-template-font-family").value || "Helvetica";
     const table_header_bg =
-      document.getElementById("edit-template-table-header-bg").value || "#0080ff";
+      document.getElementById("edit-template-table-header-bg-text").value || "#0080ff";
     const table_header_text =
-      document.getElementById("edit-template-table-header-text").value || "#ffffff";
+      document.getElementById("edit-template-table-header-text-text").value || "#ffffff";
     const table_row_bg1 =
-      document.getElementById("edit-template-table-row-bg1").value || "#f4f8ff";
+      document.getElementById("edit-template-table-row-bg1-text").value || "#f4f8ff";
     const table_row_bg2 =
-      document.getElementById("edit-template-table-row-bg2").value || "#e7f2ff";
+      document.getElementById("edit-template-table-row-bg2-text").value || "#e7f2ff";
     const table_border_color =
-      document.getElementById("edit-template-table-border-color").value || "#c7ddff";
+      document.getElementById("edit-template-table-border-color-text").value || "#c7ddff";
     const table_text_color =
-      document.getElementById("edit-template-table-text-color").value || "#000000";
+      document.getElementById("edit-template-table-text-color-text").value || "#000000";
 
     if (!name) {
       showToast(t("ui", "invoice.template_name_required"), "error");
@@ -1792,7 +1907,7 @@ const invoiceManager = {
     ) {
       const content = document.getElementById("element-content").value;
       const fontSize = document.getElementById("element-font-size").value;
-      const fontColor = document.getElementById("element-font-color").value;
+      const fontColor = document.getElementById("element-font-color-text")?.value || document.getElementById("element-font-color").value;
       const fontFamily = document.getElementById("element-font-family").value;
       const fontWeight = document.getElementById("element-font-weight").value;
 
@@ -1814,7 +1929,7 @@ const invoiceManager = {
     } else if (type === "sender" || type === "title") {
       const content = document.getElementById("element-content").value;
       const fontSize = document.getElementById("element-font-size").value;
-      const fontColor = document.getElementById("element-font-color").value;
+      const fontColor = document.getElementById("element-font-color-text")?.value || document.getElementById("element-font-color").value;
       const fontWeight = document.getElementById("element-font-weight").value;
 
       if (!content) {
@@ -2054,9 +2169,14 @@ const invoiceManager = {
                   <div class="col-md-6">
                     <div class="mb-3">
                       <label class="form-label">Kleur</label>
-                      <input type="color" class="form-control form-control-color" id="edit-element-font-color" value="${
-                        element.font_color || "#000000"
-                      }">
+                      <div class="input-group">
+                        <input type="color" class="form-control form-control-color" id="edit-element-font-color" value="${
+                          element.font_color || "#000000"
+                        }" style="max-width: 60px;">
+                        <input type="text" class="form-control" id="edit-element-font-color-text" value="${
+                          element.font_color || "#000000"
+                        }" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#000000">
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2156,7 +2276,7 @@ const invoiceManager = {
     } else {
       const content = document.getElementById("edit-element-content")?.value;
       const fontSize = document.getElementById("edit-element-font-size")?.value;
-      const fontColor = document.getElementById("edit-element-font-color")?.value;
+      const fontColor = document.getElementById("edit-element-font-color-text")?.value || document.getElementById("edit-element-font-color")?.value;
       const fontWeight = document.getElementById("edit-element-font-weight")?.value;
       const fontFamily = document.getElementById("edit-element-font-family")?.value;
 
