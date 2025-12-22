@@ -65,6 +65,63 @@ router.get("/system/update/status", (req, res) => {
   });
 });
 
+// =========================
+// API Keys Management
+// =========================
+
+// Create a new API key (returns plaintext once)
+router.post(
+  "/api-keys",
+  [body("label").optional().isString().isLength({ max: 100 })],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const label = (req.body.label || "").trim();
+      const rawKey = crypto.randomBytes(32).toString("hex");
+      const keyHash = crypto.createHash("sha256").update(rawKey).digest("hex");
+      await db.run(
+        `INSERT INTO api_keys (key_hash, label, created_by) VALUES (?, ?, ?)`,
+        [keyHash, label, req.user.id]
+      );
+      return res.json({ key: rawKey, label });
+    } catch (error) {
+      console.error("Error creating API key:", error);
+      return res.status(500).json({ error: "Failed to create API key" });
+    }
+  }
+);
+
+// List API keys (no plaintext)
+router.get("/api-keys", async (req, res) => {
+  try {
+    const rows = await db.all(
+      `SELECT id, label, created_by, created_at, revoked_at FROM api_keys ORDER BY created_at DESC`
+    );
+    return res.json({ keys: rows });
+  } catch (error) {
+    console.error("Error listing API keys:", error);
+    return res.status(500).json({ error: "Failed to list API keys" });
+  }
+});
+
+// Revoke API key
+router.post("/api-keys/:id/revoke", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) {
+      return res.status(400).json({ error: "Invalid id" });
+    }
+    await db.run(`UPDATE api_keys SET revoked_at = CURRENT_TIMESTAMP WHERE id = ?`, [id]);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("Error revoking API key:", error);
+    return res.status(500).json({ error: "Failed to revoke API key" });
+  }
+});
+
 // Trigger system update (asynchronous)
 router.post("/system/update", async (req, res) => {
   if (updateInProgress) {

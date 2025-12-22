@@ -1,0 +1,780 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Timesheet API",
+    "version": "1.0.0",
+    "description": "API for Timesheet Management System"
+  },
+  "servers": [
+    { "url": "/api" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    }
+  },
+  "security": [
+    { "bearerAuth": [] }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": { "type": "boolean" },
+                    "uptime": { "type": "number" },
+                    "env": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string" }
+                },
+                "required": ["username", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Auth success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/user/me": {
+      "get": {
+        "summary": "Current user profile",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "responses": {
+          "200": {
+            "description": "User profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer" },
+                    "username": { "type": "string" },
+                    "fullName": { "type": "string" },
+                    "role": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/user/timesheets": {
+      "get": {
+        "summary": "Get user's timesheets (unsubmitted)",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "responses": {
+          "200": {
+            "description": "List of timesheets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "user_id": { "type": "integer" },
+                      "date": { "type": "string", "format": "date" },
+                      "start_time": { "type": "string", "example": "08:00" },
+                      "end_time": { "type": "string", "example": "17:00" },
+                      "start_km": { "type": "number" },
+                      "end_km": { "type": "number" },
+                      "pause_time": { "type": "string", "example": "00:30" },
+                      "total_hours": { "type": "number" },
+                      "total_km": { "type": "number" },
+                      "ritnumber": { "type": "string" },
+                      "company_id": { "type": "integer" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "summary": "Create a new timesheet entry",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["date", "startTime", "endTime", "startKm", "endKm"],
+                "properties": {
+                  "date": { "type": "string", "format": "date", "example": "2025-12-22" },
+                  "startTime": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$", "example": "08:00" },
+                  "endTime": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$", "example": "17:00" },
+                  "startKm": { "type": "number", "minimum": 0, "example": 10000 },
+                  "endKm": { "type": "number", "minimum": 0, "example": 10150 },
+                  "pauseTime": { "type": "string", "pattern": "^([0-9]+):([0-5][0-9])$", "example": "00:30" },
+                  "ritnumber": { "type": "string", "example": "ABC123" },
+                  "companyId": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Timesheet created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer" },
+                    "userId": { "type": "integer" },
+                    "weekNumber": { "type": "integer" },
+                    "date": { "type": "string" },
+                    "startTime": { "type": "string" },
+                    "endTime": { "type": "string" },
+                    "startKm": { "type": "number" },
+                    "endKm": { "type": "number" },
+                    "pauseTime": { "type": "string" },
+                    "totalHours": { "type": "number" },
+                    "totalKm": { "type": "number" },
+                    "ritnumber": { "type": "string" },
+                    "companyId": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/user/timesheets/{id}": {
+      "put": {
+        "summary": "Update a timesheet entry",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": { "type": "string", "format": "date" },
+                  "startTime": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" },
+                  "endTime": { "type": "string", "pattern": "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$" },
+                  "startKm": { "type": "number", "minimum": 0 },
+                  "endKm": { "type": "number", "minimum": 0 },
+                  "pauseTime": { "type": "string", "pattern": "^([0-9]+):([0-5][0-9])$" },
+                  "ritnumber": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Timesheet updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Timesheet updated successfully" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Timesheet not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a timesheet entry",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Timesheet deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Timesheet deleted successfully" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Timesheet not found" }
+        }
+      }
+    },
+    "/admin/invoices/invoices": {
+      "get": {
+        "summary": "Get all invoices",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "responses": {
+          "200": {
+            "description": "List of invoices",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "template_id": { "type": "integer" },
+                      "template_name": { "type": "string" },
+                      "invoice_number": { "type": "string", "example": "2025-0001" },
+                      "invoice_type": { "type": "string", "example": "Verkoop" },
+                      "customer_name": { "type": "string" },
+                      "customer_address": { "type": "string" },
+                      "invoice_date": { "type": "string", "format": "date" },
+                      "due_date": { "type": "string", "format": "date" },
+                      "subtotal": { "type": "string", "example": "100.00" },
+                      "vat_amount": { "type": "string", "example": "21.00" },
+                      "total_amount": { "type": "string", "example": "121.00" },
+                      "status": { "type": "string", "enum": ["draft", "sent", "paid"], "example": "draft" },
+                      "notes": { "type": "string" },
+                      "created_by": { "type": "integer" },
+                      "creator_name": { "type": "string" },
+                      "created_at": { "type": "string", "format": "date-time" },
+                      "updated_at": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
+        }
+      },
+      "post": {
+        "summary": "Create a new invoice",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["template_id", "invoice_number", "invoice_date"],
+                "properties": {
+                  "template_id": { "type": "integer", "description": "ID of the invoice template to use" },
+                  "invoice_number": { "type": "string", "example": "2025001" },
+                  "invoice_type": { "type": "string", "example": "Verkoop" },
+                  "customer_name": { "type": "string", "example": "ACME Corporation" },
+                  "customer_address": { "type": "string", "example": "Street 123\n1234 AB City" },
+                  "invoice_date": { "type": "string", "format": "date", "example": "2025-12-22" },
+                  "due_date": { "type": "string", "format": "date", "example": "2026-01-22" },
+                  "notes": { "type": "string", "example": "Payment within 30 days" },
+                  "line_items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["description", "quantity", "unit_price"],
+                      "properties": {
+                        "description": { "type": "string", "example": "Transport service" },
+                        "quantity": { "type": "number", "example": 1 },
+                        "unit_price": { "type": "number", "example": 100.00 },
+                        "item_date": { "type": "string", "format": "date" },
+                        "item_km": { "type": "number", "example": 150 },
+                        "item_hours": { "type": "number", "example": 8.5 },
+                        "item_rate": { "type": "number", "example": 50.00 }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invoice created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer" },
+                    "template_id": { "type": "integer" },
+                    "invoice_number": { "type": "string" },
+                    "invoice_type": { "type": "string" },
+                    "customer_name": { "type": "string" },
+                    "customer_address": { "type": "string" },
+                    "invoice_date": { "type": "string" },
+                    "due_date": { "type": "string" },
+                    "subtotal": { "type": "string" },
+                    "vat_amount": { "type": "string" },
+                    "total_amount": { "type": "string" },
+                    "status": { "type": "string", "example": "draft" },
+                    "notes": { "type": "string" },
+                    "created_at": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/admin/invoices/invoices/{id}": {
+      "get": {
+        "summary": "Get single invoice with line items",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Invoice ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invoice details with line items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": { "type": "integer" },
+                    "template_id": { "type": "integer" },
+                    "template_name": { "type": "string" },
+                    "invoice_number": { "type": "string" },
+                    "invoice_type": { "type": "string" },
+                    "customer_name": { "type": "string" },
+                    "customer_address": { "type": "string" },
+                    "invoice_date": { "type": "string", "format": "date" },
+                    "due_date": { "type": "string", "format": "date" },
+                    "subtotal": { "type": "string" },
+                    "vat_amount": { "type": "string" },
+                    "total_amount": { "type": "string" },
+                    "status": { "type": "string" },
+                    "notes": { "type": "string" },
+                    "created_at": { "type": "string", "format": "date-time" },
+                    "line_items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "invoice_id": { "type": "integer" },
+                          "description": { "type": "string" },
+                          "quantity": { "type": "number" },
+                          "unit_price": { "type": "string" },
+                          "line_total": { "type": "string" },
+                          "position_order": { "type": "integer" },
+                          "item_date": { "type": "string", "format": "date" },
+                          "item_km": { "type": "number" },
+                          "item_hours": { "type": "number" },
+                          "item_rate": { "type": "number" },
+                          "is_total_row": { "type": "integer" },
+                          "total_row_type": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Invoice not found" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/admin/invoices/invoices/next-number": {
+      "get": {
+        "summary": "Generate next invoice number for current year",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "responses": {
+          "200": {
+            "description": "Next invoice number",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "invoice_number": { "type": "string", "example": "2025-0042" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/admin/invoices/invoices/{id}/send-email": {
+      "post": {
+        "summary": "Send invoice via email",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Invoice ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["recipient_email"],
+                "properties": {
+                  "recipient_email": { 
+                    "type": "string", 
+                    "format": "email",
+                    "example": "customer@example.com" 
+                  },
+                  "subject": { 
+                    "type": "string", 
+                    "example": "Factuur 2025001",
+                    "description": "Email subject (optional, defaults to invoice number)" 
+                  },
+                  "message": { 
+                    "type": "string", 
+                    "example": "Beste,\n\nIn de bijlage vindt u factuur 2025001.",
+                    "description": "Email body message (optional)" 
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invoice sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean", "example": true },
+                    "message": { "type": "string", "example": "Factuur succesvol verzonden naar customer@example.com" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error (missing recipient_email)" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Invoice not found" },
+          "500": { "description": "Server error (SMTP configuration or PDF generation issue)" }
+        }
+      }
+    },
+    "/user/leave/balance": {
+      "get": {
+        "summary": "Get leave balance for current user",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "responses": {
+          "200": {
+            "description": "Leave balance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "vacation_hours": { "type": "number", "example": 216 },
+                    "overtime_hours": { "type": "number", "example": 42.5 },
+                    "updated_at": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/user/leave/requests": {
+      "get": {
+        "summary": "Get leave requests for current user",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "responses": {
+          "200": {
+            "description": "List of leave requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "user_id": { "type": "integer" },
+                      "start_date": { "type": "string", "format": "date" },
+                      "end_date": { "type": "string", "format": "date" },
+                      "start_time": { "type": "string", "example": "09:00" },
+                      "end_time": { "type": "string", "example": "17:00" },
+                      "hours_requested": { "type": "number", "example": 8 },
+                      "balance_type": { "type": "string", "enum": ["vacation", "overtime"] },
+                      "reason": { "type": "string" },
+                      "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "example": "pending" },
+                      "approved_by": { "type": "integer" },
+                      "approver_name": { "type": "string" },
+                      "created_at": { "type": "string", "format": "date-time" },
+                      "updated_at": { "type": "string", "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
+        }
+      },
+      "post": {
+        "summary": "Submit a new leave request",
+        "description": "Deducts balance immediately upon submission",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["startDate", "endDate", "hours", "balanceType"],
+                "properties": {
+                  "startDate": { "type": "string", "format": "date", "example": "2025-12-23" },
+                  "endDate": { "type": "string", "format": "date", "example": "2025-12-27" },
+                  "startTime": { "type": "string", "example": "09:00" },
+                  "endTime": { "type": "string", "example": "17:00" },
+                  "hours": { "type": "number", "minimum": 0.25, "example": 40 },
+                  "balanceType": { "type": "string", "enum": ["vacation", "overtime"], "example": "vacation" },
+                  "reason": { "type": "string", "example": "Family vacation" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Leave request submitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Leave request submitted" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error or insufficient balance" },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/user/leave/requests/{id}": {
+      "put": {
+        "summary": "Update a leave request",
+        "description": "Adjusts balance based on hours delta. Resets status to pending if previously approved/rejected.",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["startDate", "endDate", "hours", "balanceType"],
+                "properties": {
+                  "startDate": { "type": "string", "format": "date" },
+                  "endDate": { "type": "string", "format": "date" },
+                  "startTime": { "type": "string" },
+                  "endTime": { "type": "string" },
+                  "hours": { "type": "number", "minimum": 0.25 },
+                  "balanceType": { "type": "string", "enum": ["vacation", "overtime"] },
+                  "reason": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Leave request updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "statusChanged": { "type": "boolean", "description": "True if status was reset to pending" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validation error or insufficient balance" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Leave request not found" },
+          "500": { "description": "Server error" }
+        }
+      },
+      "delete": {
+        "summary": "Delete (withdraw) a leave request",
+        "description": "Refunds hours to balance",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leave request withdrawn and hours refunded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Leave request withdrawn and hours refunded" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Leave request not found" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/user/leave/calendar": {
+      "get": {
+        "summary": "Get all approved leave requests (calendar view)",
+        "description": "Returns approved leave requests from all users for calendar display",
+        "security": [ { "bearerAuth": [] }, { "apiKeyAuth": [] } ],
+        "responses": {
+          "200": {
+            "description": "Approved leave requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "integer" },
+                      "user_id": { "type": "integer" },
+                      "full_name": { "type": "string" },
+                      "username": { "type": "string" },
+                      "start_date": { "type": "string", "format": "date" },
+                      "end_date": { "type": "string", "format": "date" },
+                      "hours_requested": { "type": "number" },
+                      "balance_type": { "type": "string" },
+                      "status": { "type": "string", "example": "approved" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "500": { "description": "Server error" }
+        }
+      }
+    }
+  }
+}

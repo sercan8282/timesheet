@@ -87,6 +87,9 @@
       case "branding":
         await loadBrandingSettings();
         break;
+      case "api-keys":
+        await loadApiKeysManagement();
+        break;
       case "menu":
         await loadMenuManagement();
         break;
@@ -138,6 +141,134 @@
       document.getElementById(
         "menuEditor"
       ).innerHTML = `<div class="alert alert-danger">Error: ${escapeHtml(error.message)}</div>`;
+    }
+  }
+
+  // ===== API Keys Management =====
+  async function loadApiKeysManagement() {
+    const container = document.getElementById("adminContent");
+    container.innerHTML = `
+      <div class="admin-hero">
+        <div>
+          <h5 class="mb-1"><i class="bi bi-key"></i> <span>API Keys</span></h5>
+          <small>Genereer een secret om API requests te authenticeren.</small>
+        </div>
+      </div>
+
+      <div class="toolbar-card mb-3 d-flex flex-wrap align-items-center gap-2 justify-content-between">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <input id="apiKeyLabel" class="form-control form-control-sm" placeholder="Label (optioneel)" style="max-width:240px" />
+          <button id="generateApiKeyBtn" class="btn btn-sm btn-primary"><i class="bi bi-plus-circle"></i> Generate Secret</button>
+        </div>
+        <div class="d-flex gap-2">
+          <button id="refreshApiKeysBtn" class="btn btn-sm btn-outline-secondary">Refresh</button>
+        </div>
+      </div>
+
+      <div class="glass-card p-3 shadow-soft">
+        <div id="apiKeyResult" class="alert alert-info" style="display:none"></div>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th style="width:80px">ID</th>
+                <th>Label</th>
+                <th>Created</th>
+                <th>Status</th>
+                <th style="width:140px">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="apiKeysTableBody">
+              <tr><td colspan="5" class="text-center py-3"><div class="spinner-border"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    // Wire up actions
+    document.getElementById("generateApiKeyBtn").onclick = async function () {
+      const btn = this;
+      btn.disabled = true;
+      btn.textContent = "Generating...";
+      try {
+        const label = document.getElementById("apiKeyLabel").value.trim();
+        const res = await api.createApiKey(label);
+        const box = document.getElementById("apiKeyResult");
+        box.style.display = "block";
+        box.innerHTML = `
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <strong>Secret (bewaar nu):</strong>
+              <div class="text-monospace">${escapeHtml(res.key)}</div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" id="copyApiKeyBtn"><i class="bi bi-clipboard"></i> Copy</button>
+          </div>
+        `;
+        document.getElementById("copyApiKeyBtn").onclick = function () {
+          navigator.clipboard.writeText(res.key).then(() => {
+            showToast("Secret copied to clipboard", "success");
+          });
+        };
+        await loadApiKeysTable();
+      } catch (err) {
+        showToast(escapeHtml(err.message || "Failed to generate key"), "danger");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Generate Secret";
+      }
+    };
+
+    document.getElementById("refreshApiKeysBtn").onclick = loadApiKeysTable;
+
+    await loadApiKeysTable();
+  }
+
+  async function loadApiKeysTable() {
+    const tbody = document.getElementById("apiKeysTableBody");
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3"><div class="spinner-border"></div></td></tr>`;
+    try {
+      const data = await api.listApiKeys();
+      const rows = (data && data.keys) || [];
+      if (!rows.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center">Geen API keys</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows
+        .map((k) => {
+          const status = k.revoked_at ? `Revoked at ${escapeHtml(k.revoked_at)}` : "Active";
+          return `
+            <tr>
+              <td><span class="badge-soft">${k.id}</span></td>
+              <td>${escapeHtml(k.label || "-")}</td>
+              <td>${escapeHtml(k.created_at || "")}</td>
+              <td>${escapeHtml(status)}</td>
+              <td>
+                ${k.revoked_at ? "" : `<button class="btn btn-sm btn-outline-danger" data-id="${k.id}"><i class="bi bi-slash-circle"></i> Revoke</button>`}
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      // Wire revoke buttons
+      tbody.querySelectorAll("button[data-id]").forEach((btn) => {
+        btn.onclick = async function () {
+          const id = parseInt(this.getAttribute("data-id"), 10);
+          this.disabled = true;
+          try {
+            await api.revokeApiKey(id);
+            showToast("API key revoked", "success");
+            await loadApiKeysTable();
+          } catch (err) {
+            showToast(escapeHtml(err.message || "Failed to revoke"), "danger");
+          } finally {
+            this.disabled = false;
+          }
+        };
+      });
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-danger">${escapeHtml(err.message)}</td></tr>`;
     }
   }
 
@@ -2046,6 +2177,11 @@
                   <li class="nav-item">
                     <a class="nav-link" href="#" data-tab="branding" onclick="switchAdminTab('branding'); return false;">
                       <i class="bi bi-palette"></i> Branding
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="api-keys" onclick="switchAdminTab('api-keys'); return false;">
+                      <i class="bi bi-key"></i> API Keys
                     </a>
                   </li>
                   <!-- Menu tab intentionally hidden for now; functionality retained for future use -->

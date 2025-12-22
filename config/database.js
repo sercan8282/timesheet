@@ -3121,6 +3121,19 @@ class Database {
         )
       `);
 
+      // API Keys for external authentication
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS api_keys (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key_hash TEXT NOT NULL UNIQUE,
+          label TEXT,
+          created_by INTEGER,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          revoked_at DATETIME,
+          FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+        )
+      `);
+
       // Ensure new column font_family exists on invoice_template_elements
       this.db.all(
         `PRAGMA table_info(invoice_template_elements)`,
