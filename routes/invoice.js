@@ -369,6 +369,160 @@ router.get("/templates/:id", auth, async (req, res) => {
   }
 });
 
+// Export template with elements and line fields
+router.get("/templates/:id/export", auth, async (req, res) => {
+  try {
+    const template = await db.get(
+      "SELECT * FROM invoice_templates WHERE id = ?",
+      [req.params.id]
+    );
+
+    if (!template) {
+      return res.status(404).json({ error: "Template niet gevonden" });
+    }
+
+    const elements = await db.all(
+      "SELECT * FROM invoice_template_elements WHERE template_id = ? ORDER BY position_order ASC",
+      [req.params.id]
+    );
+
+    const lineFields = await db.all(
+      "SELECT * FROM invoice_template_line_fields WHERE template_id = ? ORDER BY position_order ASC",
+      [req.params.id]
+    );
+
+    res.json({
+      version: 1,
+      template,
+      elements,
+      line_fields: lineFields,
+    });
+  } catch (error) {
+    console.error("Error exporting template:", error);
+    res.status(500).json({ error: "Fout bij exporteren van template" });
+  }
+});
+
+// Import template with elements and line fields
+router.post("/templates/import", auth, async (req, res) => {
+  const { template, elements = [], line_fields = [], name } = req.body || {};
+
+  if (!template) {
+    return res
+      .status(400)
+      .json({ error: "Geen template gegevens gevonden om te importeren" });
+  }
+
+  const safeTemplate = {
+    name: name || template.name || "Imported Template",
+    description: template.description || null,
+    is_default: 0,
+    hourly_rate: Number(template.hourly_rate) || 0,
+    km_rate: Number(template.km_rate) || 0,
+    dot_rate: Number(template.dot_rate) || 0,
+    dot_rate_is_percent: template.dot_rate_is_percent ? 1 : 0,
+    default_font_family: template.default_font_family || "Helvetica",
+    table_header_bg: template.table_header_bg || "#0080ff",
+    table_header_text: template.table_header_text || "#ffffff",
+    table_row_bg1: template.table_row_bg1 || "#f4f8ff",
+    table_row_bg2: template.table_row_bg2 || "#e7f2ff",
+    table_border_color: template.table_border_color || "#c7ddff",
+    table_text_color: template.table_text_color || "#000000",
+  };
+
+  try {
+    await db.run("BEGIN TRANSACTION");
+
+    const insertTemplate = await db.run(
+      "INSERT INTO invoice_templates (name, description, is_default, hourly_rate, km_rate, dot_rate, dot_rate_is_percent, default_font_family, table_header_bg, table_header_text, table_row_bg1, table_row_bg2, table_border_color, table_text_color) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        safeTemplate.name,
+        safeTemplate.description,
+        safeTemplate.is_default,
+        safeTemplate.hourly_rate,
+        safeTemplate.km_rate,
+        safeTemplate.dot_rate,
+        safeTemplate.dot_rate_is_percent,
+        safeTemplate.default_font_family,
+        safeTemplate.table_header_bg,
+        safeTemplate.table_header_text,
+        safeTemplate.table_row_bg1,
+        safeTemplate.table_row_bg2,
+        safeTemplate.table_border_color,
+        safeTemplate.table_text_color,
+      ]
+    );
+
+    const newTemplateId = insertTemplate.id;
+
+    for (const el of elements) {
+      await db.run(
+        `INSERT INTO invoice_template_elements 
+         (template_id, element_type, label, content, image_path, position_order, 
+          font_size, font_color, font_weight, font_family, image_align, image_width, image_height, calculation_formula, text_align_h) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          newTemplateId,
+          el.element_type,
+          el.label || null,
+          el.content || null,
+          el.image_path || null,
+          el.position_order || 0,
+          el.font_size || 14,
+          el.font_color || "#000000",
+          el.font_weight || "normal",
+          el.font_family || null,
+          el.image_align || "left",
+          el.image_width || 150,
+          el.image_height || 0,
+          el.calculation_formula || null,
+          el.text_align_h || "left",
+        ]
+      );
+    }
+
+    for (const lf of line_fields) {
+      await db.run(
+        `INSERT OR REPLACE INTO invoice_template_line_fields 
+         (template_id, field_name, field_label, is_visible, position_order) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          newTemplateId,
+          lf.field_name,
+          lf.field_label || lf.field_name,
+          lf.is_visible ? 1 : 0,
+          lf.position_order || 0,
+        ]
+      );
+    }
+
+    await db.run("COMMIT");
+
+    const created = await db.get(
+      "SELECT * FROM invoice_templates WHERE id = ?",
+      [newTemplateId]
+    );
+    const createdElements = await db.all(
+      "SELECT * FROM invoice_template_elements WHERE template_id = ? ORDER BY position_order ASC",
+      [newTemplateId]
+    );
+    const createdLineFields = await db.all(
+      "SELECT * FROM invoice_template_line_fields WHERE template_id = ? ORDER BY position_order ASC",
+      [newTemplateId]
+    );
+
+    res.status(201).json({
+      ...created,
+      elements: createdElements,
+      line_fields: createdLineFields,
+    });
+  } catch (error) {
+    await db.run("ROLLBACK");
+    console.error("Error importing template:", error);
+    res.status(500).json({ error: "Fout bij importeren van template" });
+  }
+});
+
 // Create new template
 router.post("/templates", auth, async (req, res) => {
   try {

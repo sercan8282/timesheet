@@ -781,6 +781,9 @@ const invoiceManager = {
             <button class="btn btn-primary" onclick="invoiceManager.showCreateTemplate()">
               <i class="bi bi-plus-circle"></i> Nieuw Template
             </button>
+            <button class="btn btn-outline-success" onclick="invoiceManager.showImportTemplateModal()">
+              <i class="bi bi-upload"></i> Template importeren
+            </button>
             <button class="btn btn-outline-secondary" onclick="invoiceManager.renderInvoiceList()">
               <i class="bi bi-arrow-left"></i> Terug naar Facturen
             </button>
@@ -823,6 +826,11 @@ const invoiceManager = {
               template.id
             })">
               <i class="bi bi-files"></i> Dupliceren
+            </button>
+            <button class="btn btn-sm btn-outline-success" onclick="invoiceManager.exportTemplate(${
+              template.id
+            })">
+              <i class="bi bi-download"></i> Exporteren
             </button>
             <button class="btn btn-sm btn-outline-danger" onclick="invoiceManager.deleteTemplate(${
               template.id
@@ -2199,6 +2207,167 @@ const invoiceManager = {
     } catch (error) {
       console.error("Error deleting element:", error);
       showToast(t("ui", "invoice.element_delete_failed"), "error");
+    }
+  },
+
+  showImportTemplateModal() {
+    let container = document.getElementById("modal-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "modal-container";
+      document.body.appendChild(container);
+    }
+
+    const modalHtml = `
+      <div class="modal fade" id="importTemplateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Template importeren</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Nieuwe template naam</label>
+                <input type="text" class="form-control" id="importTemplateName" placeholder="Bijv. Klant X template">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">JSON bestand</label>
+                <input type="file" accept="application/json" class="form-control" onchange="invoiceManager.loadTemplateImportFile(event)">
+                <div class="form-text">Kies het geëxporteerde template-bestand of plak JSON hieronder.</div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Template JSON</label>
+                <textarea class="form-control" id="importTemplateJson" rows="8" placeholder="Plak hier de geëxporteerde template JSON"></textarea>
+              </div>
+              <div class="alert alert-info small mb-0">
+                Bij import worden alle velden, kleuren, posities, elementen en regel-velden overgenomen. Afbeeldingspaden blijven verwijzen naar bestaande uploads.
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+              <button class="btn btn-primary" onclick="invoiceManager.importTemplateFromModal()">
+                <i class="bi bi-cloud-arrow-down"></i> Importeren
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    container.innerHTML = modalHtml;
+    const modalEl = document.getElementById("importTemplateModal");
+    const bsModal = new bootstrap.Modal(modalEl);
+    bsModal.show();
+  },
+
+  loadTemplateImportFile(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const textarea = document.getElementById("importTemplateJson");
+      if (textarea) textarea.value = text;
+      try {
+        const parsed = JSON.parse(text);
+        if (parsed.template && parsed.template.name) {
+          const nameInput = document.getElementById("importTemplateName");
+          if (nameInput && !nameInput.value) {
+            nameInput.value = `${parsed.template.name} (import)`;
+          }
+        }
+      } catch (err) {
+        showToast("Kon JSON niet lezen uit bestand", "error");
+      }
+    };
+    reader.readAsText(file);
+  },
+
+  async importTemplateFromModal() {
+    const nameInput = document.getElementById("importTemplateName");
+    const jsonArea = document.getElementById("importTemplateJson");
+    const raw = jsonArea ? jsonArea.value.trim() : "";
+    const customName = nameInput ? nameInput.value.trim() : "";
+
+    if (!raw) {
+      showToast("Plak of kies eerst een template JSON", "error");
+      return;
+    }
+
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch (err) {
+      showToast("Ongeldige JSON", "error");
+      return;
+    }
+
+    if (!payload.template) {
+      showToast("JSON bevat geen template gegevens", "error");
+      return;
+    }
+
+    const importPayload = {
+      ...payload,
+      name: customName || payload.template.name || "Imported Template",
+    };
+
+    try {
+      const created = await api.importInvoiceTemplate(importPayload);
+      showToast("Template geïmporteerd", "success");
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("importTemplateModal")
+      );
+      if (modal) modal.hide();
+
+      await this.loadData();
+      if (created && created.id) {
+        await this.editTemplate(created.id);
+      } else {
+        this.showTemplates();
+      }
+    } catch (error) {
+      console.error("Error importing template:", error);
+      showToast(
+        `${t("ui", "invoice.template_import_failed", "Import mislukt")}: ${
+          error.message || error
+        }`,
+        "error"
+      );
+    }
+  },
+
+  async exportTemplate(templateId) {
+    try {
+      const data = await api.exportInvoiceTemplate(templateId);
+      const template = (this.templates || []).find(
+        (t) => String(t.id) === String(templateId)
+      );
+      const name = (template && template.name) || `template-${templateId}`;
+      const slug = (str) =>
+        (str || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^[-]+|[-]+$/g, "") ||
+        "template";
+      const fileName = `${slug(name)}-export.json`;
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast("Template geëxporteerd", "success");
+    } catch (error) {
+      console.error("Error exporting template:", error);
+      showToast(
+        `${t("ui", "invoice.template_export_failed", "Export mislukt")}: ${
+          error.message || error
+        }`,
+        "error"
+      );
     }
   },
 
