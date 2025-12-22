@@ -347,6 +347,32 @@ app.get("/api/health", (req, res) => {
   }
 });
 
+// Swagger/OpenAPI Docs (CDN-based, no deprecated generator)
+app.get("/api/docs", (req, res) => {
+  const html = `<!DOCTYPE html>
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <title>API Docs</title>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css" />
+    </head>
+    <body>
+      <div id="swagger-ui"></div>
+      <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+      <script>
+        window.ui = SwaggerUIBundle({
+          url: '/docs/openapi.json',
+          dom_id: '#swagger-ui',
+          presets: [SwaggerUIBundle.presets.apis],
+          layout: 'BaseLayout'
+        });
+      </script>
+    </body>
+  </html>`;
+  res.setHeader('Content-Type', 'text/html');
+  res.send(html);
+});
+
 // Serve static files AFTER API routes
 app.use(express.static(path.join(__dirname, "public")));
 

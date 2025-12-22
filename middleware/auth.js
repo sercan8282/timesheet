@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const db = require("../config/database");
+const crypto = require("crypto");
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -9,7 +10,68 @@ const authMiddleware = async (req, res, next) => {
     const token = headerToken || queryToken;
 
     if (!token) {
-      return res.status(401).json({ error: "Authentication required" });
+      // Fallback: allow API Key auth via header x-api-key or query api_key
+      const apiKey = req.headers["x-api-key"] || (req.query && req.query.api_key);
+      if (!apiKey) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+
+      // Validate API key against hashed values in database
+      const keyHash = crypto.createHash("sha256").update(apiKey).digest("hex");
+      const apiRecord = await db.get(
+        `SELECT ak.id, ak.created_by, ak.revoked_at, u.role AS creator_role
+         FROM api_keys ak
+         LEFT JOIN users u ON u.id = ak.created_by
+         WHERE ak.key_hash = ?`,
+        [keyHash]
+      );
+
+      if (!apiRecord || apiRecord.revoked_at) {
+        return res.status(401).json({ error: "Invalid API key" });
+      }
+
+      // Load creator user profile to populate req.user
+      const user = await db.get(
+        `SELECT 
+            u.id, u.username, u.full_name, u.is_blocked, u.role,
+            u.company_id, u.phone, u.ritnumber, u.adr, u.mega_kast,
+            u.mfa_enabled,
+            c.name AS company_name, c.pause_time AS company_pause_time
+         FROM users u
+         LEFT JOIN companies c ON c.id = u.company_id
+         WHERE u.id = ?`,
+        [apiRecord.created_by]
+      );
+
+      if (!user) {
+        return res.status(401).json({ error: "API key creator not found" });
+      }
+
+      if (user.is_blocked === 1) {
+        return res.status(403).json({
+          error: "Your account has been blocked. Contact administrator.",
+        });
+      }
+
+      // With API keys, skip MFA enforcement to allow automation
+      req.user = {
+        id: user.id,
+        username: user.username,
+        fullName: user.full_name,
+        isAdmin: user.role === "admin",
+        role: user.role,
+        company_id: user.company_id,
+        company_name: user.company_name,
+        company_pause_time: user.company_pause_time,
+        phone: user.phone,
+        email: user.email,
+        ritnumber: user.ritnumber,
+        adr: user.adr,
+        mega_kast: user.mega_kast,
+      };
+      // Mark request as API key-authenticated
+      req.authViaApiKey = true;
+      return next();
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);

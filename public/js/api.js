@@ -265,6 +265,22 @@ class API {
     return response.blob();
   }
 
+  // Admin: API Keys
+  async createApiKey(label) {
+    return this.request(`/admin/api-keys`, {
+      method: "POST",
+      body: JSON.stringify({ label }),
+    });
+  }
+
+  async listApiKeys() {
+    return this.request(`/admin/api-keys`);
+  }
+
+  async revokeApiKey(id) {
+    return this.request(`/admin/api-keys/${id}/revoke`, { method: "POST" });
+  }
+
   async resendSubmissionEmail(submissionId) {
     return this.request(`/submission/submissions/${submissionId}/resend`, {
       method: "POST",
