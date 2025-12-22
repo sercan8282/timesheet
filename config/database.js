@@ -2953,6 +2953,13 @@ class Database {
           km_rate REAL DEFAULT 0,
           dot_rate REAL DEFAULT 0,
           dot_rate_is_percent INTEGER DEFAULT 0,
+          default_font_family TEXT DEFAULT 'Helvetica',
+          table_header_bg TEXT DEFAULT '#0080ff',
+          table_header_text TEXT DEFAULT '#ffffff',
+          table_row_bg1 TEXT DEFAULT '#f4f8ff',
+          table_row_bg2 TEXT DEFAULT '#e7f2ff',
+          table_border_color TEXT DEFAULT '#c7ddff',
+          table_text_color TEXT DEFAULT '#000000',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -3017,6 +3024,40 @@ class Database {
                 }
               );
             }
+            if (!columnNames.includes("default_font_family")) {
+              this.db.run(
+                "ALTER TABLE invoice_templates ADD COLUMN default_font_family TEXT DEFAULT 'Helvetica'",
+                (err) => {
+                  if (err && !err.message.includes("duplicate column")) {
+                    console.error("Error adding default_font_family:", err);
+                  } else {
+                    console.log(
+                      "✓ Added default_font_family column to invoice_templates"
+                    );
+                  }
+                }
+              );
+            }
+            const ensureColor = (name, defaultValue) => {
+              if (!columnNames.includes(name)) {
+                this.db.run(
+                  `ALTER TABLE invoice_templates ADD COLUMN ${name} TEXT DEFAULT '${defaultValue}'`,
+                  (err) => {
+                    if (err && !err.message.includes("duplicate column")) {
+                      console.error(`Error adding ${name}:`, err);
+                    } else {
+                      console.log(`✓ Added ${name} column to invoice_templates`);
+                    }
+                  }
+                );
+              }
+            };
+            ensureColor("table_header_bg", "#0080ff");
+            ensureColor("table_header_text", "#ffffff");
+            ensureColor("table_row_bg1", "#f4f8ff");
+            ensureColor("table_row_bg2", "#e7f2ff");
+            ensureColor("table_border_color", "#c7ddff");
+            ensureColor("table_text_color", "#000000");
           }
         }
       );
@@ -3037,12 +3078,47 @@ class Database {
           font_size INTEGER DEFAULT 14,
           font_color TEXT DEFAULT '#000000',
           font_weight TEXT DEFAULT 'normal',
+          font_family TEXT,
           calculation_formula TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (template_id) REFERENCES invoice_templates(id) ON DELETE CASCADE
         )
       `);
+
+      // Uploaded fonts library
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS invoice_fonts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          family TEXT NOT NULL,
+          weight TEXT CHECK(weight IN ('normal','bold')) DEFAULT 'normal',
+          file_path TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Ensure new column font_family exists on invoice_template_elements
+      this.db.all(
+        `PRAGMA table_info(invoice_template_elements)`,
+        [],
+        (err, columns) => {
+          if (!err && columns) {
+            const names = columns.map((c) => c.name);
+            if (!names.includes("font_family")) {
+              this.db.run(
+                "ALTER TABLE invoice_template_elements ADD COLUMN font_family TEXT",
+                (err) => {
+                  if (err && !err.message.includes("duplicate column")) {
+                    console.error("Error adding font_family to elements:", err);
+                  } else {
+                    console.log("✓ Added font_family column to invoice_template_elements");
+                  }
+                }
+              );
+            }
+          }
+        }
+      );
 
       this.db.all(
         `PRAGMA table_info(invoice_template_elements)`,
@@ -3090,6 +3166,21 @@ class Database {
                   } else {
                     console.log(
                       "✓ Added image_height column to invoice_template_elements"
+                    );
+                  }
+                }
+              );
+            }
+
+            if (!columnNames.includes("text_align_h")) {
+              this.db.run(
+                "ALTER TABLE invoice_template_elements ADD COLUMN text_align_h TEXT DEFAULT 'left'",
+                (alterErr) => {
+                  if (alterErr && !alterErr.message.includes("duplicate column")) {
+                    console.error("Error adding text_align_h to invoice_template_elements:", alterErr);
+                  } else {
+                    console.log(
+                      "✓ Added text_align_h column to invoice_template_elements"
                     );
                   }
                 }

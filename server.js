@@ -71,11 +71,12 @@ app.get("/api/invoices/template/:id/preview-pdf", async (req, res) => {
       const content = cleanContent(el.content);
       const fontName =
         el.font_weight === "bold" ? "Helvetica-Bold" : "Helvetica";
+      const textAlignH = el.text_align_h || "left";
       doc
         .font(fontName)
         .fontSize(parseInt(el.font_size) || 12)
         .fillColor(el.font_color || "#000000")
-        .text(content, x, y, { width: width - 10 });
+        .text(content, x, y, { width: width - 10, align: textAlignH });
       const textHeight = doc.heightOfString(content, { width: width - 10 });
       return y + textHeight + 10;
     };

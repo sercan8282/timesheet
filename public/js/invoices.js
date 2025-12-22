@@ -883,6 +883,42 @@ const invoiceManager = {
                   <input type="checkbox" class="form-check-input" id="template-dot-rate-percent">
                   <label class="form-check-label" for="template-dot-rate-percent">DOT tarief is percentage van subtotal (excl. BTW)</label>
                 </div>
+                <div class="mb-3">
+                  <label class="form-label">Standaard lettertype</label>
+                  <select class="form-select" id="template-font-family">
+                    <option value="Helvetica" selected>Helvetica</option>
+                    <option value="Times-Roman">Times New Roman</option>
+                    <option value="Courier">Courier</option>
+                  </select>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Header achtergrond</label>
+                    <input type="color" class="form-control form-control-color" id="template-table-header-bg" value="#0080ff">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Header tekst</label>
+                    <input type="color" class="form-control form-control-color" id="template-table-header-text" value="#ffffff">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Rij 1 achtergrond</label>
+                    <input type="color" class="form-control form-control-color" id="template-table-row-bg1" value="#f4f8ff">
+                  </div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Rij 2 achtergrond</label>
+                    <input type="color" class="form-control form-control-color" id="template-table-row-bg2" value="#e7f2ff">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Randkleur</label>
+                    <input type="color" class="form-control form-control-color" id="template-table-border-color" value="#c7ddff">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Tekstkleur</label>
+                    <input type="color" class="form-control form-control-color" id="template-table-text-color" value="#000000">
+                  </div>
+                </div>
                 <div class="mb-3 form-check">
                   <input type="checkbox" class="form-check-input" id="template-default">
                   <label class="form-check-label" for="template-default">
@@ -928,6 +964,20 @@ const invoiceManager = {
     const dot_rate_is_percent = document.getElementById(
       "template-dot-rate-percent"
     ).checked;
+    const default_font_family =
+      document.getElementById("template-font-family").value || "Helvetica";
+    const table_header_bg =
+      document.getElementById("template-table-header-bg").value || "#0080ff";
+    const table_header_text =
+      document.getElementById("template-table-header-text").value || "#ffffff";
+    const table_row_bg1 =
+      document.getElementById("template-table-row-bg1").value || "#f4f8ff";
+    const table_row_bg2 =
+      document.getElementById("template-table-row-bg2").value || "#e7f2ff";
+    const table_border_color =
+      document.getElementById("template-table-border-color").value || "#c7ddff";
+    const table_text_color =
+      document.getElementById("template-table-text-color").value || "#000000";
 
     if (!name) {
       showToast(t("ui", "invoice.template_name_required"), "error");
@@ -943,6 +993,13 @@ const invoiceManager = {
         km_rate,
         dot_rate,
         dot_rate_is_percent: dot_rate_is_percent ? 1 : 0,
+        default_font_family,
+        table_header_bg,
+        table_header_text,
+        table_row_bg1,
+        table_row_bg2,
+        table_border_color,
+        table_text_color,
       });
 
       showToast(t("ui", "invoice.template_created"), "success");
@@ -960,6 +1017,12 @@ const invoiceManager = {
   async editTemplate(templateId) {
     try {
       this.currentTemplate = await api.getInvoiceTemplate(templateId);
+      // Load available fonts for selectors
+      try {
+        this.fonts = await api.getInvoiceFonts();
+      } catch (e) {
+        this.fonts = [];
+      }
       this.renderTemplateEditor();
     } catch (error) {
       console.error("Error loading template:", error);
@@ -1046,9 +1109,68 @@ const invoiceManager = {
                   }>
                   <label class="form-check-label" for="edit-template-dot-rate-percent">DOT tarief is percentage van subtotal (excl. BTW)</label>
                 </div>
-                <button class="btn btn-primary" onclick="invoiceManager.updateTemplateSettings()">
+                <div class="mb-3">
+                  <label class="form-label">Standaard lettertype</label>
+                  <select class="form-select" id="edit-template-font-family">
+                    <option value="Helvetica" ${
+                      (template.default_font_family || "Helvetica") === "Helvetica" ? "selected" : ""
+                    }>Helvetica</option>
+                    <option value="Times-Roman" ${
+                      template.default_font_family === "Times-Roman" ? "selected" : ""
+                    }>Times New Roman</option>
+                    <option value="Courier" ${
+                      template.default_font_family === "Courier" ? "selected" : ""
+                    }>Courier</option>
+                  </select>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Header achtergrond</label>
+                    <input type="color" class="form-control form-control-color" id="edit-template-table-header-bg" value="${
+                      template.table_header_bg || "#0080ff"
+                    }">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Header tekst</label>
+                    <input type="color" class="form-control form-control-color" id="edit-template-table-header-text" value="${
+                      template.table_header_text || "#ffffff"
+                    }">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Rij 1 achtergrond</label>
+                    <input type="color" class="form-control form-control-color" id="edit-template-table-row-bg1" value="${
+                      template.table_row_bg1 || "#f4f8ff"
+                    }">
+                  </div>
+                </div>
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label">Rij 2 achtergrond</label>
+                    <input type="color" class="form-control form-control-color" id="edit-template-table-row-bg2" value="${
+                      template.table_row_bg2 || "#e7f2ff"
+                    }">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Randkleur</label>
+                    <input type="color" class="form-control form-control-color" id="edit-template-table-border-color" value="${
+                      template.table_border_color || "#c7ddff"
+                    }">
+                  </div>
+                  <div class="col-md-4">
+                    <label class="form-label">Tekstkleur</label>
+                    <input type="color" class="form-control form-control-color" id="edit-template-table-text-color" value="${
+                      template.table_text_color || "#000000"
+                    }">
+                  </div>
+                </div>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-secondary" onclick="invoiceManager.openFontManager()">
+                    <i class="bi bi-fonts"></i> Lettertypes beheren
+                  </button>
+                  <button class="btn btn-primary" onclick="invoiceManager.updateTemplateSettings()">
                   <i class="bi bi-save"></i> Instellingen Opslaan
-                </button>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1165,6 +1287,112 @@ const invoiceManager = {
 
     // Update preview after rendering
     this.updateTemplatePreview();
+
+    // Populate font selects with built-ins + uploaded
+    this.populateFontSelect(document.getElementById("edit-template-font-family"), this.currentTemplate.default_font_family || "Helvetica", false);
+    const elFontSelect = document.getElementById("element-font-family");
+    if (elFontSelect) this.populateFontSelect(elFontSelect, "inherit", true);
+  },
+
+  openFontManager() {
+    const modalHtml = `
+      <div class="modal fade" id="fontManagerModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Lettertypes beheren</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Lettertype naam (family)</label>
+                <input type="text" class="form-control" id="font-family-input" placeholder="Bijv. Open Sans">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Gewicht</label>
+                <select class="form-select" id="font-weight-input">
+                  <option value="normal" selected>Normaal</option>
+                  <option value="bold">Vet</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Bestand (TTF/OTF)</label>
+                <input type="file" class="form-control" id="font-file-input" accept=".ttf,.otf">
+              </div>
+              <div class="border rounded p-2" style="max-height:180px; overflow:auto;">
+                <div class="small text-muted mb-2">Bestaande lettertypes</div>
+                ${((this.fonts||[])  
+                  .map(f => `<div class='d-flex justify-content-between align-items-center small'><span>${f.family} (${f.weight})</span><span class='text-muted'>${f.file_path.split('/').pop()}</span></div>`)
+                  .join('')) || '<div class="text-muted small">Geen geüploade lettertypes</div>'}
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Sluiten</button>
+              <button class="btn btn-primary" onclick="invoiceManager.uploadFont()"><i class="bi bi-upload"></i> Uploaden</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    let container = document.getElementById("modal-container");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "modal-container";
+      document.body.appendChild(container);
+    }
+    container.innerHTML = modalHtml;
+    const modal = new bootstrap.Modal(document.getElementById("fontManagerModal"));
+    modal.show();
+  },
+
+  async uploadFont() {
+    try {
+      const family = document.getElementById("font-family-input").value.trim();
+      const weight = document.getElementById("font-weight-input").value;
+      const file = document.getElementById("font-file-input").files[0];
+      if (!family || !file) {
+        showToast("Family en bestand zijn verplicht", "error");
+        return;
+      }
+      const fd = new FormData();
+      fd.append("family", family);
+      fd.append("weight", weight);
+      fd.append("font", file);
+      await api.uploadInvoiceFont(fd);
+      showToast("Lettertype geüpload", "success");
+      this.fonts = await api.getInvoiceFonts();
+      // Refresh selects and modal list
+      this.populateFontSelect(document.getElementById("edit-template-font-family"), this.currentTemplate.default_font_family || "Helvetica", false);
+      const elFontSelect = document.getElementById("element-font-family");
+      if (elFontSelect) this.populateFontSelect(elFontSelect, "inherit", true);
+      this.openFontManager();
+    } catch (e) {
+      console.error(e);
+      showToast("Upload mislukt", "error");
+    }
+  },
+
+  populateFontSelect(selectEl, value, includeInherit) {
+    if (!selectEl) return;
+    const builtins = [
+      { val: "Helvetica", label: "Helvetica" },
+      { val: "Times-Roman", label: "Times New Roman" },
+      { val: "Courier", label: "Courier" },
+    ];
+    const customs = (this.fonts || [])
+      .map((f) => f.family)
+      .filter((v, i, a) => a.indexOf(v) === i)
+      .sort()
+      .map((family) => ({ val: family, label: family }));
+
+    const options = [];
+    if (includeInherit) options.push({ val: "inherit", label: "Overnemen van template" });
+    builtins.forEach((o) => options.push(o));
+    customs.forEach((o) => options.push(o));
+
+    selectEl.innerHTML = options
+      .map((o) => `<option value="${o.val}" ${o.val === value ? "selected" : ""}>${o.label}</option>`) 
+      .join("");
   },
 
   updateTemplatePreview() {
@@ -1226,6 +1454,17 @@ const invoiceManager = {
       <div class="mb-3">
         <label class="form-label">Volgorde</label>
         <input type="number" class="form-control" id="element-order" value="0">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Horizontale uitlijning</label>
+        <div class="btn-group d-flex w-100" role="group">
+          <input type="radio" class="btn-check" name="text-align-h" id="align-h-left" value="left" checked>
+          <label class="btn btn-outline-secondary flex-grow-1" for="align-h-left"><i class="bi bi-text-left"></i> Links</label>
+          <input type="radio" class="btn-check" name="text-align-h" id="align-h-center" value="center">
+          <label class="btn btn-outline-secondary flex-grow-1" for="align-h-center"><i class="bi bi-text-center"></i> Midden</label>
+          <input type="radio" class="btn-check" name="text-align-h" id="align-h-right" value="right">
+          <label class="btn btn-outline-secondary flex-grow-1" for="align-h-right"><i class="bi bi-text-right"></i> Rechts</label>
+        </div>
       </div>
     `;
 
@@ -1302,6 +1541,10 @@ const invoiceManager = {
         <div class="mb-3">
           <label class="form-label">Tekstkleur</label>
           <input type="color" class="form-control form-control-color" id="element-font-color" value="#000000">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Lettertype</label>
+          <select class="form-select" id="element-font-family"></select>
         </div>
         <div class="mb-3">
           <label class="form-label">Tekstgewicht</label>
@@ -1385,6 +1628,20 @@ const invoiceManager = {
     const dot_rate_is_percent = document.getElementById(
       "edit-template-dot-rate-percent"
     ).checked;
+    const default_font_family =
+      document.getElementById("edit-template-font-family").value || "Helvetica";
+    const table_header_bg =
+      document.getElementById("edit-template-table-header-bg").value || "#0080ff";
+    const table_header_text =
+      document.getElementById("edit-template-table-header-text").value || "#ffffff";
+    const table_row_bg1 =
+      document.getElementById("edit-template-table-row-bg1").value || "#f4f8ff";
+    const table_row_bg2 =
+      document.getElementById("edit-template-table-row-bg2").value || "#e7f2ff";
+    const table_border_color =
+      document.getElementById("edit-template-table-border-color").value || "#c7ddff";
+    const table_text_color =
+      document.getElementById("edit-template-table-text-color").value || "#000000";
 
     if (!name) {
       showToast(t("ui", "invoice.template_name_required"), "error");
@@ -1400,6 +1657,13 @@ const invoiceManager = {
         km_rate,
         dot_rate,
         dot_rate_is_percent: dot_rate_is_percent ? 1 : 0,
+        default_font_family,
+        table_header_bg,
+        table_header_text,
+        table_row_bg1,
+        table_row_bg2,
+        table_border_color,
+        table_text_color,
       });
 
       showToast(
@@ -1423,6 +1687,7 @@ const invoiceManager = {
     let type = originalType;
     const label = document.getElementById("element-label").value;
     const order = document.getElementById("element-order").value;
+    const textAlignH = document.querySelector('input[name="text-align-h"]:checked')?.value || "left";
 
     const formData = new FormData();
     // If the user selected "Afbeelding", we treat it specially and do not require text content
@@ -1432,6 +1697,7 @@ const invoiceManager = {
       formData.append("element_type", type);
       formData.append("label", label);
       formData.append("position_order", order);
+      formData.append("text_align_h", textAlignH);
 
       const imageFile = document.getElementById("element-image")?.files?.[0];
       if (!imageFile) {
@@ -1465,6 +1731,7 @@ const invoiceManager = {
     formData.append("element_type", type);
     formData.append("label", label);
     formData.append("position_order", order);
+    formData.append("text_align_h", textAlignH);
 
     // Handle text-based types (including new layout types)
     if (
@@ -1475,6 +1742,7 @@ const invoiceManager = {
       const content = document.getElementById("element-content").value;
       const fontSize = document.getElementById("element-font-size").value;
       const fontColor = document.getElementById("element-font-color").value;
+      const fontFamily = document.getElementById("element-font-family").value;
       const fontWeight = document.getElementById("element-font-weight").value;
 
       if (!content) {
@@ -1485,6 +1753,7 @@ const invoiceManager = {
       formData.append("content", content);
       formData.append("font_size", fontSize);
       formData.append("font_color", fontColor);
+      formData.append("font_family", fontFamily);
       formData.append("font_weight", fontWeight);
       // Optional image for layout/text sections (e.g., logo in top columns)
       const imageFileOptional = document.getElementById("element-image")?.files?.[0];
@@ -1656,6 +1925,17 @@ const invoiceManager = {
                   element.position_order || 0
                 }">
               </div>
+              <div class="mb-3">
+                <label class="form-label">Horizontale uitlijning</label>
+                <div class="btn-group d-flex w-100" role="group">
+                  <input type="radio" class="btn-check" name="edit-text-align-h" id="edit-align-h-left" value="left" ${element.text_align_h === "left" || !element.text_align_h ? "checked" : ""}>
+                  <label class="btn btn-outline-secondary flex-grow-1" for="edit-align-h-left"><i class="bi bi-text-left"></i> Links</label>
+                  <input type="radio" class="btn-check" name="edit-text-align-h" id="edit-align-h-center" value="center" ${element.text_align_h === "center" ? "checked" : ""}>
+                  <label class="btn btn-outline-secondary flex-grow-1" for="edit-align-h-center"><i class="bi bi-text-center"></i> Midden</label>
+                  <input type="radio" class="btn-check" name="edit-text-align-h" id="edit-align-h-right" value="right" ${element.text_align_h === "right" ? "checked" : ""}>
+                  <label class="btn btn-outline-secondary flex-grow-1" for="edit-align-h-right"><i class="bi bi-text-right"></i> Rechts</label>
+                </div>
+              </div>
               
               ${
                 element.element_type === "image" || 
@@ -1734,6 +2014,15 @@ const invoiceManager = {
                     }>Vet</option>
                   </select>
                 </div>
+                <div class="mb-3">
+                  <label class="form-label">Lettertype</label>
+                  <select class="form-select" id="edit-element-font-family">
+                    <option value="inherit" ${!element.font_family || element.font_family === "inherit" ? "selected" : ""}>Overnemen van template</option>
+                    <option value="Helvetica" ${element.font_family === "Helvetica" ? "selected" : ""}>Helvetica</option>
+                    <option value="Times-Roman" ${element.font_family === "Times-Roman" ? "selected" : ""}>Times New Roman</option>
+                    <option value="Courier" ${element.font_family === "Courier" ? "selected" : ""}>Courier</option>
+                  </select>
+                </div>
               `
               }
             </div>
@@ -1759,6 +2048,13 @@ const invoiceManager = {
     }
     modalContainer.innerHTML = modalHtml;
 
+    // Populate font select in modal (after injected into DOM)
+    this.populateFontSelect(
+      document.getElementById("edit-element-font-family"),
+      element.font_family || "inherit",
+      true
+    );
+
     // Show modal
     const modal = new bootstrap.Modal(
       document.getElementById("editElementModal")
@@ -1778,11 +2074,13 @@ const invoiceManager = {
     const label = document.getElementById("edit-element-label").value;
     const order = document.getElementById("edit-element-order").value;
     const newElementType = document.getElementById("edit-element-type").value;
+    const textAlignH = document.querySelector('input[name="edit-text-align-h"]:checked')?.value || "left";
 
     const formData = new FormData();
     formData.append("label", label);
     formData.append("position_order", order);
     formData.append("element_type", newElementType);
+    formData.append("text_align_h", textAlignH);
 
     if (element.element_type === "image" || 
         (element.element_type.startsWith("top_") && element.image_path) ||
@@ -1802,6 +2100,7 @@ const invoiceManager = {
       const fontSize = document.getElementById("edit-element-font-size")?.value;
       const fontColor = document.getElementById("edit-element-font-color")?.value;
       const fontWeight = document.getElementById("edit-element-font-weight")?.value;
+      const fontFamily = document.getElementById("edit-element-font-family")?.value;
 
       if (content !== undefined && content !== null) {
         if (!content.trim()) {
@@ -1812,6 +2111,7 @@ const invoiceManager = {
         formData.append("font_size", fontSize || 14);
         formData.append("font_color", fontColor || "#000000");
         formData.append("font_weight", fontWeight || "normal");
+        if (fontFamily) formData.append("font_family", fontFamily);
       }
     }
 
@@ -1885,6 +2185,9 @@ const invoiceManager = {
           formData.append("font_size", element.font_size || 14);
           formData.append("font_color", element.font_color || "#000000");
           formData.append("font_weight", element.font_weight || "normal");
+          if (element.font_family) {
+            formData.append("font_family", element.font_family);
+          }
           formData.append(
             "calculation_formula",
             element.calculation_formula || ""
