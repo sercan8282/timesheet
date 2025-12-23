@@ -253,7 +253,14 @@ app.use(
           "data:",
           "blob:",
         ],
-        connectSrc: ["'self'"],
+        // Allow mobile app (Capacitor) and production domain to call the API
+        connectSrc: [
+          "'self'",
+          'https://urenregistratie.site',
+          'https://localhost',
+          'http://localhost',
+          'capacitor://localhost'
+        ],
         frameSrc: ["'none'"],
         objectSrc: ["'none'"],
         baseUri: ["'self'"],
@@ -293,6 +300,7 @@ app.use("/api/", limiter);
 const corsOptions = {
   origin: [
     'http://localhost:3000',
+    'https://localhost',
     'https://urenregistratie.site',
     'capacitor://localhost',
     'http://localhost',

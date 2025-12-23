@@ -1,0 +1,2 @@
+--------- beginning of main
+12-23 19:37:57.738 I/registratie.app(31003): Background concurrent mark compact GC freed 9311KB AllocSpace bytes, 43(1412KB) LOS objects, 85% free, 4282KB/28MB, paused 114us,1.290ms total 103.600ms

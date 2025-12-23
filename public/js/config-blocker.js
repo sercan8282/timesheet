@@ -8,20 +8,30 @@ console.log('[BLOCKER] Loaded');
 window.appReadyToInit = false;
 
 // Global config
+// Normalize and store the backend URL so we never end up with plain hostnames
+const storedUrl = localStorage.getItem('timesheet_backend_url');
+const normalizeUrl = (url) => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  return 'https://' + trimmed;
+};
+
 window.AppConfig = {
-  backendUrl: localStorage.getItem('timesheet_backend_url') || null,
+  backendUrl: normalizeUrl(storedUrl) || 'https://urenregistratie.site',
   getBackendUrl() { return this.backendUrl; },
   setBackendUrl(url) {
-    if (!url.startsWith('http')) url = 'https://' + url;
-    this.backendUrl = url;
-    localStorage.setItem('timesheet_backend_url', url);
+    const normalized = normalizeUrl(url);
+    this.backendUrl = normalized;
+    localStorage.setItem('timesheet_backend_url', normalized);
   },
   testConnection: async function() {
     if (!this.backendUrl) return false;
     try {
-      const r = await fetch(this.backendUrl + '/health', { timeout: 5000 });
+      const r = await fetch(this.backendUrl.replace(/\/$/, '') + '/api/health', { timeout: 5000 });
       return r.ok;
     } catch (e) {
+      console.error('[BLOCKER] Health check failed:', e);
       return false;
     }
   }
@@ -62,6 +72,9 @@ function showModal() {
         backdrop: 'static',
         keyboard: false
       });
+
+      // Pre-fill with the current value so users can just test/save
+      input.value = window.AppConfig.getBackendUrl() || 'https://urenregistratie.site';
       
       testBtn.onclick = async (e) => {
         e.preventDefault();
@@ -81,13 +94,11 @@ function showModal() {
         testBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
         
         try {
-          let testUrl = url;
-          if (!testUrl.startsWith('http')) testUrl = 'https://' + testUrl;
-          testUrl = testUrl.replace(/\/$/, '');
-          const r = await fetch(testUrl + '/health', { timeout: 5000 });
+          let testUrl = normalizeUrl(url).replace(/\/$/, '');
+          const r = await fetch(testUrl + '/api/health', { timeout: 5000 });
           if (r.ok) {
             status.className = 'alert alert-success';
-            msg.innerHTML = '✅ Connected!';
+            msg.innerHTML = `✅ Connected to ${testUrl}`;
             saveBtn.disabled = false;
           } else {
             status.className = 'alert alert-warning';
@@ -96,7 +107,7 @@ function showModal() {
           }
         } catch (err) {
           status.className = 'alert alert-danger';
-          msg.innerHTML = '❌ ' + err.message;
+          msg.innerHTML = `❌ ${err.message || 'Failed to fetch'} (URL: ${normalizeUrl(url)})`;
           saveBtn.disabled = true;
         }
         status.style.display = 'block';
