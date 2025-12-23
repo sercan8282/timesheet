@@ -3,6 +3,21 @@ apply plugin: 'com.android.application'
 android {
     namespace = "site.urenregistratie.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+    
+    signingConfigs {
+        release {
+            storeFile file('../urenregistratie-release.keystore')
+            storePassword 'Ur3nR3g1str4t13@2025!SecureKey'
+            keyAlias 'urenregistratie-release'
+            keyPassword 'Ur3nR3g1str4t13@2025!SecureKey'
+        }
+    }
+
     defaultConfig {
         applicationId "site.urenregistratie.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -20,6 +35,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
 }

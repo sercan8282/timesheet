@@ -1,4 +1,29 @@
-const API_BASE_URL = "/api";
+// Get API base URL from config system
+// Falls back to /api for backward compatibility
+function getAPIBaseUrl() {
+  // If running in mobile/Capacitor, use the configured backend
+  if (typeof window !== 'undefined' && window.AppConfig) {
+    const backendUrl = window.AppConfig.getBackendUrl();
+    if (backendUrl) {
+      return backendUrl + '/api';
+    }
+  }
+  // Otherwise use relative path (works with reverse proxy)
+  return '/api';
+}
+
+// Dynamic base URL - checked on each request
+let API_BASE_URL = null; // Will be set on first use
+
+// Listen for URL changes (if user updates config)
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', function(e) {
+    if (e.key === 'timesheet_backend_url') {
+      API_BASE_URL = null; // Reset so it's recalculated
+      console.log('✅ Backend URL changed, will recalculate on next request');
+    }
+  });
+}
 
 class API {
   constructor() {
@@ -20,7 +45,16 @@ class API {
     localStorage.removeItem("token");
   }
 
+  // Get the API base URL, calculating it fresh if needed
+  _getBaseUrl() {
+    return getAPIBaseUrl();
+  }
+
   async request(endpoint, options = {}) {
+    const baseUrl = this._getBaseUrl();
+    console.log('[API] Request to:', baseUrl + endpoint);
+    console.log('[API] Using backend URL:', window.AppConfig ? window.AppConfig.getBackendUrl() : 'NOT SET');
+    
     const headers = {
       "Content-Type": "application/json",
       ...options.headers,
@@ -30,10 +64,12 @@ class API {
       headers["Authorization"] = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(`${baseUrl}${endpoint}`, {
       ...options,
       headers,
     });
+
+    console.log('[API] Response status:', response.status, response.statusText);
 
     if (response.status === 401) {
       this.clearToken();
@@ -43,11 +79,15 @@ class API {
 
     // Check if response is JSON
     const contentType = response.headers.get("content-type");
+    console.log('[API] Content-Type:', contentType);
+    
     if (!contentType || !contentType.includes("application/json")) {
       const text = await response.text();
-      console.error("Non-JSON response:", text);
+      console.error('[API] Non-JSON response (first 500 chars):', text.substring(0, 500));
+      console.error('[API] Full URL called:', baseUrl + endpoint);
+      console.error('[API] Status:', response.status);
       throw new Error(
-        `Server error: ${response.status} ${response.statusText}`
+        `Server returned ${response.status} with non-JSON response. Check backend URL.`
       );
     }
 

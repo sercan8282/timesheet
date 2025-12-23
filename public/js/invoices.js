@@ -36,23 +36,33 @@ const invoiceManager = {
     const content = document.getElementById("content");
     content.innerHTML = `
       <div class="container-fluid mt-4">
-        <div class="row mb-4">
-          <div class="col">
+        <div class="row mb-4 align-items-center">
+          <div class="col-12 col-md-auto">
             <h2><i class="bi bi-receipt"></i> <span data-i18n="ui:invoices.title">Facturen</span></h2>
           </div>
-          <div class="col-auto">
-            <button class="btn btn-primary" onclick="invoiceManager.showCreateInvoice()">
-              <i class="bi bi-plus-circle"></i> <span data-i18n="ui:invoices.new_invoice">Nieuwe Factuur</span>
-            </button>
-            <button class="btn btn-outline-secondary" onclick="invoiceManager.showTemplates()">
-              <i class="bi bi-layout-text-sidebar"></i> <span data-i18n="ui:invoices.templates">Templates</span>
-            </button>
-            <button class="btn btn-outline-primary" onclick="invoiceManager.showImportPdf()">
-              <i class="bi bi-file-earmark-arrow-up"></i> <span data-i18n="ui:invoices.import_pdf">Importeer PDF</span>
-            </button>
-            <button class="btn btn-outline-info" onclick="invoiceManager.showImportSettings()">
-              <i class="bi bi-gear"></i> Import Instellingen
-            </button>
+          <div class="col-12">
+            <div class="row g-2">
+              <div class="col-6 col-md-auto">
+                <button class="btn btn-primary w-100 w-md-auto" onclick="invoiceManager.showCreateInvoice()">
+                  <i class="bi bi-plus-circle"></i> <span data-i18n="ui:invoices.new_invoice">Nieuwe Factuur</span>
+                </button>
+              </div>
+              <div class="col-6 col-md-auto">
+                <button class="btn btn-outline-secondary w-100 w-md-auto" onclick="invoiceManager.showTemplates()">
+                  <i class="bi bi-layout-text-sidebar"></i> <span data-i18n="ui:invoices.templates">Templates</span>
+                </button>
+              </div>
+              <div class="col-6 col-md-auto">
+                <button class="btn btn-outline-primary w-100 w-md-auto" onclick="invoiceManager.showImportPdf()">
+                  <i class="bi bi-file-earmark-arrow-up"></i> <span data-i18n="ui:invoices.import_pdf">Importeer PDF</span>
+                </button>
+              </div>
+              <div class="col-6 col-md-auto">
+                <button class="btn btn-outline-info w-100 w-md-auto" onclick="invoiceManager.showImportSettings()">
+                  <i class="bi bi-gear"></i> Import Instellingen
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

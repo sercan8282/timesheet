@@ -10,13 +10,15 @@ function renderWeeklySummary() {
         <div class="col-12">
           <div class="card">
             <div class="card-header">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <h5 class="mb-0"><i class="bi bi-calendar-week"></i> <span data-i18n="ui:weekly.title">Weekly Hours Summary</span></h5>
-                <div class="d-flex align-items-center gap-2">
-                  <label class="form-label mb-0" for="weeklyYearFilter"><span data-i18n="ui:weekly.year">Year</span></label>
-                  <select id="weeklyYearFilter" class="form-select form-select-sm" style="width: auto"></select>
-                  <label class="form-label mb-0" for="weeklyWeekFilter"><span data-i18n="ui:weekly.week">Week</span></label>
-                  <input id="weeklyWeekFilter" type="number" min="1" max="53" class="form-control form-control-sm" style="width: 90px" placeholder="e.g. 12">
+              <h5 class="mb-3"><i class="bi bi-calendar-week"></i> <span data-i18n="ui:weekly.title">Weekly Hours Summary</span></h5>
+              <div class="row g-2">
+                <div class="col-6 col-md-auto">
+                  <label class="form-label mb-2 d-block" for="weeklyYearFilter"><span data-i18n="ui:weekly.year">Year</span></label>
+                  <select id="weeklyYearFilter" class="form-select form-select-sm"></select>
+                </div>
+                <div class="col-6 col-md-auto">
+                  <label class="form-label mb-2 d-block" for="weeklyWeekFilter"><span data-i18n="ui:weekly.week">Week</span></label>
+                  <input id="weeklyWeekFilter" type="number" min="1" max="53" class="form-control form-control-sm" placeholder="e.g. 12">
                 </div>
               </div>
             </div>

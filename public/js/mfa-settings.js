@@ -54,17 +54,10 @@ async function initMFASettings() {
 
   try {
     // Fetch MFA status
-    const response = await fetch(`${API_BASE_URL}/mfa/status`, {
-      headers: {
-        Authorization: `Bearer ${api.getToken()}`,
-      },
+    console.log('[MFA-Settings] Loading MFA status');
+    const status = await api.request('/mfa/status', {
+      method: 'GET'
     });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch MFA status");
-    }
-
-    const status = await response.json();
 
     // Display status
     if (status.mfaEnabled) {
@@ -114,14 +107,11 @@ async function initMFASettings() {
 
     // Load backup codes if MFA enabled
     if (status.mfaEnabled) {
-      const codesResponse = await fetch(`${API_BASE_URL}/user/backup-codes`, {
-        headers: {
-          Authorization: `Bearer ${api.getToken()}`,
-        },
+      const codesData = await api.request('/user/backup-codes', {
+        method: 'GET'
       });
 
-      if (codesResponse.ok) {
-        const codesData = await codesResponse.json();
+      if (codesData && codesData.codes) {
         const codesDisplay = document.getElementById("backupCodesDisplay");
         codesDisplay.innerHTML = codesData.codes
           .map((code) => `<div>${code}</div>`)
@@ -179,21 +169,16 @@ async function mfaDisableSubmit(event) {
   const code = document.getElementById("disableMfaCode").value;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/mfa/disable`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${api.getToken()}`,
-      },
+    console.log('[MFA-Settings] Disabling MFA');
+    const data = await api.request('/mfa/disable', {
+      method: 'POST',
       body: JSON.stringify({
         password: password,
         token: code,
       }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (data.error) {
       throw new Error(data.error || "Failed to disable MFA");
     }
 

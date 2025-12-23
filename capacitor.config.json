@@ -3,7 +3,6 @@
   "appName": "Timesheet",
   "webDir": "public",
   "server": {
-    "url": "https://urenregistratie.site",
     "cleartext": false,
     "androidScheme": "https"
   },
@@ -14,7 +13,8 @@
     "buildOptions": {
       "keystorePath": "",
       "keystoreAlias": ""
-    }
+    },
+    "useWebView2": true
   },
   "plugins": {
     "SplashScreen": {

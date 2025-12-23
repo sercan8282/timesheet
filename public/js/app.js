@@ -20,11 +20,43 @@ class App {
     this.locale = localStorage.getItem("locale") || "nl";
     this.translations = {}; // cache for loaded translations: { 'namespace.key.locale': text }
     this.currentPage = null; // Track current page
+    this.initialized = false;
 
-    this.init();
+    console.log('[APP] Constructor called. appReadyToInit =', window.appReadyToInit);
+    
+    // Check if config blocker has allowed app to initialize
+    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
+      if (window.appReadyToInit) {
+        console.log('[APP] Config ready, initializing');
+        this.init();
+      } else {
+        console.log('[APP] Config not ready, waiting...');
+        // Poll until config is ready
+        const checkReady = setInterval(() => {
+          if (window.appReadyToInit) {
+            console.log('[APP] Config now ready, initializing');
+            clearInterval(checkReady);
+            this.init();
+          }
+        }, 100);
+      }
+    } else {
+      console.log('[APP] Not on Capacitor, initializing directly');
+      this.init();
+    }
   }
 
   async init() {
+    // Initialize Capacitor URL if running on mobile
+    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform()) {
+      try {
+        const backendUrl = window.AppConfig ? window.AppConfig.getBackendUrl() : null;
+        console.log('[DEBUG] Capacitor backend URL:', backendUrl);
+      } catch (error) {
+        console.log('[DEBUG] Error getting backend URL:', error);
+      }
+    }
+
     // Load branding first
     try {
       this.branding = await api.getPublicBranding();
@@ -452,6 +484,109 @@ class App {
       window.currentUser = null;
       this.showLogin();
     });
+  }
+
+  changeServerURL() {
+    const currentUrl = window.AppConfig ? window.AppConfig.getBackendUrl() : 'https://urenregistratie.site';
+    
+    const modalHtml = `
+      <div class="modal fade" id="serverUrlModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+              <h5 class="modal-title"><i class="bi bi-cloud-arrow-down"></i> Change Server URL</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="serverUrlInput" class="form-label">Backend Server URL</label>
+                <input type="text" class="form-control" id="serverUrlInput" 
+                  placeholder="https://mijnuren.nl" value="${currentUrl || ''}">
+                <small class="text-muted">Enter the full URL of your backend server</small>
+              </div>
+              <div id="serverUrlStatus"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-info" id="testServerUrlBtn">
+                <i class="bi bi-wifi"></i> Test Connection
+              </button>
+              <button type="button" class="btn btn-primary" id="saveServerUrlBtn">
+                <i class="bi bi-check-lg"></i> Save
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    const container = document.body;
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = modalHtml;
+    const modal = tempDiv.querySelector('#serverUrlModal');
+    container.appendChild(modal);
+    
+    const bsModal = new bootstrap.Modal(modal);
+    const input = document.getElementById('serverUrlInput');
+    const testBtn = document.getElementById('testServerUrlBtn');
+    const saveBtn = document.getElementById('saveServerUrlBtn');
+    const statusDiv = document.getElementById('serverUrlStatus');
+    
+    testBtn.onclick = async () => {
+      const url = input.value.trim();
+      if (!url) {
+        statusDiv.innerHTML = '<div class="alert alert-warning">Please enter a URL</div>';
+        return;
+      }
+      
+      testBtn.disabled = true;
+      testBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
+      
+      try {
+        let testUrl = url;
+        if (!testUrl.startsWith('http')) testUrl = 'https://' + testUrl;
+        testUrl = testUrl.replace(/\/$/, '');
+        const r = await fetch(testUrl + '/health', { timeout: 5000 });
+        
+        if (r.ok) {
+          statusDiv.innerHTML = '<div class="alert alert-success"><i class="bi bi-check-circle"></i> ✅ Connected successfully!</div>';
+          saveBtn.disabled = false;
+        } else {
+          statusDiv.innerHTML = '<div class="alert alert-warning"><i class="bi bi-exclamation-triangle"></i> Server responded with ' + r.status + '</div>';
+          saveBtn.disabled = true;
+        }
+      } catch (err) {
+        statusDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> ❌ ' + err.message + '</div>';
+        saveBtn.disabled = true;
+      }
+      
+      testBtn.disabled = false;
+      testBtn.innerHTML = '<i class="bi bi-wifi"></i> Test Connection';
+    };
+    
+    saveBtn.onclick = () => {
+      const url = input.value.trim();
+      if (!url) {
+        alert('Please enter a URL');
+        return;
+      }
+      
+      if (window.AppConfig) {
+        window.AppConfig.setBackendUrl(url);
+        this.showMessage('Server URL changed to: ' + url, 'success');
+        console.log('[APP] Server URL changed to:', url);
+      }
+      
+      bsModal.hide();
+      modal.addEventListener('hidden.bs.modal', () => {
+        modal.remove();
+      }, { once: true });
+    };
+    
+    bsModal.show();
+    modal.addEventListener('hidden.bs.modal', () => {
+      modal.remove();
+    }, { once: true });
   }
 
   showMessage(message, type = "info") {
