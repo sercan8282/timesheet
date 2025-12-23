@@ -1,0 +1,973 @@
+--------- beginning of main
+12-23 14:37:10.929   713   868 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+--------- beginning of system
+12-23 14:37:11.444   713  1642 D ActivityManager: sync unfroze 4584 com.google.android.gms for 6
+12-23 14:37:11.467  1516  1693 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.468  1516  1693 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread fg]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.468  1516  1693 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.468  1516  1693 D PickerDataLayer: Cloud provider allowlist was changed, and the current cloud provider is no longer on the allowlist. Allowlist: [] Current Provider: null
+12-23 14:37:11.468  1516  1693 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.468  1516  1693 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread fg]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.468  1516  1693 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.475   713  2312 W ProcessStats: Tracking association SourceState{eddb21f com.google.android.gms.persistent/10155 ImpBg #5725} whose proc state 6 is better than process ProcessState{3a4796c com.google.android.gms/10155 pkg=com.google.android.gms (sub)} proc state 14 (54 skipped)
+12-23 14:37:11.478  4566  5711 I NetworkScheduler.Stats: (REDACTED) Task %s/%s started execution. cause:%s exec_start_elapsed_seconds: %s
+12-23 14:37:11.481  1516  1676 I MediaApplication: PhotoPickerSettingsActivity is now disabled.
+12-23 14:37:11.481   713   746 D ActivityManager: sync unfroze 3182 com.google.android.photopicker for 3
+12-23 14:37:11.481  4584  4674 I TelephonySpamChimeraSer: Running Telephony Spam Chimera Service [CONTEXT service_id=150 ]
+12-23 14:37:11.483  4584  4674 I TelephonySpamChimeraSer: Cleaning SIP Header local table of old entries [CONTEXT service_id=150 ]
+12-23 14:37:11.488  3182  3182 D ActivityThread: Package [com.android.vending] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-23 14:37:11.488  3182  3182 D ActivityThread: Package [com.android.vending] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-23 14:37:11.488  3182  3182 D ActivityThread: Package [com.google.android.gms] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-23 14:37:11.488  3182  3182 D ActivityThread: Package [com.google.android.gms] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-23 14:37:11.490  4584  4674 I SpamListSync: Call spam module disabled. Skipping cleaning cache sip header table. [CONTEXT service_id=150 ]
+12-23 14:37:11.490  4584  4674 I TelephonySpamChimeraSer: Syncing Call Spam List [CONTEXT service_id=150 ]
+12-23 14:37:11.490  1516  1647 I MediaProvider: Changed PhotoPickerGetContentActivity component state to STATE_ENABLED ( 1 )
+12-23 14:37:11.490  4584  4674 I SpamListSync: (REDACTED) SpamListSyncChimeraService.syncSpamList called with tag: %s, extras: %s
+12-23 14:37:11.490  4584  4674 I SpamListSync: Call spam module disabled. Skipping spam list syncing. [CONTEXT service_id=150 ]
+12-23 14:37:11.491  1516  1647 I MediaProvider: Changed PhotoPickerActivity component state to STATE_ENABLED ( 1 )
+12-23 14:37:11.492  1516  1647 I MediaProvider: Changed PhotoPickerUserSelectActivity component state to STATE_ENABLED ( 1 )
+12-23 14:37:11.492  1516  1647 I TranscodeHelper: Empty transcode compat stale
+12-23 14:37:11.494   713  1405 E SettingsToPropertiesMapper: key=persist.device_config.storage_native_boot.transcode_compat_manifest value=com.yelp.android,0,com.yy.biu,0,com.groupme.android,0,air.tv.douyu.android,0,com.baidu.mbaby,0,com.vlocker.locker,0,com.znxh.hyhuo,0,com.yixia.xiaokaxiu,0 exceeds system property max length.
+12-23 14:37:11.497  3182  3182 D PhotopickerDeviceConfigReceiver: onReceive: will evaluate Photopicker components with new DeviceConfig.
+12-23 14:37:11.500  3182  3182 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+12-23 14:37:11.500  3182  3182 D PhotopickerDeviceConfigReceiver: Setting false state for com.android.photopicker.MainActivity
+12-23 14:37:11.501  3182  3182 D PhotopickerDeviceConfigReceiver: Setting false state for com.android.photopicker.PhotopickerGetContentActivity
+12-23 14:37:11.501  3182  3182 D PhotopickerDeviceConfigReceiver: Setting false state for com.android.photopicker.PhotopickerUserSelectActivity
+12-23 14:37:11.514  1516  1778 D WM-GreedyScheduler: Ignoring {WorkSpec: 39cfa5a9-a2c2-4485-9291-66c25e7b0844}. Requires device idle.
+12-23 14:37:11.514  1516  1778 D WM-GreedyScheduler: Ignoring {WorkSpec: 83039536-c65a-49e9-a5f1-c7fb1622736d}. Requires device idle.
+12-23 14:37:11.517  1516  1778 D WM-GreedyScheduler: Ignoring {WorkSpec: 39cfa5a9-a2c2-4485-9291-66c25e7b0844}. Requires device idle.
+12-23 14:37:11.518  1516  1778 D WM-GreedyScheduler: Ignoring {WorkSpec: 83039536-c65a-49e9-a5f1-c7fb1622736d}. Requires device idle.
+12-23 14:37:11.519  1516  1647 I TranscodeHelper: Parsed 0 packages from resource
+12-23 14:37:11.519  1516  1647 I TranscodeHelper: Parsed 8 packages from device config
+12-23 14:37:11.522  1516  1676 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.522  1516  1676 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.522  1516  1676 D PickerSyncController: Cloud-Media-in-Photo-Picker feature is disabled during PickerSyncController construction.
+12-23 14:37:11.522  1516  1676 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.522  1516  1676 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.522  1516  1676 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.522  1516  1676 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.522  1516  1676 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.527  3182  3186 W oid.photopicker: userfaultfd: MOVE ioctl seems unsupported: Connection timed out
+12-23 14:37:11.528  4566  5828 I NetworkScheduler.Stats: (REDACTED) Task %s/%s finished executing. cause:%s result: %s elapsed_millis: %s uptime_millis: %s exec_start_elapsed_seconds: %s
+12-23 14:37:11.534  1516  1676 D PickerSyncController: Updated cloud provider to: null
+12-23 14:37:11.535  1516  1676 D PickerSyncController: Ignoring cache media info for null authority with bundle: null
+12-23 14:37:11.538  1516  1676 D PickerNotificationSender: Sending a notification for available providers update
+12-23 14:37:11.540  1516  1676 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.540  1516  1676 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:11.553  4566  5821 I PlatformConfigurator: updateFromConfigurations using legacy put method [CONTEXT service_id=204 ]
+12-23 14:37:11.819   713   713 D SdkSandboxManager: Property sdksandbox_next_activity_allowlist is empty.
+12-23 14:37:11.819   713   713 D SdkSandboxManager: Property sdksandbox_next_contentprovider_allowlist is empty.
+12-23 14:37:11.819   713   713 D SdkSandboxManager: Property sdksandbox_activity_allowlist_per_targetSdkVersion is empty.
+12-23 14:37:11.819   713   713 D SdkSandboxManager: Property contentprovider_allowlist_per_targetSdkVersion is empty.
+12-23 14:37:11.819   713   713 D SdkSandboxManager: Property services_allowlist_per_targetSdkVersion is empty.
+12-23 14:37:11.834   713   713 D SelinuxAuditLogs: SelinuxAuditLogsService scheduled successfully.
+12-23 14:37:11.859  1522  1522 I AiAiTextClassifier: onDestroyTextClassificationSession = TextClassificationSessionId {98ac23e7-d1fc-47a7-9816-8053b97765de}
+12-23 14:37:11.859  1522  1522 I AiAiTextClassifier: onDestroyTextClassificationSession = TextClassificationSessionId {4903324c-839e-4d37-b953-2cd3d296b21e}
+12-23 14:37:11.859  1522  1522 I AiAiTextClassifier: onDestroyTextClassificationSession = TextClassificationSessionId {c485c03e-0ceb-4537-902d-57da219e65b9}
+12-23 14:37:11.859  1522  1522 I AiAiTextClassifier: onDestroyTextClassificationSession = TextClassificationSessionId {756a69c2-6ee0-4dd2-9b31-dbc34f2aab01}
+12-23 14:37:11.899   713   713 V TextClassificationManagerService: Unbinding ComponentInfo{com.google.android.as/com.google.android.apps.miphone.aiai.textclassifier.service.QAiaiTextClassifierService} for 0
+12-23 14:37:11.901  1522  1522 I AiAiTextClassifier: AiaiTextClassifierService.onDestroy()
+12-23 14:37:11.901  1522  1522 I AiAiTextClassifier: AiaiTextClassifierServiceConnector.onDestroy()
+12-23 14:37:11.929   219   219 I lowmemorykiller: lmkd data connection established
+12-23 14:37:11.961   713   713 I AutofillManagerService: Ignoring change on package_deny_list_for_unimportant_view
+12-23 14:37:11.972   219   219 I lowmemorykiller: Wakeup counter is reset from 347 to 0
+12-23 14:37:11.972   219   219 I lowmemorykiller: Using psi monitors for memory pressure detection
+12-23 14:37:11.972   219   219 I lowmemorykiller: Properties reinitilized
+12-23 14:37:11.972  5841  5841 I lowmemorykiller: lmkd updated properties successfully
+12-23 14:37:11.972   219   219 I lowmemorykiller: lmkd data connection dropped
+12-23 14:37:11.972   219   219 I lowmemorykiller: closing lmkd data connection
+12-23 14:37:11.974   713   713 I AutofillManagerService: Ignoring change on trigger_fill_request_on_filtered_important_views
+12-23 14:37:11.974   713   713 I AutofillManagerService: Ignoring change on package_and_activity_allowlist_for_triggering_fill_request
+12-23 14:37:11.974   713   713 I AutofillManagerService: Ignoring change on multiline_filter_enabled
+12-23 14:37:11.974   713   713 I AutofillManagerService: Ignoring change on augmented_autofill_mode
+12-23 14:37:11.974   713   713 I AutofillManagerService: Ignoring change on include_all_views_in_assist_structure
+12-23 14:37:11.974   713   713 I AutofillManagerService: Ignoring change on should_enable_autofill_on_all_view_types
+12-23 14:37:11.974   713   713 I AutofillManagerService: Ignoring change on autofill_save_dialog_landscape_body_height_max_percent
+12-23 14:37:11.974   713   713 I AutofillManagerService: Ignoring change on non_autofillable_ime_action_ids
+12-23 14:37:11.974   713   713 I AutofillManagerService: Ignoring change on autofill_save_dialog_portrait_body_height_max_percent
+12-23 14:37:11.975   713   713 I AutofillManagerService: Ignoring change on include_all_autofill_type_not_none_views_in_assist_structure
+12-23 14:37:11.975   713   713 I AutofillManagerService: Ignoring change on trigger_fill_request_on_unimportant_view
+12-23 14:37:11.975   713   713 W RemoteAugmentedAutofillService: mayInterruptIfRunning not supported - ignoring
+12-23 14:37:11.983  1522  2090 I AiAiAutofill: Disconnected AiAiAugmentedAutofillService.
+12-23 14:37:11.988  1522  2090 I AiAiAutofill: Connected AiAiAugmentedAutofillService.
+12-23 14:37:12.045  1522  2043 E AiAiCaptions: Language for Live Caption is not available for download: hi-IN
+12-23 14:37:12.045  1522  2043 E AiAiCaptions: Language for Live Caption is not available for download: pt-BR
+12-23 14:37:12.045  1522  2043 E AiAiCaptions: Language for Live Caption is not available for download: tr-TR
+12-23 14:37:12.045  1522  2043 E AiAiCaptions: Language for Live Caption is not available for download: pl-PL
+12-23 14:37:12.045  1522  2043 E AiAiCaptions: Language for Live Caption is not available for download: cmn-Hans-CN
+12-23 14:37:12.045  1522  2043 E AiAiCaptions: Language for Live Caption is not available for download: ko-KR
+12-23 14:37:12.045  1522  2043 E AiAiCaptions: Language for Live Caption is not available for download: cmn-Hant-TW
+12-23 14:37:12.045  1522  2043 E AiAiCaptions: Language for Live Caption is not available for download: ru-RU
+12-23 14:37:12.046  1522  2043 E AiAiCaptions: Language for Live Caption is not available for download: vi-VN
+12-23 14:37:12.047  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.050   500   500 W Zygote  : forkRepeatedly terminated due to non-simple command
+12-23 14:37:12.050   500   500 D Zygote  : mbuffer starts with 1 , nice name is , mEnd = 35, mNext = 35, mLinesLeft = 0, mFd = 5
+12-23 14:37:12.050   500   500 D Zygote  : Buffer content prefix: 1?--hidden-api-log-sampling-rate=0?
+12-23 14:37:12.052  1522  1638 I ogle.android.as: Waiting for a blocking GC ProfileSaver
+12-23 14:37:12.055  1522  1779 E SP.Service.AiAi: captions_i18n_v0_en-US is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.059  1522  1782 I AiAiTextClassifier: [KnowledgeGraphCollectionsTableDownloaderImpl] Config changed, triggering a sync of KnowledgeGraphCollectionsTable
+12-23 14:37:12.059  1522  1782 I AiAiTextClassifier: Updating text classifier flags in CutoffProvider.
+12-23 14:37:12.067  1522  5855 E AiAiEcho: Reading elements from Geller failed with cause
+12-23 14:37:12.067  1522  5855 E AiAiEcho: ilw: Code: UNKNOWN, Message: Geller data fetch is not enabled
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at imn.a(PG:17)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at lhh.b(PG:20)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at abge.g(PG:11)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at kotlinx.coroutines.DispatchedTask.run(PG:112)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at xjo.a(PG:3)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at xir.run(PG:19)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at xjp.run(PG:5)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:348)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at hxw.run(PG:221)
+12-23 14:37:12.067  1522  5855 E AiAiEcho: 	at java.lang.Thread.run(Thread.java:1563)
+12-23 14:37:12.068  1522  1638 I ogle.android.as: WaitForGcToComplete blocked ProfileSaver on Background for 15.354ms
+12-23 14:37:12.088  1522  1782 I AiAiNowPlaying: Now Playing config changed. Refreshing FA controller
+12-23 14:37:12.088  1522  1782 I AiAiNowPlaying: Now Playing config changed. Refreshing FA controller.
+12-23 14:37:12.088  1522  1782 I AiAiNowPlaying: Registering Now Playing population: NOW_PLAYING_USAGE
+12-23 14:37:12.088  1522  1782 I AiAiNowPlaying: Registering Now Playing population: NOW_PLAYING_USAGE_WEEKLY
+12-23 14:37:12.090  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.090  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.090  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.090  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.090  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.091  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.091  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.091  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.091  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.091  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.093  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.096  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.096  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.096  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.096  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.096  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.096  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.096  1522  2251 I AiAiCaptions: TtsLangFetcherImpl::fetch(). Fetching locales en_US
+12-23 14:37:12.098  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.101  1522  2251 I TextToSpeech: Sucessfully bound to com.google.android.tts
+12-23 14:37:12.101  1522  2251 I AiAiCaptions: TtsLangFetcherImpl::fetch(). Fetching locales en_US
+12-23 14:37:12.101  1522  2251 W AiAiCaptions: TtsSynthesizerImpl::initialize(): TTS engine is initializing
+12-23 14:37:12.102   713   729 D TextToSpeechManagerPerUserService: Trying to start connection to TTS engine: com.google.android.tts
+12-23 14:37:12.104   713   931 D BackgroundInstallControlService: Package event received: 0
+12-23 14:37:12.106  1522  1782 I ModelReloader: Cancelled all jobs.
+12-23 14:37:12.106  1522  1782 I AmbientMusicServiceMana: Unloading model 9f6ad62a-1f0b-11e7-87c5-40a8f03d3f15
+12-23 14:37:12.106  1522  1782 I SoundTriggerManagerComp: Unloading model 9f6ad62a-1f0b-11e7-87c5-40a8f03d3f15
+12-23 14:37:12.107  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.107  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.107  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.107  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.107  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.107  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.108  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.108  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:12.108  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: ylk: java.lang.reflect.InvocationTargetException
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at yll.c(PG:55)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at xws.w(PG:78)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at xws.e(PG:90)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at xwp.a(PG:34)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at mpd.M(PG:25)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at qmu.d(PG:34)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at qmf.e(PG:7)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at mpg.a(PG:11)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at acgy.h(PG:7)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at qmv.run(PG:9)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at xho.execute(PG:1)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at qmx.onPropertiesChanged(PG:47)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at android.provider.DeviceConfig.lambda$handleChange$1(DeviceConfig.java:1796)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at android.provider.DeviceConfig$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at xjo.a(PG:3)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at xir.run(PG:19)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at xjp.run(PG:5)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:520)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:348)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1154)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:652)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at hxw.run(PG:221)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at java.lang.Thread.run(Thread.java:1563)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: Caused by: java.lang.reflect.InvocationTargetException
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at java.lang.reflect.Method.invoke(Native Method)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at yll.c(PG:48)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	... 24 more
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: Caused by: java.lang.IllegalStateException: No underlying SoundTriggerModule available
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	at android.media.soundtrigger.SoundTriggerManager.deleteModel(SoundTriggerManager.java:265)
+12-23 14:37:12.110  1522  1782 E AmbientMusicServiceMana: 	... 26 more
+12-23 14:37:12.112  1522  1782 I AiAiTextClassifier: [ResourceDownloaderImpl]: downloadResource: Another download of kg_collections_table is in progress.
+12-23 14:37:12.121   713   713 D ActivityManager: sync unfroze 2271 com.google.android.tts for 6
+12-23 14:37:12.126  1522  5682 I AiAiEcho: Settings changed for uri: content://settings/secure/now_playing_enabled
+12-23 14:37:12.130   713   931 D BackgroundInstallControlService: Package event received: 0
+12-23 14:37:12.131  2271  2271 D ActivityThread: Package [com.android.vending] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-23 14:37:12.131  2271  2271 D ActivityThread: Package [com.android.vending] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-23 14:37:12.131  2271  2271 D ActivityThread: Package [com.google.android.gms] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-23 14:37:12.132  2271  2271 D ActivityThread: Package [com.google.android.gms] reported as REPLACED, but missing application info. Assuming REMOVED.
+12-23 14:37:12.140  1522  1766 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+12-23 14:37:12.140  1522  1766 I AiAiEcho: EchoTargets: 
+12-23 14:37:12.140  1522  1766 I AiAiEcho: Filtered by AiAi flag check: 
+12-23 14:37:12.140  1522  1766 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+12-23 14:37:12.141  1522  1766 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+12-23 14:37:12.141  1522  1766 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+12-23 14:37:12.141  1522  1766 I AiAiEcho: EchoTargets: 
+12-23 14:37:12.141  1522  1766 I AiAiEcho: Filtered by AiAi flag check: 
+12-23 14:37:12.141  1522  1766 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+12-23 14:37:12.141  1522  1766 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+12-23 14:37:12.142  1522  1766 I AiAiEcho: Predicting[0]:  [CONTEXT sampling_count=5 ]
+12-23 14:37:12.142  1522  1766 I AiAiEcho: EchoTargets: 
+12-23 14:37:12.142  1522  1766 I AiAiEcho: Filtered by AiAi flag check: 
+12-23 14:37:12.142  1522  1766 I AiAiEcho: [CONTEXT ratelimit_period="10 SECONDS" ]
+12-23 14:37:12.142  1522  1766 I AiAiEcho: #remoteViewsTwiddler: feature disabled.
+12-23 14:37:12.143  1522  1766 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface ambientcue with targets# 0 (types=[])
+12-23 14:37:12.145  1522  1766 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface home with targets# 0 (types=[])
+12-23 14:37:12.145  1522  1766 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+12-23 14:37:12.146   984  1135 I AmbientCueRepository: Receiving SmartSpace targets # 0
+12-23 14:37:12.149   984   984 W SsPagerDots: Total number of pages invalid: 0. Assuming 1 page.
+12-23 14:37:12.160  2271  2271 I GoogleTtsServicePeer: Creating Google TTS service, version googletts.google-speech-apk_20250804.02_p3.800153222
+12-23 14:37:12.162  2271  2271 I ExoPlayerImpl: Init acf24a [AndroidXMedia3/1.8.0] [emu64xa, sdk_gphone64_x86_64, Google, 36]
+12-23 14:37:12.167  1140  1140 D SsBaseTemplateCard: Passed-in item info is null
+12-23 14:37:12.167  1140  1140 D SsBaseTemplateCard: Passed-in item info is null
+12-23 14:37:12.167  1140  1140 D SsBaseTemplateCard: Passed-in item info is null
+12-23 14:37:12.167  1140  1140 D SsBaseTemplateCard: Passed-in item info is null
+12-23 14:37:12.167  1140  1140 I SsBaseTemplateCard: Secondary card pane is null
+12-23 14:37:12.168  2271  2271 I ExoPlayerImpl: Init ab1e5bb [AndroidXMedia3/1.8.0] [emu64xa, sdk_gphone64_x86_64, Google, 36]
+12-23 14:37:12.187   713   729 D MediaMetricsManagerService: failed to get player_metrics_app_blocklist from DeviceConfig
+12-23 14:37:12.187   713   729 V MediaMetricsManagerService: Logging level blocked: Failed to get PLAYER_METRICS_APP_BLOCKLIST.
+12-23 14:37:12.194   713   729 D MediaMetricsManagerService: failed to get player_metrics_app_blocklist from DeviceConfig
+12-23 14:37:12.194   713   729 V MediaMetricsManagerService: Logging level blocked: Failed to get PLAYER_METRICS_APP_BLOCKLIST.
+12-23 14:37:12.247  1522  1782 I AiAiStatsd: Usage metrics: 0 features enabled, 0 features used for date 2025-12-22.
+12-23 14:37:12.247  1522  1782 I AiAiStatsd: AiAi is used for the day (2025-12-22): true, the week: true
+12-23 14:37:12.247  1522  1782 I AiAiStatsd: Uploading atoms for date: 2025-12-22.
+12-23 14:37:12.248  1522  1782 I AiAiStatsd: Total days uploaded: 1 days.
+12-23 14:37:12.267  1516  1647 I TranscodeHelper: Empty transcode compat stale
+12-23 14:37:12.267  1516  1693 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.267  1516  1647 I TranscodeHelper: Parsed 0 packages from resource
+12-23 14:37:12.267  1516  1647 I TranscodeHelper: Parsed 8 packages from device config
+12-23 14:37:12.267  1516  1693 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread fg]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.267  1516  1693 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.267  1516  1693 D PickerDataLayer: Cloud provider allowlist was changed, and the current cloud provider is no longer on the allowlist. Allowlist: [com.google.android.apps.photos] Current Provider: null
+12-23 14:37:12.267  1516  1693 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.267  1516  1693 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread fg]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.267  1516  1693 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.268  1516  1647 I MediaProvider: Changed PhotoPickerGetContentActivity component state to STATE_ENABLED ( 1 )
+12-23 14:37:12.269  1516  1647 I MediaProvider: Changed PhotoPickerActivity component state to STATE_ENABLED ( 1 )
+12-23 14:37:12.270  3182  3182 D PhotopickerDeviceConfigReceiver: onReceive: will evaluate Photopicker components with new DeviceConfig.
+12-23 14:37:12.271  3182  3182 D PhotopickerDeviceConfigReceiver: Setting true state for com.android.photopicker.MainActivity
+12-23 14:37:12.271  1516  1647 I MediaProvider: Changed PhotoPickerUserSelectActivity component state to STATE_ENABLED ( 1 )
+12-23 14:37:12.272  1516  1676 I MediaApplication: PhotoPickerSettingsActivity is now enabled
+12-23 14:37:12.272  1516  1676 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.272  1516  1676 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.272  3182  3182 D PhotopickerDeviceConfigReceiver: Setting true state for com.android.photopicker.PhotopickerGetContentActivity
+12-23 14:37:12.273  3182  3182 D PhotopickerDeviceConfigReceiver: Setting true state for com.android.photopicker.PhotopickerUserSelectActivity
+12-23 14:37:12.274  1516  1676 D CloudProviderUtils: Available CloudMediaProvider-s: [CloudProviderInfo{authority='com.google.android.apps.photos.cloudpicker', pkg='com.google.android.apps.photos', uid=10170}]
+12-23 14:37:12.274  1516  1676 I PickerSyncController: Only 1 cloud provider found, hence com.google.android.apps.photos.cloudpicker is the default
+12-23 14:37:12.274  1516  1676 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.274  1516  1676 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.274  1516  1676 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.274  1516  1676 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.276  1516  1676 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.278  1516  1676 D PickerSyncController: Updated cloud provider to: com.google.android.apps.photos.cloudpicker
+12-23 14:37:12.278  1516  1676 D PickerSyncLockManager: Trying to acquire lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = [] with timeout.
+12-23 14:37:12.278  1516  1676 D CloseableReentrantLock: Successfully acquired lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.278  1516  1676 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.278  1516  1676 D PickerNotificationSender: Sending a notification for available providers update
+12-23 14:37:12.278  1516  1676 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Locked by thread com.android.providers.media.internal.modules.utils.BackgroundThread]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.278  1516  1676 D PickerSyncController: Initialized cloud provider to: com.google.android.apps.photos.cloudpicker
+12-23 14:37:12.278  1516  1676 D CloseableReentrantLock: Successfully released lock com.android.providers.media.photopicker.sync.CloseableReentrantLock@abdb7f4[Unlocked]. Lock Name = CLOUD_PROVIDER_LOCK. Threads that may be waiting to acquire this lock = []
+12-23 14:37:12.286  1516  1676 I SyncWorkManager: Scheduling periodic proactive syncs
+12-23 14:37:12.311  1516  1778 W JobInfo : Requested important-while-foreground flag for job12 is ignored and takes no effect
+12-23 14:37:12.311  1516  1778 D WM-SystemJobScheduler: Scheduling work ID 072e2d97-a8b4-4a94-a509-a286135ddb64Job ID 12
+12-23 14:37:12.313  1516  1778 D WM-GreedyScheduler: Ignoring {WorkSpec: 39cfa5a9-a2c2-4485-9291-66c25e7b0844}. Requires device idle.
+12-23 14:37:12.313  1516  1778 D WM-GreedyScheduler: Ignoring {WorkSpec: 83039536-c65a-49e9-a5f1-c7fb1622736d}. Requires device idle.
+12-23 14:37:12.313  1516  1778 D WM-GreedyScheduler: Ignoring {WorkSpec: 072e2d97-a8b4-4a94-a509-a286135ddb64}. Requires device idle.
+12-23 14:37:12.314  1516  1676 I SyncWorkManager: Scheduling periodic picker album data resets
+12-23 14:37:12.320  1516  1692 W JobInfo : Requested important-while-foreground flag for job13 is ignored and takes no effect
+12-23 14:37:12.320  1516  1692 D WM-SystemJobScheduler: Scheduling work ID d113963f-4e70-47d2-b272-8ed8507a918eJob ID 13
+12-23 14:37:12.334  1516  1692 D WM-GreedyScheduler: Ignoring {WorkSpec: 39cfa5a9-a2c2-4485-9291-66c25e7b0844}. Requires device idle.
+12-23 14:37:12.334  1516  1692 D WM-GreedyScheduler: Ignoring {WorkSpec: 83039536-c65a-49e9-a5f1-c7fb1622736d}. Requires device idle.
+12-23 14:37:12.334  1516  1692 D WM-GreedyScheduler: Ignoring {WorkSpec: 072e2d97-a8b4-4a94-a509-a286135ddb64}. Requires device idle.
+12-23 14:37:12.334  1516  1692 D WM-GreedyScheduler: Ignoring {WorkSpec: d113963f-4e70-47d2-b272-8ed8507a918e}. Requires device idle.
+12-23 14:37:12.343   713   713 I ResourceTimer: GetResourceValue count=7337 pvalues=7000,17000,32000,650000
+12-23 14:37:12.343   713   713 I ResourceTimer: RetrieveAttributes count=19278 pvalues=7000,9000,19000,120000
+12-23 14:37:12.383  2271  2271 I PipelineReaderImpl: Initializing en-us-x-iog-lstm-embedded from disk
+12-23 14:37:12.396  2271  2271 I native  : I0000 00:00:1766497032.396271    2271 android_resource_loader.cc:109] Loading resources for en_us_x_embedded_valerian_vocoded/8022132130347675641
+12-23 14:37:12.398  2271  2271 I native  : I0000 00:00:1766497032.398101    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/burdock_frame_config.pb" (as: FILE) ...
+12-23 14:37:12.398  2271  2271 I native  : I0000 00:00:1766497032.398605    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/burdock_frame_config.pb" of size 68
+12-23 14:37:12.401  2271  2271 I native  : I0000 00:00:1766497032.401823    2271 android_resource_loader.cc:100] Built resource acoustic_frame_config
+12-23 14:37:12.401  2271  2271 I native  : I0000 00:00:1766497032.401864    2271 android_resource_loader.cc:116] Loaded resource:acoustic_frame_config
+12-23 14:37:12.402  2271  2271 I native  : I0000 00:00:1766497032.402026    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/affixes_en_us_android.far" (as: FILE) ...
+12-23 14:37:12.402  2271  2271 I native  : I0000 00:00:1766497032.402257    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/affixes_en_us_android.far" of size 36782
+12-23 14:37:12.405   713  5830 E SettingsToPropertiesMapper: key=persist.device_config.configuration.AdbWritableFlags__adb_writable_flags_list value=adservices/disable_sdk_sandbox,adservices/enforce_broadcast_receiver_restrictions,adservices/fledge_ad_selection_enforce_foreground_status_custom_audience,adservices/fledge_custom_audience_max_count,adservices/fledge_custom_audience_max_num_ads,adservices/fledge_custom_audience_max_owner_count,adservices/fledge_custom_audience_per_app_max_count,adservices/fledge_js_isolate_enforce_max_heap_size,adservices/fledge_js_isolate_max_heap_size_bytes,adservices/sdk_request_permits_per_second,adservices/sdksandbox_customized_sdk_context_enabled,configuration/namespace_to_package_mapping,constrain_display_apis/always_constrain_display_apis,constrain_display_apis/never_constrain_display_apis,constrain_display_apis/never_constrain_display_apis_all_packages,device_policy_manager/disable_resources_updatability,flipendo/default_savings_mode_launch,flipendo/essential_apps,flipendo/flipendo_enabled_launch,flipendo/grayscale_enabled_launch,flipendo/lever_ble_scanning_enabled_launch,flipendo/lever_hotspot_enabled_launch,flipendo/lever_work_profile_enabled_launch,flipendo/resuspend_delay_minutes,namespace/key,namespace1/key1,namespace1/key2,namespace2/key1,namespace2/key2,package_manager_service/incfs_default_timeouts,package_manager_service/known_digesters_list,privacy/location_access_check_periodic_interval_millis,rollback/enable_rollback_timeout,rollback/watchdog_explicit_health_check_enabled,rollback/watchdog_request_timeout_millis,rollback/watchdog_trigger_failure_count,rollback/watchdog_trigger_failure_duration_millis,rollback_boot/rollback_lifetime_in_millis,systemui/nas_generate_actions,systemui/nas_generate_replies,systemui/nas_max_messages_to_extract,systemui/nas_max_suggestions,testspace/another,testspace/flagname,textclassifier/config_updater_model_enabled,textclassifier/key,textclassifier/key2,textclassifier/manifest_url_annotator_en,textclassifier/manifest_url_annotator_ru,textclassifier/model_download_backoff_delay_in_millis,textclassifier/model_download_manager_enabled,textclassifier/multi_language_support_enabled,textclassifier/testing_locale_list_override,textclassifier/textclassifier_service_package_override,window_manager/enable_default_rescind_bal_privileges_from_pending_intent_sender,wrong/nas_generate_replies, exceeds system property max length.
+12-23 14:37:12.408  2271  2271 I native  : I0000 00:00:1766497032.408907    2271 android_resource_loader.cc:100] Built resource affix_word_splitter_grm
+12-23 14:37:12.409  2271  2271 I native  : I0000 00:00:1766497032.409086    2271 android_resource_loader.cc:116] Loaded resource:affix_word_splitter_grm
+12-23 14:37:12.409  2271  2271 I native  : I0000 00:00:1766497032.409453    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/affixes_params_en_us.pb" (as: FILE) ...
+12-23 14:37:12.409  2271  2271 I native  : I0000 00:00:1766497032.409515    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/affixes_params_en_us.pb" of size 420
+12-23 14:37:12.410  2271  2271 I native  : I0000 00:00:1766497032.410419    2271 affix_word_splitter_data.cc:33] Ambiguous affix entries for spelling ['s] -- their grammars should disambiguate them.
+12-23 14:37:12.410  2271  2271 I native  : I0000 00:00:1766497032.410615    2271 affix_word_splitter_data.cc:33] Ambiguous affix entries for spelling ['s] -- their grammars should disambiguate them.
+12-23 14:37:12.410  2271  2271 I native  : I0000 00:00:1766497032.410681    2271 affix_word_splitter_data.cc:33] Ambiguous affix entries for spelling ['s] -- their grammars should disambiguate them.
+12-23 14:37:12.410  2271  2271 I native  : I0000 00:00:1766497032.410771    2271 affix_word_splitter_data.cc:33] Ambiguous affix entries for spelling [s] -- their grammars should disambiguate them.
+12-23 14:37:12.410  2271  2271 I native  : I0000 00:00:1766497032.410785    2271 affix_word_splitter_data.cc:33] Ambiguous affix entries for spelling [s] -- their grammars should disambiguate them.
+12-23 14:37:12.410  2271  2271 I native  : I0000 00:00:1766497032.410846    2271 affix_word_splitter_data.cc:33] Ambiguous affix entries for spelling [s] -- their grammars should disambiguate them.
+12-23 14:37:12.410  2271  2271 I native  : I0000 00:00:1766497032.410951    2271 affix_word_splitter_data.cc:33] Ambiguous affix entries for spelling [ed] -- their grammars should disambiguate them.
+12-23 14:37:12.411  2271  2271 I native  : I0000 00:00:1766497032.411016    2271 affix_word_splitter_data.cc:33] Ambiguous affix entries for spelling [ed] -- their grammars should disambiguate them.
+12-23 14:37:12.411  2271  2271 I native  : I0000 00:00:1766497032.411079    2271 affix_word_splitter_data.cc:33] Ambiguous affix entries for spelling [ed] -- their grammars should disambiguate them.
+12-23 14:37:12.411  2271  2271 I native  : I0000 00:00:1766497032.411158    2271 affix_word_splitter_data.cc:89] Loaded affixes in [/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/affixes_params_en_us.pb].
+12-23 14:37:12.412  2271  2271 I native  : I0000 00:00:1766497032.412244    2271 android_resource_loader.cc:100] Built resource affix_word_splitter
+12-23 14:37:12.412  2271  2271 I native  : I0000 00:00:1766497032.412287    2271 android_resource_loader.cc:116] Loaded resource:affix_word_splitter
+12-23 14:37:12.412  2271  2271 I native  : I0000 00:00:1766497032.412418    2271 android_resource_loader.cc:100] Built resource audio_manipulation_params
+12-23 14:37:12.412  2271  2271 I native  : I0000 00:00:1766497032.412538    2271 android_resource_loader.cc:116] Loaded resource:audio_manipulation_params
+12-23 14:37:12.412  2271  2271 I native  : I0000 00:00:1766497032.412597    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/roman_numeral_android.far" (as: FILE) ...
+12-23 14:37:12.412  2271  2271 I native  : I0000 00:00:1766497032.412718    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/roman_numeral_android.far" of size 5112
+12-23 14:37:12.413  2271  2271 I native  : I0000 00:00:1766497032.413747    2271 android_resource_loader.cc:100] Built resource classify_roman_numerals_grm_fst
+12-23 14:37:12.413  2271  2271 I native  : I0000 00:00:1766497032.413800    2271 android_resource_loader.cc:116] Loaded resource:classify_roman_numerals_grm_fst
+12-23 14:37:12.413  2271  2271 I native  : I0000 00:00:1766497032.413821    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_us_pronounce.far" (as: FILE) ...
+12-23 14:37:12.413  2271  2271 I native  : I0000 00:00:1766497032.413883    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_us_pronounce.far" of size 5040
+12-23 14:37:12.414  2271  2271 I native  : I0000 00:00:1766497032.414223    2271 android_resource_loader.cc:100] Built resource compound_pronounce_grm_fst
+12-23 14:37:12.414  2271  2271 I native  : I0000 00:00:1766497032.414290    2271 android_resource_loader.cc:116] Loaded resource:compound_pronounce_grm_fst
+12-23 14:37:12.414  2271  2271 I native  : I0000 00:00:1766497032.414333    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/disambiguation_rules_en_us.pb" (as: FILE) ...
+12-23 14:37:12.414  2271  2271 I native  : I0000 00:00:1766497032.414388    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/disambiguation_rules_en_us.pb" of size 317147
+12-23 14:37:12.446   984   984 D NavigationModeController: getCurrentUserContext: contextUser=0 currentUser=0
+12-23 14:37:12.451  4566  5821 I PlatformConfigurator: updateFromConfigurations using legacy put method [CONTEXT service_id=204 ]
+12-23 14:37:12.473  2271  2271 I native  : I0000 00:00:1766497032.473595    2271 android_resource_loader.cc:100] Built resource disambiguation_rules
+12-23 14:37:12.473  2271  2271 I native  : I0000 00:00:1766497032.473643    2271 android_resource_loader.cc:116] Loaded resource:disambiguation_rules
+12-23 14:37:12.473  2271  2271 I native  : I0000 00:00:1766497032.473955    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/engine_config_en_us_x_embedded_valerian_vocoded.pb" (as: FILE) ...
+12-23 14:37:12.474   984  1135 D nativeloader: Load /system_ext/priv-app/SystemUIGoogle/SystemUIGoogle.apk!/lib/x86_64/libtensorflowlite_jni.so using class loader ns clns-shared-9 (caller=/system_ext/priv-app/SystemUIGoogle/SystemUIGoogle.apk!classes2.dex): ok
+12-23 14:37:12.474   984  1135 I Interpreter: Loaded native library: tensorflowlite_jni
+12-23 14:37:12.474  2271  2271 I native  : I0000 00:00:1766497032.474021    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/engine_config_en_us_x_embedded_valerian_vocoded.pb" of size 54
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475148    2271 android_resource_loader.cc:100] Built resource engine_config
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475263    2271 android_resource_loader.cc:116] Loaded resource:engine_config
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475298    2271 android_resource_loader.cc:100] Built resource guided_synthesis
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475342    2271 android_resource_loader.cc:116] Loaded resource:guided_synthesis
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475361    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/mapping_grammar_en.far" (as: FILE) ...
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475402    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/mapping_grammar_en.far" of size 863
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475697    2271 android_resource_loader.cc:100] Built resource homograph_mapping_grammar
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475759    2271 android_resource_loader.cc:116] Loaded resource:homograph_mapping_grammar
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475857    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/lettuce_model.fb" (as: MEMORY) ...
+12-23 14:37:12.475  2271  2271 I native  : I0000 00:00:1766497032.475902    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/lettuce_model.fb" of size 2100680
+12-23 14:37:12.477  2271  2271 I native  : I0000 00:00:1766497032.477192    2271 android_resource_loader.cc:100] Built resource lettuce_model_resource
+12-23 14:37:12.477  2271  2271 I native  : I0000 00:00:1766497032.477219    2271 android_resource_loader.cc:116] Loaded resource:lettuce_model_resource
+12-23 14:37:12.477  2271  2271 I native  : I0000 00:00:1766497032.477252    2271 android_resource_loader.cc:100] Built resource lettuce_model_scorer
+12-23 14:37:12.477  2271  2271 I native  : I0000 00:00:1766497032.477268    2271 android_resource_loader.cc:116] Loaded resource:lettuce_model_scorer
+12-23 14:37:12.477  2271  2271 I native  : I0000 00:00:1766497032.477286    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/lettuce_classify_embedded_us_generated_android.far" (as: FILE) ...
+12-23 14:37:12.477  2271  2271 I native  : I0000 00:00:1766497032.477326    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/lettuce_classify_embedded_us_generated_android.far" of size 4439801
+12-23 14:37:12.477   984  1135 D nativeloader: Load libtensorflowlite_jni_gms_client.so using class loader ns clns-shared-9 (caller=/system_ext/priv-app/SystemUIGoogle/SystemUIGoogle.apk!classes2.dex): dlopen failed: library "libtensorflowlite_jni_gms_client.so" not found
+12-23 14:37:12.477   984  1135 I Interpreter: Didn't load native library: tensorflowlite_jni_gms_client
+12-23 14:37:12.480   713   756 W BatteryStatsImpl: Unexpected per uid modem model name ()
+12-23 14:37:12.485   713   734 I GnssBlocklistHelper: Update GNSS satellite blocklist: 
+12-23 14:37:12.488   984  1135 I tflite  : Initialized TensorFlow Lite runtime.
+12-23 14:37:12.522  2271  2271 I native  : I0000 00:00:1766497032.522386    2271 android_resource_loader.cc:100] Built resource lettuce_node_generator_grm
+12-23 14:37:12.531  2271  2271 I native  : I0000 00:00:1766497032.531749    2271 android_resource_loader.cc:116] Loaded resource:lettuce_node_generator_grm
+12-23 14:37:12.531  2271  2271 I native  : I0000 00:00:1766497032.531791    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/lucid_collection_android.far" (as: FILE) ...
+12-23 14:37:12.531  2271  2271 I native  : I0000 00:00:1766497032.531865    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/lucid_collection_android.far" of size 306120
+12-23 14:37:12.535  2271  2271 I native  : I0000 00:00:1766497032.535559    2271 android_resource_loader.cc:100] Built resource lucid_parser_grm_fst
+12-23 14:37:12.536  2271  2271 I native  : I0000 00:00:1766497032.536199    2271 android_resource_loader.cc:116] Loaded resource:lucid_parser_grm_fst
+12-23 14:37:12.536  2271  2271 I native  : I0000 00:00:1766497032.536446    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/markup_triggers.pb" (as: FILE) ...
+12-23 14:37:12.537  2271  2271 I native  : I0000 00:00:1766497032.537049    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/markup_triggers.pb" of size 930
+12-23 14:37:12.538  2271  2271 I native  : I0000 00:00:1766497032.538126    2271 android_resource_loader.cc:100] Built resource markup_triggers
+12-23 14:37:12.538  2271  2271 I native  : I0000 00:00:1766497032.538175    2271 android_resource_loader.cc:116] Loaded resource:markup_triggers
+12-23 14:37:12.538  2271  2271 I native  : I0000 00:00:1766497032.538282    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/morphosyntactic_mapping.pb" (as: FILE) ...
+12-23 14:37:12.538  2271  2271 I native  : I0000 00:00:1766497032.538333    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/morphosyntactic_mapping.pb" of size 6
+12-23 14:37:12.538  2271  2271 I native  : I0000 00:00:1766497032.538648    2271 android_resource_loader.cc:100] Built resource morph_analyzer_attribute_map
+12-23 14:37:12.538  2271  2271 I native  : I0000 00:00:1766497032.538690    2271 android_resource_loader.cc:116] Loaded resource:morph_analyzer_attribute_map
+12-23 14:37:12.539  2271  2271 I native  : I0000 00:00:1766497032.539052    2271 android_resource_loader.cc:100] Built resource multilingual_capabilities
+12-23 14:37:12.539  2271  2271 I native  : I0000 00:00:1766497032.539131    2271 android_resource_loader.cc:116] Loaded resource:multilingual_capabilities
+12-23 14:37:12.539  2271  2271 I native  : I0000 00:00:1766497032.539200    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_us_phonology.pb" (as: FILE) ...
+12-23 14:37:12.539  2271  2271 I native  : I0000 00:00:1766497032.539240    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_us_phonology.pb" of size 2196
+12-23 14:37:12.539  5887  5887 W libbinder.BackendUnifiedServiceManager: Thread Pool max thread count is 0. Cannot cache binder as linkToDeath cannot be implemented. serviceName: package
+12-23 14:37:12.542  2271  2271 W native  : W0000 00:00:1766497032.542382    2271 phonology.cc:80] Phonemes @, @` have non-distinctive features. See b/111971558.
+12-23 14:37:12.542  2271  2271 W native  : W0000 00:00:1766497032.542822    2271 phonology.cc:80] Phonemes l, r\ have non-distinctive features. See b/111971558.
+12-23 14:37:12.543  2271  2271 I native  : I0000 00:00:1766497032.543617    2271 android_resource_loader.cc:100] Built resource phonology
+12-23 14:37:12.543  2271  2271 I native  : I0000 00:00:1766497032.543641    2271 android_resource_loader.cc:116] Loaded resource:phonology
+12-23 14:37:12.543  2271  2271 I native  : I0000 00:00:1766497032.543827    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_morphology" (as: FILE) ...
+12-23 14:37:12.543  2271  2271 I native  : I0000 00:00:1766497032.543919    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_morphology" of size 2753822
+12-23 14:37:12.550  2271  2271 I native  : I0000 00:00:1766497032.550818    2271 model-api.cc:46] Registered model under key morphology
+12-23 14:37:12.555  2271  2271 I native  : I0000 00:00:1766497032.555543    2271 android_resource_loader.cc:100] Built resource analyze_morphology_saft_portable_algo
+12-23 14:37:12.555  2271  2271 I native  : I0000 00:00:1766497032.555870    2271 android_resource_loader.cc:116] Loaded resource:analyze_morphology_saft_portable_algo
+12-23 14:37:12.557  2271  2271 I native  : I0000 00:00:1766497032.557870    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/ipa_to_tts_to-en_us.far" (as: FILE) ...
+12-23 14:37:12.557  2271  2271 I native  : I0000 00:00:1766497032.557952    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/ipa_to_tts_to-en_us.far" of size 465858
+12-23 14:37:12.566  2271  2271 I native  : I0000 00:00:1766497032.566768    2271 android_resource_loader.cc:100] Built resource ipa_to_tts_phoneme_mapper
+12-23 14:37:12.566  2271  2271 I native  : I0000 00:00:1766497032.566856    2271 android_resource_loader.cc:116] Loaded resource:ipa_to_tts_phoneme_mapper
+12-23 14:37:12.566  2271  2271 I native  : I0000 00:00:1766497032.566933    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_us.hlex.bin" (as: MEMORY) ...
+12-23 14:37:12.567  2271  2271 I native  : I0000 00:00:1766497032.566991    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_us.hlex.bin" of size 5117760
+12-23 14:37:12.573  2271  2271 I native  : I0000 00:00:1766497032.573904    2271 android_resource_loader.cc:100] Built resource lexicon
+12-23 14:37:12.573  2271  2271 I native  : I0000 00:00:1766497032.573928    2271 android_resource_loader.cc:116] Loaded resource:lexicon
+12-23 14:37:12.573  2271  2271 I native  : I0000 00:00:1766497032.573956    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/homographs_model_en_us_embedded.bin" (as: MEMORY) ...
+12-23 14:37:12.574  2271  2271 I native  : I0000 00:00:1766497032.574005    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/homographs_model_en_us_embedded.bin" of size 399120
+12-23 14:37:12.574   713   811 D CompatChangeReporter: Compat change id reported: 262645982; UID 10144; state: ENABLED
+12-23 14:37:12.589  2271  2271 I native  : I0000 00:00:1766497032.589380    2271 android_resource_loader.cc:100] Built resource homograph_classifier_model_resource
+12-23 14:37:12.589  2271  2271 I native  : I0000 00:00:1766497032.589637    2271 android_resource_loader.cc:116] Loaded resource:homograph_classifier_model_resource
+12-23 14:37:12.591  2271  2271 I native  : I0000 00:00:1766497032.591277    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/lettuce_node_generator_params_embedded_us_runtime.pb" (as: FILE) ...
+12-23 14:37:12.591  2271  2271 I native  : I0000 00:00:1766497032.591849    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/lettuce_node_generator_params_embedded_us_runtime.pb" of size 2599
+12-23 14:37:12.645  2182  4562 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/base.odex) is kOatUpToDate with filter 'speed-profile' executable 'false'
+12-23 14:37:12.647  2182  4562 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/split_AdsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+12-23 14:37:12.651  2182  2182 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/split_CronetDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+12-23 14:37:12.652  2182  2182 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/split_DynamiteLoader_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+12-23 14:37:12.655  2182  2182 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/split_DynamiteModulesA_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+12-23 14:37:12.665  2182  2182 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/split_DynamiteModulesC_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+12-23 14:37:12.668  2182  2182 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/split_GoogleCertificates_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+12-23 14:37:12.669  1139  1286 D SatelliteController: iisInCarrierRoamingNbIotNtn: satellite is disabled
+12-23 14:37:12.669  2182  2182 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/split_MapsDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+12-23 14:37:12.671  2182  2182 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/split_MeasurementDynamite_installtime.odex) is kOatUpToDate with filter 'speed' executable 'false'
+12-23 14:37:12.672  1139  1286 D SatelliteController: getCarrierRoamingNtnConnectType: Falling back to global carrier config connect type: 0
+12-23 14:37:12.673  2182  2182 I artd    : GetBestInfo: odex next to the dex file (/data/app/~~JyqnjdDnokn7po2ds9GnQw==/com.google.android.gms-Q4nCGOy41rfxyAkQMl4nlw==/oat/x86_64/split_all_locale_splits.odex) is kOatUpToDate with filter 'speed' executable 'false'
+12-23 14:37:12.682  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000d/dl-MlkitBarcodeUi.optional_253434100800.apk has no usable artifacts
+12-23 14:37:12.683   713   713 D SelinuxAuditLogs: SelinuxAuditLogsService scheduled successfully.
+12-23 14:37:12.688  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000001/CronetDynamite.apk has no usable artifacts
+12-23 14:37:12.690  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000002/DynamiteLoader.apk has no usable artifacts
+12-23 14:37:12.690  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000005/GoogleCertificates.apk has no usable artifacts
+12-23 14:37:12.691  2182  2182 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/3E7B8642D2C3A70E57BF17BBA509AC6EF658CD43/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+12-23 14:37:12.692  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000013/dl-MlkitBarcodeUi.optional_254730100800.apk has no usable artifacts
+12-23 14:37:12.693  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000b/dl-MlkitOcrCommon.optional_253434100800.apk has no usable artifacts
+12-23 14:37:12.693  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000008/dl-VisionOcr.optional_253434100000.apk has no usable artifacts
+12-23 14:37:12.696  2182  2182 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/9F0553103A93E6B9A9293C06FF57F54D16588402/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+12-23 14:37:12.697   713   713 D AppHibernationService: App hibernation changed to enabled=true
+12-23 14:37:12.698  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000f/dl-PlayCloudSearch.optional_253434100000.apk has no usable artifacts
+12-23 14:37:12.713  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/0000000e/dl-Appsearch.optional_253434100800.apk has no usable artifacts
+12-23 14:37:12.715  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000009/dl-TfliteDynamiteDynamite.integ_243930802100800.apk has no usable artifacts
+12-23 14:37:12.716  2182  2182 I artd    : GetBestInfo: /data/user_de/0/com.google.android.gms/app_chimera/m/00000007/MeasurementDynamite.apk has no usable artifacts
+12-23 14:37:12.717  2182  2182 I artd    : GetBestInfo: vdex next to the dex file (/data/user/0/com.google.android.gms/app_dg_cache/4C804C498047991068B7703A3662CB65242D8D66/oat/x86_64/the.vdex) is kOatUpToDate with filter 'verify' executable 'false'
+12-23 14:37:12.735   578  5888 E adbd    : error reading output FD 29: Connection reset by peer
+12-23 14:37:12.837   984   991 W System  : A resource failed to call close. 
+12-23 14:37:12.931   713   713 E DeviceConfig: Parsing int failed for location_mode
+12-23 14:37:12.960  2271  2271 I native  : I0000 00:00:1766497032.959992    2271 exl_node_generator.cc:58] Setting legal word grammar as macro_only: true
+12-23 14:37:12.960  2271  2271 I native  : I0000 00:00:1766497032.960146    2271 android_resource_loader.cc:100] Built resource lettuce_node_generator
+12-23 14:37:12.960  2271  2271 I native  : I0000 00:00:1766497032.960182    2271 android_resource_loader.cc:116] Loaded resource:lettuce_node_generator
+12-23 14:37:12.960  2271  2271 I native  : I0000 00:00:1766497032.960201    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/burdock_model.params.pb" (as: FILE) ...
+12-23 14:37:12.960  2271  2271 I native  : I0000 00:00:1766497032.960268    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/burdock_model.params.pb" of size 8875
+12-23 14:37:12.962  2271  2271 I native  : I0000 00:00:1766497032.961996    2271 android_resource_loader.cc:100] Built resource lstm_add_specification_resource
+12-23 14:37:12.962  2271  2271 I native  : I0000 00:00:1766497032.962111    2271 android_resource_loader.cc:116] Loaded resource:lstm_add_specification_resource
+12-23 14:37:12.962  2271  2271 I native  : I0000 00:00:1766497032.962649    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/chive_model_fused.pb" (as: FILE) ...
+12-23 14:37:12.962  2271  2271 I native  : I0000 00:00:1766497032.962703    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/chive_model_fused.pb" of size 1281
+12-23 14:37:12.962  2271  2271 I native  : I0000 00:00:1766497032.962951    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/burdock_valerian_model.tflite" (as: MEMORY) ...
+12-23 14:37:12.963  2271  2271 I native  : I0000 00:00:1766497032.963024    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/burdock_valerian_model.tflite" of size 1790608
+12-23 14:37:12.970  2271  2271 E tflite  : third_party/tensorflow/lite/core/subgraph.cc:1082 tensor.data.raw != nullptr was not true.
+12-23 14:37:12.970  2271  2271 I native  : I0000 00:00:1766497032.970424    2271 chive_inference_resource.cc:234] Creating new CHiVE model [model graph]: 
+12-23 14:37:12.970  2271  2271 I native  : I0000 00:00:1766497032.970468    2271 chive_model.cc:179] Creating a single pass CHiVE model
+12-23 14:37:12.970  2271  2271 I native  : I0000 00:00:1766497032.970936    2271 android_resource_loader.cc:100] Built resource chive_inference_config
+12-23 14:37:12.970  2271  2271 I native  : I0000 00:00:1766497032.970984    2271 android_resource_loader.cc:116] Loaded resource:chive_inference_config
+12-23 14:37:12.971  2271  2271 I native  : I0000 00:00:1766497032.971001    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/converter_en_us_android.far" (as: FILE) ...
+12-23 14:37:12.971  2271  2271 I native  : I0000 00:00:1766497032.971034    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/converter_en_us_android.far" of size 1473
+12-23 14:37:12.971  2271  2271 I native  : I0000 00:00:1766497032.971427    2271 android_resource_loader.cc:100] Built resource pron_buffet_to_tts_converter
+12-23 14:37:12.971  2271  2271 I native  : I0000 00:00:1766497032.971472    2271 android_resource_loader.cc:116] Loaded resource:pron_buffet_to_tts_converter
+12-23 14:37:12.971  2271  2271 I native  : I0000 00:00:1766497032.971508    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/regexp_rewrite_embedded.pb" (as: FILE) ...
+12-23 14:37:12.971  2271  2271 I native  : I0000 00:00:1766497032.971559    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/regexp_rewrite_embedded.pb" of size 6025
+12-23 14:37:12.971  2271  2271 I native  : I0000 00:00:1766497032.971879    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/punctuation.pb" (as: FILE) ...
+12-23 14:37:12.971  2271  2271 I native  : I0000 00:00:1766497032.971944    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/punctuation.pb" of size 452
+12-23 14:37:12.997  2271  2271 E native  : E0000 00:00:1766497032.997200    2271 re2.cc:250] Error parsing '^|[^\p{Letter}\\]': invalid character class range: \p{Letter}
+12-23 14:37:12.997  2271  2271 E native  : E0000 00:00:1766497032.997224    2271 replacement_rule.cc:40] Invalid context regexp: invalid character class range: \p{Letter}
+12-23 14:37:12.997  2271  2271 E native  : E0000 00:00:1766497032.997234    2271 replacement_rule.cc:151] Error creating replacement rule.
+12-23 14:37:12.997  2271  2271 E native  : E0000 00:00:1766497032.997244    2271 regexp_rewriter.cc:34] Error creating rule MessageLite at 0x7fb5ffe24510.
+12-23 14:37:12.997  2271  2271 I native  : I0000 00:00:1766497032.997442    2271 android_resource_loader.cc:100] Built resource rewrite_algo
+12-23 14:37:12.997  2271  2271 I native  : I0000 00:00:1766497032.997479    2271 android_resource_loader.cc:116] Loaded resource:rewrite_algo
+12-23 14:37:12.997  2271  2271 I native  : I0000 00:00:1766497032.997511    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/roman_numeral_contexts.pb" (as: FILE) ...
+12-23 14:37:12.997  2271  2271 I native  : I0000 00:00:1766497032.997547    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/roman_numeral_contexts.pb" of size 9114
+12-23 14:37:12.997  2271  2271 I native  : I0000 00:00:1766497032.997874    2271 android_resource_loader.cc:100] Built resource roman_numeral_context_words
+12-23 14:37:12.997  2271  2271 I native  : I0000 00:00:1766497032.997888    2271 android_resource_loader.cc:116] Loaded resource:roman_numeral_context_words
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998019    2271 android_resource_loader.cc:100] Built resource classify_roman_numerals_grm_algo
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998029    2271 android_resource_loader.cc:116] Loaded resource:classify_roman_numerals_grm_algo
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998051    2271 android_resource_loader.cc:100] Built resource runtime_override
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998060    2271 android_resource_loader.cc:116] Loaded resource:runtime_override
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998072    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/sb_model.bin" (as: MEMORY) ...
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998113    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/sb_model.bin" of size 48272
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998309    2271 android_resource_loader.cc:100] Built resource sentence_boundary_model_resource
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998328    2271 android_resource_loader.cc:116] Loaded resource:sentence_boundary_model_resource
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998359    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_verbalize_spec.pb" (as: FILE) ...
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998385    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/en_verbalize_spec.pb" of size 3984
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998574    2271 android_resource_loader.cc:100] Built resource serialization_spec
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998590    2271 android_resource_loader.cc:116] Loaded resource:serialization_spec
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998614    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/textnorm_params_embedded_en_us.pb" (as: FILE) ...
+12-23 14:37:12.998  2271  2271 I native  : I0000 00:00:1766497032.998640    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/textnorm_params_embedded_en_us.pb" of size 321
+12-23 14:37:12.999  2271  2271 I native  : I0000 00:00:1766497032.999081    2271 android_resource_loader.cc:100] Built resource textnorm_params
+12-23 14:37:12.999  2271  2271 I native  : I0000 00:00:1766497032.999121    2271 android_resource_loader.cc:116] Loaded resource:textnorm_params
+12-23 14:37:13.001  2271  2271 I native  : I0000 00:00:1766497033.001661    2271 android_resource_loader.cc:100] Built resource icu_transliterator_to_latin
+12-23 14:37:13.001  2271  2271 I native  : I0000 00:00:1766497033.001694    2271 android_resource_loader.cc:116] Loaded resource:icu_transliterator_to_latin
+12-23 14:37:13.001  2271  2271 I native  : I0000 00:00:1766497033.001715    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/g2p_m3_syls0_stress0_en-US.fst" (as: FILE) ...
+12-23 14:37:13.001  2271  2271 I native  : I0000 00:00:1766497033.001752    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/g2p_m3_syls0_stress0_en-US.fst" of size 696736
+12-23 14:37:13.001  2271  2271 I native  : I0000 00:00:1766497033.001772    2271 compact_fst.cc:20] Loading FST from "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/g2p_m3_syls0_stress0_en-US.fst" ...
+12-23 14:37:13.034  2271  2271 I native  : I0000 00:00:1766497033.034302    2271 decoder.cc:50] G2P FST loaded (56 graphemes and 41 phonemes).
+12-23 14:37:13.036  2271  2271 I native  : I0000 00:00:1766497033.036308    2271 android_resource_loader.cc:100] Built resource learned_fst_g2p_mapper
+12-23 14:37:13.036  2271  2271 I native  : I0000 00:00:1766497033.036340    2271 android_resource_loader.cc:116] Loaded resource:learned_fst_g2p_mapper
+12-23 14:37:13.036  2271  2271 I native  : I0000 00:00:1766497033.036372    2271 android_resource_loader.cc:100] Built resource spelling_normalizer
+12-23 14:37:13.036  2271  2271 I native  : I0000 00:00:1766497033.036386    2271 android_resource_loader.cc:116] Loaded resource:spelling_normalizer
+12-23 14:37:13.043  2271  2271 I native  : I0000 00:00:1766497033.043913    2271 android_resource_loader.cc:100] Built resource token_resolver_algo
+12-23 14:37:13.043  2271  2271 I native  : I0000 00:00:1766497033.043958    2271 android_resource_loader.cc:116] Loaded resource:token_resolver_algo
+12-23 14:37:13.043  2271  2271 I native  : I0000 00:00:1766497033.043979    2271 android_resource_loader.cc:100] Built resource utf8_utils
+12-23 14:37:13.044  2271  2271 I native  : I0000 00:00:1766497033.043992    2271 android_resource_loader.cc:116] Loaded resource:utf8_utils
+12-23 14:37:13.044  2271  2271 I native  : I0000 00:00:1766497033.044012    2271 android_resource_loader.cc:100] Built resource lexical_classifier
+12-23 14:37:13.044  2271  2271 I native  : I0000 00:00:1766497033.044024    2271 android_resource_loader.cc:116] Loaded resource:lexical_classifier
+12-23 14:37:13.044  2271  2271 I native  : I0000 00:00:1766497033.044041    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/universal_carrier_pigeon_config.binarypb" (as: FILE) ...
+12-23 14:37:13.044  2271  2271 I native  : I0000 00:00:1766497033.044083    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/universal_carrier_pigeon_config.binarypb" of size 52
+12-23 14:37:13.044  2271  2271 I native  : I0000 00:00:1766497033.044658    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/universal_carrier_pigeon_model.tflite" (as: FILE) ...
+12-23 14:37:13.044  2271  2271 I native  : I0000 00:00:1766497033.044743    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/universal_carrier_pigeon_model.tflite" of size 638952
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048322    2271 android_resource_loader.cc:100] Built resource carrier_pigeon_algo
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048354    2271 android_resource_loader.cc:116] Loaded resource:carrier_pigeon_algo
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048377    2271 android_resource_loader.cc:100] Built resource icu_transliterator
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048390    2271 android_resource_loader.cc:116] Loaded resource:icu_transliterator
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048406    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/variant_overrides_en_us.pb" (as: FILE) ...
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048443    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/variant_overrides_en_us.pb" of size 1525
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048681    2271 android_resource_loader.cc:100] Built resource variant_overrides
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048703    2271 android_resource_loader.cc:116] Loaded resource:variant_overrides
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048719    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/variant_selection_model_en_us_embedded.bin" (as: MEMORY) ...
+12-23 14:37:13.048  2271  2271 I native  : I0000 00:00:1766497033.048755    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/variant_selection_model_en_us_embedded.bin" of size 221608
+12-23 14:37:13.049  2271  2271 I native  : I0000 00:00:1766497033.049568    2271 android_resource_loader.cc:100] Built resource variant_selection_model_data_resource
+12-23 14:37:13.049  2271  2271 I native  : I0000 00:00:1766497033.049603    2271 android_resource_loader.cc:116] Loaded resource:variant_selection_model_data_resource
+12-23 14:37:13.057  2271  2271 I native  : I0000 00:00:1766497033.057291    2271 select_variants.cc:128] Word with override has only one variant: her
+12-23 14:37:13.057  2271  2271 I native  : I0000 00:00:1766497033.057360    2271 android_resource_loader.cc:100] Built resource select_variants_algo
+12-23 14:37:13.057  2271  2271 I native  : I0000 00:00:1766497033.057378    2271 android_resource_loader.cc:116] Loaded resource:select_variants_algo
+12-23 14:37:13.057  2271  2271 I native  : I0000 00:00:1766497033.057396    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/us_verbalization_capabilities.pb" (as: FILE) ...
+12-23 14:37:13.057  2271  2271 I native  : I0000 00:00:1766497033.057432    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/us_verbalization_capabilities.pb" of size 5224
+12-23 14:37:13.058  2271  2271 I native  : I0000 00:00:1766497033.058720    2271 android_resource_loader.cc:100] Built resource verbalization_capabilities
+12-23 14:37:13.058  2271  2271 I native  : I0000 00:00:1766497033.058753    2271 android_resource_loader.cc:116] Loaded resource:verbalization_capabilities
+12-23 14:37:13.058  2271  2271 I native  : I0000 00:00:1766497033.058773    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/verbalize_embedded_android.far" (as: FILE) ...
+12-23 14:37:13.058  2271  2271 I native  : I0000 00:00:1766497033.058814    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/verbalize_embedded_android.far" of size 2342559
+12-23 14:37:13.063  2271  2271 I native  : I0000 00:00:1766497033.063632    2271 android_resource_loader.cc:100] Built resource verbalize_grm_fst
+12-23 14:37:13.063  2271  2271 I native  : I0000 00:00:1766497033.063675    2271 android_resource_loader.cc:116] Loaded resource:verbalize_grm_fst
+12-23 14:37:13.063  2271  2271 I native  : I0000 00:00:1766497033.063699    2271 android_resource_loader.cc:100] Built resource speller_algo
+12-23 14:37:13.063  2271  2271 I native  : I0000 00:00:1766497033.063712    2271 android_resource_loader.cc:116] Loaded resource:speller_algo
+12-23 14:37:13.065  2271  2271 I native  : I0000 00:00:1766497033.065345    2271 android_resource_loader.cc:100] Built resource verbalize_grm_algo
+12-23 14:37:13.065  2271  2271 I native  : I0000 00:00:1766497033.065366    2271 android_resource_loader.cc:116] Loaded resource:verbalize_grm_algo
+12-23 14:37:13.067  2271  2271 I native  : I0000 00:00:1766497033.067085    2271 android_resource_loader.cc:100] Built resource vocoding_resource
+12-23 14:37:13.067  2271  2271 I native  : I0000 00:00:1766497033.067111    2271 android_resource_loader.cc:116] Loaded resource:vocoding_resource
+12-23 14:37:13.067  2271  2271 I native  : I0000 00:00:1766497033.067134    2271 voice_params_resource.cc:33] Voice information: MessageLite at 0x7fb67fe757d0
+12-23 14:37:13.067  2271  2271 I native  : I0000 00:00:1766497033.067167    2271 android_resource_loader.cc:100] Built resource voice_params
+12-23 14:37:13.067  2271  2271 I native  : I0000 00:00:1766497033.067180    2271 android_resource_loader.cc:116] Loaded resource:voice_params
+12-23 14:37:13.073  2271  2271 I native  : I0000 00:00:1766497033.073606    2271 android_resource_loader.cc:100] Built resource word_resolver_algo
+12-23 14:37:13.073  2271  2271 I native  : I0000 00:00:1766497033.073644    2271 android_resource_loader.cc:116] Loaded resource:word_resolver_algo
+12-23 14:37:13.073  2271  2271 I native  : I0000 00:00:1766497033.073672    2271 data_source.cc:95] Opening data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/xsampa_to_tts_to-en_us.far" (as: FILE) ...
+12-23 14:37:13.073  2271  2271 I native  : I0000 00:00:1766497033.073721    2271 data_source.cc:99] ... Opened data source "/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83/xsampa_to_tts_to-en_us.far" of size 22132
+12-23 14:37:13.074  2271  2271 I native  : I0000 00:00:1766497033.074801    2271 android_resource_loader.cc:100] Built resource xsampa_to_tts_phoneme_mapper
+12-23 14:37:13.074  2271  2271 I native  : I0000 00:00:1766497033.074857    2271 android_resource_loader.cc:116] Loaded resource:xsampa_to_tts_phoneme_mapper
+12-23 14:37:13.074  2271  2271 I native  : I0000 00:00:1766497033.074877    2271 local_pipeline_runner.cc:49] Done loading all resources from: {/data/user_de/0/com.google.android.tts/files/superpacks/en-us/en-us-x-multi-r83}
+12-23 14:37:13.077  2271  2271 I ComposerWrapperImpl: Done initializing en-us-x-iog-lstm-embedded
+12-23 14:37:13.078   713   729 D OomAdjuster: Not killing cached processes
+12-23 14:37:13.081   713   713 D TextToSpeechManagerPerUserService: Connected successfully to TTS engine: com.google.android.tts
+12-23 14:37:13.081  1522  5682 I TextToSpeech: Connected to TTS engine
+12-23 14:37:13.118   713   774 I AppsFilter: interaction: PackageSetting{ae12fde com.android.microdroid.empty_payload/10211} -> PackageSetting{c74463f com.google.android.as/10145} BLOCKED
+12-23 14:37:13.118   713   774 I AppsFilter: interaction: PackageSetting{ae12fde com.android.microdroid.empty_payload/10211} -> PackageSetting{ea34b0c com.google.android.photopicker/10202} BLOCKED
+12-23 14:37:13.140   713   928 D ShortcutService: received package broadcast intent: Intent { act=android.intent.action.PACKAGE_CHANGED dat=package: flg=0x45000010 (has extras) }
+12-23 14:37:13.140   713   928 D ShortcutService: changing package: com.google.android.providers.media.module userId=0
+12-23 14:37:13.144  1139  1139 D CarrierSvcBindHelper: onPackageModified: com.google.android.providers.media.module
+12-23 14:37:13.145  1139  1286 I SatelliteAppTracker: onPackageModified : com.google.android.providers.media.module
+12-23 14:37:13.152   713   819 I RoleService: Granting default roles...
+12-23 14:37:13.161  1139  1139 D CarrierSvcBindHelper: No carrier app for: 0
+12-23 14:37:13.172  1139  1286 E SatelliteAppTracker: packageName: com.google.android.providers.media.module, value: null
+12-23 14:37:13.173   984   984 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+12-23 14:37:13.173   984   984 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+12-23 14:37:13.176  1139  1286 I SatelliteAppTracker: onPackageModified : com.google.android.as
+12-23 14:37:13.176  1139  1286 E SatelliteAppTracker: packageName: com.google.android.as, value: null
+12-23 14:37:13.178   713   713 V NotificationManagerService.NotificationListeners: enabling notification listener for 0: ComponentInfo{com.google.android.apps.nexuslauncher/com.android.launcher3.notification.NotificationListener}
+12-23 14:37:13.178   713   713 V NotificationManagerService.NotificationListeners: Not registering ComponentInfo{com.google.android.apps.nexuslauncher/com.android.launcher3.notification.NotificationListener} is already binding
+12-23 14:37:13.179   713   713 V NotificationManagerService.NotificationListeners: enabling notification listener for 0: ComponentInfo{com.google.android.as/com.google.android.apps.miphone.aiai.common.notification.service.AiAiNotificationListenerService}
+12-23 14:37:13.179   713   713 V NotificationManagerService.NotificationListeners: Not registering ComponentInfo{com.google.android.as/com.google.android.apps.miphone.aiai.common.notification.service.AiAiNotificationListenerService} is already binding
+12-23 14:37:13.179   713   713 V NotificationManagerService.NotificationAssistants: enabling notification assistant for 0: ComponentInfo{com.google.android.as/com.google.android.apps.miphone.aiai.common.notification.service.AiAiNotificationAssistantService}
+12-23 14:37:13.179   713   713 V NotificationManagerService.NotificationAssistants: Not registering ComponentInfo{com.google.android.as/com.google.android.apps.miphone.aiai.common.notification.service.AiAiNotificationAssistantService} is already binding
+12-23 14:37:13.180  1140  1184 I PluginActionManager[com.android.systemui.action.ICON_WRAPPER_PLUGIN]: Found 0 plugins
+12-23 14:37:13.180   713   864 D AmbientContextManagerService: onServiceRemoved
+12-23 14:37:13.180   713   864 D AmbientContextManagerPerUserService: Trying to cancel the remote request. Reason: Service destroyed.
+12-23 14:37:13.181   713   864 D AmbientContextManagerService: newServicesListLocked with service name: com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiAmbientContextDetectionService
+12-23 14:37:13.181  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_CUSTOM_WIDGET]: Found 0 plugins
+12-23 14:37:13.181   713   745 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.182   713   864 D DefaultAmbientContextManagerPerUserService: Created DefaultAmbientContextManagerPerUserServiceand service type: DEFAULT and service name: com.google.android.as/com.google.android.apps.miphone.aiai.app.AiAiAmbientContextDetectionService
+12-23 14:37:13.184  1522  5846 I AiAiEcho: AppIndexer Package:[com.google.android.providers.media.module] UserProfile:[0] Enabled:[true].
+12-23 14:37:13.184  1522  5846 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.google.android.providers.media.module], userId:[0], reason:[package is updated.].
+12-23 14:37:13.186  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_NETWORK_FETCHER_ACTIONS]: Found 0 plugins
+12-23 14:37:13.186  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_ALL_APPS_ACTIONS]: Found 0 plugins
+12-23 14:37:13.188  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_LAUNCHER_OVERLAY]: Found 0 plugins
+12-23 14:37:13.189  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_BC_SMARTSPACE_DATA]: Found 0 plugins
+12-23 14:37:13.189  1140  1184 I PluginActionManager[com.android.systemui.action.ICON_WRAPPER_PLUGIN]: Found 0 plugins
+12-23 14:37:13.189   713   928 D ShortcutService: received package broadcast intent: Intent { act=android.intent.action.PACKAGE_CHANGED dat=package: flg=0x45000010 (has extras) }
+12-23 14:37:13.189   713   928 D ShortcutService: changing package: com.google.android.as userId=0
+12-23 14:37:13.189  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_CUSTOM_WIDGET]: Found 0 plugins
+12-23 14:37:13.189  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_NETWORK_FETCHER_ACTIONS]: Found 0 plugins
+12-23 14:37:13.190   984  1159 I PluginActionManager[com.android.systemui.action.FALSING_PLUGIN]: Found 0 plugins
+12-23 14:37:13.190  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_ALL_APPS_ACTIONS]: Found 0 plugins
+12-23 14:37:13.190  1139  1139 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+12-23 14:37:13.190   713  1091 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 10154, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.190  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_LAUNCHER_OVERLAY]: Found 0 plugins
+12-23 14:37:13.190  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_BC_SMARTSPACE_DATA]: Found 0 plugins
+12-23 14:37:13.193   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_SENSOR_MANAGER]: Found 0 plugins
+12-23 14:37:13.198   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_AUTH_CONTEXT]: Found 0 plugins
+12-23 14:37:13.203   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_VOLUME]: Found 0 plugins
+12-23 14:37:13.207   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_TOAST]: Found 0 plugins
+12-23 14:37:13.208  1139  1286 I SatelliteAppTracker: onPackageModified : com.google.android.photopicker
+12-23 14:37:13.208   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_GLOBAL_ACTIONS]: Found 0 plugins
+12-23 14:37:13.208  1139  1286 E SatelliteAppTracker: packageName: com.google.android.photopicker, value: null
+12-23 14:37:13.208   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_QS]: Found 0 plugins
+12-23 14:37:13.208   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_NOTIFICATION_ASSISTANT]: Found 0 plugins
+12-23 14:37:13.208   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_OVERLAY]: Found 0 plugins
+12-23 14:37:13.208   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW]: Found 0 plugins
+12-23 14:37:13.208   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW]: Found 0 plugins
+12-23 14:37:13.208   984  1159 I PluginActionManager[com.android.systemui.action.FALSING_PLUGIN]: Found 0 plugins
+12-23 14:37:13.208   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_SENSOR_MANAGER]: Found 0 plugins
+12-23 14:37:13.209   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_AUTH_CONTEXT]: Found 0 plugins
+12-23 14:37:13.209   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_VOLUME]: Found 0 plugins
+12-23 14:37:13.209   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_TOAST]: Found 0 plugins
+12-23 14:37:13.210  1140  1184 I PluginActionManager[com.android.systemui.action.ICON_WRAPPER_PLUGIN]: Found 0 plugins
+12-23 14:37:13.211  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_CUSTOM_WIDGET]: Found 0 plugins
+12-23 14:37:13.211  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_NETWORK_FETCHER_ACTIONS]: Found 0 plugins
+12-23 14:37:13.211  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_ALL_APPS_ACTIONS]: Found 0 plugins
+12-23 14:37:13.211  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_LAUNCHER_OVERLAY]: Found 0 plugins
+12-23 14:37:13.212  1140  1184 I PluginActionManager[com.android.systemui.action.PLUGIN_BC_SMARTSPACE_DATA]: Found 0 plugins
+12-23 14:37:13.213  2271  3222 I GoogleTTSServiceImpl: currentLocale = en-US
+12-23 14:37:13.218   984   984 D ControlsListingControllerImpl: ServiceConfig reloaded, count: 0
+12-23 14:37:13.221   713   729 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.222   713   729 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.222   713   729 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_WAP_PUSH, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.222   713   729 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = SEND_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.222   713   729 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.224   713   959 D ActivityManager: sync unfroze 1475 com.google.android.permissioncontroller for 6
+12-23 14:37:13.242   713   931 D BackgroundInstallControlService: Package event received: 0
+12-23 14:37:13.242   713   931 D BackgroundInstallControlService: Package event received: 0
+12-23 14:37:13.242  1139  1346 D ImsResolver: maybeAddedImsService, packageName: com.google.android.providers.media.module
+12-23 14:37:13.242  1139  1346 V ImsResolver: searchForImsServices: package=com.google.android.providers.media.module, users=[UserHandle{0}]
+12-23 14:37:13.242  1139  1346 V ImsResolver: searchForImsServices: package=com.google.android.providers.media.module, users=[UserHandle{0}]
+12-23 14:37:13.243   713  1079 W SignedPackage: Package doesn't have required signing certificate: com.google.android.retaildemo
+12-23 14:37:13.244   713  1079 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms.supervision, role: android.app.role.SYSTEM_SUPERVISION, user: 0
+12-23 14:37:13.250   713   928 D ShortcutService: received package broadcast intent: Intent { act=android.intent.action.PACKAGE_CHANGED dat=package: flg=0x45000010 (has extras) }
+12-23 14:37:13.250   713   928 D ShortcutService: changing package: com.google.android.photopicker userId=0
+12-23 14:37:13.258   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_GLOBAL_ACTIONS]: Found 0 plugins
+12-23 14:37:13.258   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_QS]: Found 0 plugins
+12-23 14:37:13.258   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_NOTIFICATION_ASSISTANT]: Found 0 plugins
+12-23 14:37:13.258   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_OVERLAY]: Found 0 plugins
+12-23 14:37:13.258   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW]: Found 0 plugins
+12-23 14:37:13.258   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW]: Found 0 plugins
+12-23 14:37:13.258   984  1159 I PluginActionManager[com.android.systemui.action.FALSING_PLUGIN]: Found 0 plugins
+12-23 14:37:13.258   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_SENSOR_MANAGER]: Found 0 plugins
+12-23 14:37:13.261   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_AUTH_CONTEXT]: Found 0 plugins
+12-23 14:37:13.262   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_VOLUME]: Found 0 plugins
+12-23 14:37:13.263   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_TOAST]: Found 0 plugins
+12-23 14:37:13.263  1475  1831 I PermissionControllerServiceImpl: Updating user sensitive for uid 10201
+12-23 14:37:13.263   713  1079 W SignedPackage: Package doesn't have required signing certificate: com.google.android.apps.work.clouddpc
+12-23 14:37:13.264   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_GLOBAL_ACTIONS]: Found 0 plugins
+12-23 14:37:13.268   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_QS]: Found 0 plugins
+12-23 14:37:13.268   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_NOTIFICATION_ASSISTANT]: Found 0 plugins
+12-23 14:37:13.269   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_OVERLAY]: Found 0 plugins
+12-23 14:37:13.269   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW]: Found 0 plugins
+12-23 14:37:13.272   984  1159 I PluginActionManager[com.android.systemui.action.PLUGIN_NOTIFICATION_MENU_ROW]: Found 0 plugins
+12-23 14:37:13.273  1139  1139 D SatelliteController: packageStateChanged: package:com.google.android.providers.media.module defaultSmsPackageName: com.google.android.apps.messaging satelliteGatewayServicePackageName: 
+12-23 14:37:13.273  1475  1831 I PermissionControllerServiceImpl: Updating user sensitive for uid 10145
+12-23 14:37:13.273  1475  1831 I PermissionControllerServiceImpl: Updating user sensitive for uid 10202
+12-23 14:37:13.276  1139  1139 D CarrierSvcBindHelper: onPackageModified: com.google.android.as
+12-23 14:37:13.276  1139  1139 D CarrierSvcBindHelper: No carrier app for: 0
+12-23 14:37:13.283  1139  1360 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+12-23 14:37:13.283   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 10154, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.284   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.284   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.284   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_WAP_PUSH, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.285   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = SEND_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.285   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.285  1139  1139 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+12-23 14:37:13.285   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 10154, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.286  1139  1360 D SatelliteAccessController: Current default SMS app:ComponentInfo{com.google.android.apps.messaging/com.google.android.apps.messaging.shared.receiver.SmsDeliverReceiver}
+12-23 14:37:13.289  1139  1360 D SatelliteController: getSelectedSatelliteSubId: subId=-1
+12-23 14:37:13.289  1139  1360 D SatelliteAccessController: supportedMsgApps:com.google.android.apps.messaging
+12-23 14:37:13.294   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.301   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.301   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_WAP_PUSH, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.301   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = SEND_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.302   713  1642 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.311   713  1079 I Role    : com.google.android.gms not qualified for android.app.role.SYSTEM_DEPENDENCY_INSTALLER due to missing RequiredComponent{mIntentFilterData=IntentFilterData{mAction='android.content.pm.action.INSTALL_DEPENDENCY', mCategories='[]', mDataScheme='null', mDataType='null'}, mMinTargetSdkVersion=1, mFlags='0', mPermission='android.permission.BIND_DEPENDENCY_INSTALLER', mQueryFlags=0, mMetaData=[]}
+12-23 14:37:13.316   713  1079 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.SYSTEM_DEPENDENCY_INSTALLER, user: 0
+12-23 14:37:13.318   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_shortcut_target_service, current:{}, new:{}
+12-23 14:37:13.318   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_qs_targets, current:{}, new:{}
+12-23 14:37:13.318   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_button_targets, current:{}, new:{}
+12-23 14:37:13.318   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_gesture_targets, current:{}, new:{}
+12-23 14:37:13.318   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_key_gesture_targets, current:{}, new:{}
+12-23 14:37:13.318  1139  1346 D ImsResolver: maybeAddedImsService, packageName: com.google.android.as
+12-23 14:37:13.318  1139  1346 V ImsResolver: searchForImsServices: package=com.google.android.as, users=[UserHandle{0}]
+12-23 14:37:13.319  1139  1346 V ImsResolver: searchForImsServices: package=com.google.android.as, users=[UserHandle{0}]
+12-23 14:37:13.321   713   841 V AccessibilityManagerService: onUserStateChangedLocked for userId: 0, forceUpdate: false
+12-23 14:37:13.325  1139  1139 D SatelliteController: packageStateChanged: package:com.google.android.as defaultSmsPackageName: com.google.android.apps.messaging satelliteGatewayServicePackageName: 
+12-23 14:37:13.326   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_shortcut_target_service, current:{}, new:{}
+12-23 14:37:13.326   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_button_targets, current:{}, new:{}
+12-23 14:37:13.326   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_gesture_targets, current:{}, new:{}
+12-23 14:37:13.326   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_qs_targets, current:{}, new:{}
+12-23 14:37:13.326   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_key_gesture_targets, current:{}, new:{}
+12-23 14:37:13.326   713   841 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+12-23 14:37:13.326   713   713 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.326   713   713 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.327   713   713 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.328   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_shortcut_target_service, current:{}, new:{}
+12-23 14:37:13.328   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_qs_targets, current:{}, new:{}
+12-23 14:37:13.328   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_button_targets, current:{}, new:{}
+12-23 14:37:13.328   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_gesture_targets, current:{}, new:{}
+12-23 14:37:13.328   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_key_gesture_targets, current:{}, new:{}
+12-23 14:37:13.328   713   841 V AccessibilityManagerService: onUserStateChangedLocked for userId: 0, forceUpdate: false
+12-23 14:37:13.329   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_shortcut_target_service, current:{}, new:{}
+12-23 14:37:13.329   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_button_targets, current:{}, new:{}
+12-23 14:37:13.329   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_gesture_targets, current:{}, new:{}
+12-23 14:37:13.330   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_qs_targets, current:{}, new:{}
+12-23 14:37:13.330   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_key_gesture_targets, current:{}, new:{}
+12-23 14:37:13.330   713   841 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+12-23 14:37:13.330   713   713 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.330   713   713 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.330   713   713 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.333   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_shortcut_target_service, current:{}, new:{}
+12-23 14:37:13.333   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_qs_targets, current:{}, new:{}
+12-23 14:37:13.333   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_button_targets, current:{}, new:{}
+12-23 14:37:13.333   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_gesture_targets, current:{}, new:{}
+12-23 14:37:13.333   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_key_gesture_targets, current:{}, new:{}
+12-23 14:37:13.333   713   841 V AccessibilityManagerService: onUserStateChangedLocked for userId: 0, forceUpdate: false
+12-23 14:37:13.334   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_shortcut_target_service, current:{}, new:{}
+12-23 14:37:13.334   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_button_targets, current:{}, new:{}
+12-23 14:37:13.334   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_gesture_targets, current:{}, new:{}
+12-23 14:37:13.334   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_qs_targets, current:{}, new:{}
+12-23 14:37:13.334   713   841 V AccessibilityUserState: updateShortcutTargets: type:accessibility_key_gesture_targets, current:{}, new:{}
+12-23 14:37:13.334   713   841 W MagnificationConnectionManager: requestConnection duplicated request: connect=false, mConnectionState=DISCONNECTED
+12-23 14:37:13.335   713   713 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.335   713   713 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.335   713   713 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.335  1139  1360 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+12-23 14:37:13.340   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 10154, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.340  1139  1139 D CarrierSvcBindHelper: onPackageModified: com.google.android.photopicker
+12-23 14:37:13.340  1139  1139 D CarrierSvcBindHelper: No carrier app for: 0
+12-23 14:37:13.341  1139  1139 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+12-23 14:37:13.342   713  1642 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 10154, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.342   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.348   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.348   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_WAP_PUSH, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.349   713  1642 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.350   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = SEND_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.360   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.360   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_WAP_PUSH, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.361   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = SEND_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.361   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.362  1139  1139 D SatelliteController: packageStateChanged: package:com.google.android.photopicker defaultSmsPackageName: com.google.android.apps.messaging satelliteGatewayServicePackageName: 
+12-23 14:37:13.364   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.364  1139  1360 D SatelliteAccessController: Current default SMS app:ComponentInfo{com.google.android.apps.messaging/com.google.android.apps.messaging.shared.receiver.SmsDeliverReceiver}
+12-23 14:37:13.364  1139  1360 D SatelliteController: getSelectedSatelliteSubId: subId=-1
+12-23 14:37:13.364  1139  1346 D ImsResolver: maybeAddedImsService, packageName: com.google.android.photopicker
+12-23 14:37:13.364  1139  1346 V ImsResolver: searchForImsServices: package=com.google.android.photopicker, users=[UserHandle{0}]
+12-23 14:37:13.365  1139  1346 V ImsResolver: searchForImsServices: package=com.google.android.photopicker, users=[UserHandle{0}]
+12-23 14:37:13.365  1139  1360 D SatelliteAccessController: supportedMsgApps:com.google.android.apps.messaging
+12-23 14:37:13.371   713  1079 E RoleControllerServiceImpl: Default/fallback role holder package doesn't qualify for the role, package: com.google.android.gms, role: android.app.role.WALLET, user: 0
+12-23 14:37:13.372  1139  1360 E SmsApplication: com.google.android.apps.messaging lost android:read_cell_broadcasts:  (fixing)
+12-23 14:37:13.373   713  2312 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 10154, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.375   713  1642 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.376   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.382   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = RECEIVE_WAP_PUSH, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.383   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = SEND_SMS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.397   713   731 W AppOpService: Ignored setUidMode call for runtime permission app op: uid = 1001, code = READ_CELL_BROADCASTS, mode = allow, callingUid = 1001, oldMode = allow
+12-23 14:37:13.398  1139  1360 D SatelliteAccessController: Current default SMS app:ComponentInfo{com.google.android.apps.messaging/com.google.android.apps.messaging.shared.receiver.SmsDeliverReceiver}
+12-23 14:37:13.398  1139  1360 D SatelliteController: getSelectedSatelliteSubId: subId=-1
+12-23 14:37:13.398  1139  1360 D SatelliteAccessController: supportedMsgApps:com.google.android.apps.messaging
+12-23 14:37:13.400   713  1079 W SignedPackage: Cannot get ApplicationInfo for package: com.google.android.devicelockcontroller
+12-23 14:37:13.406  2271  3222 I GoogleTTSServiceImpl: For default lang en-us is name en-US-language (en-us-x-iog-server)
+12-23 14:37:13.406  1522  5848 I AiAiEcho: AppIndexer Package:[com.google.android.as] UserProfile:[0] Enabled:[true].
+12-23 14:37:13.406  1522  5848 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.google.android.as], userId:[0], reason:[package is updated.].
+12-23 14:37:13.407   713   745 W libbinder.IPCThreadState: Sending oneway calls to frozen process.
+12-23 14:37:13.410  1522  2367 I TextToSpeech: Setting up the connection to TTS engine...
+12-23 14:37:13.410  1522  1522 I AiAiCaptions: TtsSynthesizerImpl::onInit(): status: true(0).
+12-23 14:37:13.438  1522  5847 I AiAiEcho: AppIndexer Package:[com.google.android.photopicker] UserProfile:[0] Enabled:[true].
+12-23 14:37:13.438  1522  5847 I AiAiEcho: AppFetcherImplV2 updateApps package:[com.google.android.photopicker], userId:[0], reason:[package is updated.].
+12-23 14:37:13.446  2271  3222 I GoogleTTSServiceImpl: onIsValidVoiceName(en-us-x-tpf-local): SUCCESS
+12-23 14:37:13.515  2271  3222 I GoogleTTSServiceImpl: onIsValidVoiceName(en-us-x-tpf-local): SUCCESS
+12-23 14:37:13.515  2271  5859 I GoogleTTSServiceImpl: Synthesis request for locale eng-USA and name en-us-x-tpf-local
+12-23 14:37:13.574  2271  5859 I GoogleTTSServiceImpl: TTS dispatch: en-us-x-tpf-lstm-embedded
+12-23 14:37:13.622  1522  5682 I AiAiCaptions: TtsSynthesizerImpl::handleRequestSuccess(): requestId: requestId: 2
+12-23 14:37:13.624  2271  5859 I GoogleTTSServiceImpl: Synthesis request for locale eng-USA and name en-us-x-tpf-local
+12-23 14:37:13.625  2271  5859 I GoogleTTSServiceImpl: TTS dispatch: en-us-x-tpf-lstm-embedded
+12-23 14:37:13.627   713  2312 D TextToSpeechManagerPerUserService: Unbinding TTS engine: com.google.android.tts. Reason: client disconnection request
+12-23 14:37:13.627  1522  2418 I AiAiCaptions: TtsLangFetcherImpl::fetch(). Fetching 1 lang packs is finished. Failures count: 0
+12-23 14:37:13.630   713   713 W TextToSpeechManagerPerUserService: Disconnected from TTS engine
+12-23 14:37:13.630   713   713 W TextToSpeechManagerPerUserService$TextToSpeechSessionConnection: mayInterruptIfRunning not supported - ignoring
+12-23 14:37:13.631  1522  5682 I TextToSpeech: Disconnected from TTS engine
+12-23 14:37:13.671  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.671  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.671  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.671  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.671  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.671  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.671  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.672  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.672  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.673  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.673  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.673  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.673  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.673  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.673  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.673  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.673  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.673  1522  1779 E SP.Service.AiAi: captions_i18n_v0_en-US is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.673  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.673  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.673  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.673  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.673  1522  2251 I AiAiCaptions: ComponentsManagerImpl::update()
+12-23 14:37:13.674  1522  2251 I AiAiCaptions: updateBasicComponents::updateBasicComponents()
+12-23 14:37:13.674  1522  2251 I AiAiCaptions: Would enable com.google.android.apps.miphone.aiai.captions.settingsui.settingsactivity.CaptionsSettingsActivity but already enabled
+12-23 14:37:13.676  1522  2251 I AiAiCaptions: Would enable com.google.android.apps.miphone.aiai.captions.CaptionsSettingsActivity but already enabled
+12-23 14:37:13.676  1522  2251 I AiAiCaptions: Would enable com.google.android.apps.miphone.aiai.captions.downloadservice.CaptionsDownloadService but already enabled
+12-23 14:37:13.685  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.685  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.685  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.685  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.685  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.685  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.685  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_en-US is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.686  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:13.686  1522  1779 I SP.Service.AiAi: UnspecifiedLegacyClient is already not in the set of current clients for captions_i18n_v0_mandatory
+12-23 14:37:13.693  1522  1928 I SP.AiAi : Registering captions_i18n_v0_background.20240825, url: https://storage.googleapis.com/captions/captions_i18n_v0_20240825_manifest.json, constraints: W:b:u:l, flags: bg, requested: 20240825, current: 20210623
+12-23 14:37:13.693  1522  2251 I AiAiCaptions: initialize(): bound to superpacks service.
+12-23 14:37:13.709  1522  1928 I SP.AiAi : Scheduling job with delay of 0s for {W:b:u:l, bg}, 1 candidates
+12-23 14:37:13.710  1522  2251 I AiAiCaptions: Would enable com.google.android.apps.miphone.aiai.captions.CaptionsForegroundService but already enabled
+12-23 14:37:13.711  1522  2251 I AiAiCaptions: initialize(): bound to superpacks service.
+12-23 14:37:13.715  1522  2251 I AiAiCaptions: shouldEnableCaptionsForCalls: isCallCaptioningEnabled is true [CONTEXT ratelimit_period="1 MINUTES" skipped=1 ]
+12-23 14:37:13.716  1522  2251 I AiAiCaptions: Would enable com.google.android.apps.miphone.aiai.captions.tulip.audiosource.impl.CIS but already enabled
+12-23 14:37:13.717  1522  2251 I AiAiCaptions: initialize(): bound to superpacks service.
+12-23 14:37:13.719  1522  2251 I AiAiCaptions: Would enable com.google.android.apps.miphone.aiai.captions.CaptionsOnboardingService but already enabled
+12-23 14:37:13.719  1522  2251 I AiAiCaptions: initialize(): bound to superpacks service.
+12-23 14:37:13.722  1522  2251 I AiAiCaptions: Would enable com.google.android.apps.miphone.aiai.captions.notificationbroadcastreceiver.CaptionsNotificationBroadcastReceiver but already enabled
+12-23 14:37:13.722  1522  2251 I AiAiCaptions: initialize(): bound to superpacks service.
+12-23 14:37:13.722  1522  1522 I SP.AiAi : ====> Starting job {W:b:u:l, bg}
+12-23 14:37:13.724  1522  2251 I AiAiCaptions: Would enable com.google.android.apps.miphone.aiai.captions.quicksetting.CaptionsTileService but already enabled
+12-23 14:37:13.725  1522  2251 I AiAiCaptions: initialize(): bound to superpacks service.
+12-23 14:37:13.726  1522  2251 I AiAiCaptions: updateComponents(): Updated components state
+12-23 14:37:13.726  1522  2251 I AiAiCaptions: updateTriggerState(): stopping trigger.
+12-23 14:37:13.726  1522  2251 I AiAiCaptions: stop(): stop is called but CaptionsTriggerImpl already stopped
+12-23 14:37:13.727  1522  1928 I SP.AiAi : Scheduling: download registered, 0 started, 0 paused, 1 scheduled, 6 pending: manifests:kg_collections_table-21051103 {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 {W:C:I:l, bg}, manifests:spelling_correction-22110320 {W:C:I:l, bg}, manifests:captions_i18n_v0_background-20240825 * {W:b:u:l, bg}
+12-23 14:37:13.741  1522  1779 I SP.AiAi : Scheduling: job start ({W:b:u:l, bg}), 1 started, 0 paused, 0 scheduled, 6 pending: manifests:kg_collections_table-21051103 {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 {W:C:I:l, bg}, manifests:spelling_correction-22110320 {W:C:I:l, bg}, manifests:captions_i18n_v0_background-20240825 @ * {W:b:u:l, bg}
+12-23 14:37:13.741  1522  1779 I SP.AiAi : Requesting download of URL https://storage.googleapis.com/captions/captions_i18n_v0_20240825_manifest.json to captions_i18n_v0_background-20240825.fetched (constraints: W:b:u:l)
+12-23 14:37:13.752   713   931 D BackgroundInstallControlService: Package event received: 0
+12-23 14:37:13.753   713  2312 D ActivityManager: sync unfroze 1960 com.google.android.as.oss for 6
+12-23 14:37:13.754   713   931 D BackgroundInstallControlService: Package event received: 0
+12-23 14:37:13.756  1960  1960 I AstreaGrpcService: AstreaGrpcService#onCreate called with the following services: [com.google.android.apps.miphone.astrea.pd.api.ProtectedDownloadService, com.google.android.apps.miphone.astrea.http.api.HttpService, com.google.android.apps.miphone.astrea.fl.api.TrainingService, com.google.android.apps.miphone.astrea.pir.api.PirService]
+12-23 14:37:13.759  1960  5912 W System.err: Seeding context with ref: 74151600
+12-23 14:37:13.759  1960  5912 I HttpGrpcBindableService: Downloading requested for URL 'https://storage.googleapis.com/captions/captions_i18n_v0_20240825_manifest.json'
+12-23 14:37:13.931  1960  5912 I HttpGrpcBindableService: Responding with header information for URL 'https://storage.googleapis.com/captions/captions_i18n_v0_20240825_manifest.json'
+12-23 14:37:13.934  1522  5911 I AstreaHttpConnection: Started download from url='https://storage.googleapis.com/captions/captions_i18n_v0_20240825_manifest.json'
+12-23 14:37:13.935  1960  5921 I HttpGrpcBindableService: [pfd-write] DOWNLOAD COMPLETE: Downloaded 19929 bytes from URL [https://storage.googleapis.com/captions/captions_i18n_v0_20240825_manifest.json].
+12-23 14:37:13.935  1960  5921 W System.err: val in interceptor: null
+12-23 14:37:13.935   713   868 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+12-23 14:37:13.938  1522  5911 I AstreaHttpConnection: DOWNLOAD COMPLETE: Downloaded unknown number of bytes from https://storage.googleapis.com/captions/captions_i18n_v0_20240825_manifest.json.
+12-23 14:37:13.939  1522  1779 I SP.AiAi : <==== Finishing job {W:b:u:l, bg}, 217 ms. elapsed since start
+12-23 14:37:13.940  1522  1779 I SP.AiAi : Download stopped: manifests:captions_i18n_v0_background-20240825, succeeded, size: 19929
+12-23 14:37:13.958  1522  1779 I SP.AiAi : Scheduling job with delay of 0s for {W:C:I:l, bg}, 5 candidates
+12-23 14:37:13.976  1522  1928 I SP.AiAi : Successfully got manifest for captions_i18n_v0_background-manifest: manifests:captions_i18n_v0_background-20240825
+12-23 14:37:13.982  1522  5922 I AiAiCaptions: loadManifest(): Successfully loaded embedded manifest of superpack 'captions_i18n_v0_background' (version 20240825)
+12-23 14:37:13.982  1522  2251 I AiAiCaptions: generateAndDownloadSuperpack(): Successfully created manifest of superpack 'captions_i18n_v0_mandatory' (version 20240825), starting to download. Packs to skip: 
+12-23 14:37:13.983  1522  2251 I AiAiCaptions: generateAndDownloadSuperpack(): Successfully created manifest of superpack 'captions_i18n_v0_en-US' (version 20240825), starting to download. Packs to skip: 
+12-23 14:37:13.990  1522  1779 I SP.AiAi : Scheduling: download stopped, 0 started, 0 paused, 5 scheduled, 5 pending: manifests:kg_collections_table-21051103 * {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 * {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 * {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 * {W:C:I:l, bg}, manifests:spelling_correction-22110320 * {W:C:I:l, bg}
+12-23 14:37:13.991  1522  1928 I SP.AiAi : Registering captions_i18n_v0_mandatory.20240825, url: null, constraints: *:b:u:l, flags: *, requested: 20240825, current: 20210623
+12-23 14:37:13.991  1522  1928 I SP.AiAi : Registering captions_i18n_v0_en-US.20240825, url: null, constraints: *:b:u:l, flags: *, requested: 20240825, current: 20210623
+12-23 14:37:14.074  1522  1928 I SP.AiAi : Successfully got manifest for captions_i18n_v0_mandatory-manifest: manifests:captions_i18n_v0_mandatory-20240825
+12-23 14:37:14.081  1522  1928 I SP.AiAi : Successfully got manifest for captions_i18n_v0_en-US-manifest: manifests:captions_i18n_v0_en-US-20240825
+12-23 14:37:14.086  1522  5922 I AiAiCaptions: downloadSuperpack(): Successfully loaded embedded manifest of superpack 'captions_i18n_v0_mandatory' (version 20240825)
+12-23 14:37:14.086  1522  5924 I AiAiCaptions: downloadSuperpack(): Successfully loaded embedded manifest of superpack 'captions_i18n_v0_en-US' (version 20240825)
+12-23 14:37:14.087  1522  1928 I SP.AiAi : Syncing captions_i18n_v0_mandatory (20240825) with slices: [{sound_recognition_v7, W:b:u:l, bg}, {emotion_recognition_v4, W:b:u:l, bg}], metadata: false
+12-23 14:37:14.088  1522  1928 I SP.AiAi : Syncing captions_i18n_v0_en-US (20240825) with slices: [{asr_en-US_v3056, W:b:u:l, bg}, {input_predictions_en-US_v4, W:b:u:l, bg}], metadata: false
+12-23 14:37:14.138  1522  1928 I SP.AiAi : Scheduling job with delay of 0s for {W:b:u:l, bg}, 1 candidates
+12-23 14:37:14.143  1522  1522 I SP.AiAi : ====> Starting job {W:b:u:l, bg}
+12-23 14:37:14.153  1522  1928 I SP.AiAi : Scheduling: download registered, 0 started, 0 paused, 1 scheduled, 6 pending: manifests:kg_collections_table-21051103 {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 {W:C:I:l, bg}, manifests:spelling_correction-22110320 {W:C:I:l, bg}, captions_i18n_v0_mandatory:sound_recognition_v7 * {W:b:u:l, bg}
+12-23 14:37:14.165  1522  1779 I SP.AiAi : Scheduling: job start ({W:b:u:l, bg}), 1 started, 0 paused, 0 scheduled, 6 pending: manifests:kg_collections_table-21051103 {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 {W:C:I:l, bg}, manifests:spelling_correction-22110320 {W:C:I:l, bg}, captions_i18n_v0_mandatory:sound_recognition_v7 @ * {W:b:u:l, bg}
+12-23 14:37:14.165  1522  1779 I SP.AiAi : Requesting download of URL https://storage.googleapis.com/captions/sound_recognition_v7.zip to sound_recognition_v7.zip.fetched (constraints: W:b:u:l)
+12-23 14:37:14.170  1960  5912 W System.err: Seeding context with ref: 20488201
+12-23 14:37:14.173  1960  5912 I HttpGrpcBindableService: Downloading requested for URL 'https://storage.googleapis.com/captions/sound_recognition_v7.zip'
+12-23 14:37:14.175  1522  1779 I SP.AiAi : Requesting download of URL https://storage.googleapis.com/captions/emotion_recognition_v4.zip to emotion_recognition_v4.zip.fetched (constraints: W:b:u:l)
+12-23 14:37:14.184  1522  1928 I SP.AiAi : Scheduling: download registered, 1 started, 0 paused, 0 scheduled, 7 pending: manifests:kg_collections_table-21051103 {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 {W:C:I:l, bg}, manifests:spelling_correction-22110320 {W:C:I:l, bg}, captions_i18n_v0_mandatory:sound_recognition_v7 @ {W:b:u:l, bg}, captions_i18n_v0_mandatory:emotion_recognition_v4 @ * {W:b:u:l, bg}
+12-23 14:37:14.194  1960  5912 I HttpGrpcBindableService: Responding with header information for URL 'https://storage.googleapis.com/captions/sound_recognition_v7.zip'
+12-23 14:37:14.197  1522  5911 I AstreaHttpConnection: Started download from url='https://storage.googleapis.com/captions/sound_recognition_v7.zip'
+12-23 14:37:14.255  1522  1779 I SP.AiAi : Requesting download of URL https://storage.googleapis.com/captions/soda-en-US-v3056.zip to asr_en-US_v3056.zip.fetched (constraints: W:b:u:l)
+12-23 14:37:14.268  1522  1928 I SP.AiAi : Scheduling: download registered, 1 started, 0 paused, 0 scheduled, 8 pending: manifests:kg_collections_table-21051103 {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 {W:C:I:l, bg}, manifests:spelling_correction-22110320 {W:C:I:l, bg}, captions_i18n_v0_mandatory:sound_recognition_v7 @ {W:b:u:l, bg}, captions_i18n_v0_mandatory:emotion_recognition_v4 @ {W:b:u:l, bg}, captions_i18n_v0_en-US:asr_en-US_v3056 @ * {W:b:u:l, bg}
+12-23 14:37:14.282  1522  1928 I SP.AiAi : Scheduling: download registered, 1 started, 0 paused, 0 scheduled, 9 pending: manifests:kg_collections_table-21051103 {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 {W:C:I:l, bg}, manifests:spelling_correction-22110320 {W:C:I:l, bg}, captions_i18n_v0_mandatory:sound_recognition_v7 @ {W:b:u:l, bg}, captions_i18n_v0_mandatory:emotion_recognition_v4 @ {W:b:u:l, bg}, captions_i18n_v0_en-US:asr_en-US_v3056 @ {W:b:u:l, bg}, captions_i18n_v0_en-US:input_predictions_en-US_v4 @ * {W:b:u:l, bg}
+12-23 14:37:14.288  1522  1779 I SP.AiAi : Requesting download of URL https://storage.googleapis.com/captions/input_predictions_en-US_v4.zip to input_predictions_en-US_v4.zip.fetched (constraints: W:b:u:l)
+12-23 14:37:15.147  1960  5921 I HttpGrpcBindableService: [pfd-write] DOWNLOAD COMPLETE: Downloaded 8693764 bytes from URL [https://storage.googleapis.com/captions/sound_recognition_v7.zip].
+12-23 14:37:15.147  1960  5921 W System.err: val in interceptor: null
+12-23 14:37:15.148  1522  5911 I AstreaHttpConnection: DOWNLOAD COMPLETE: Downloaded unknown number of bytes from https://storage.googleapis.com/captions/sound_recognition_v7.zip.
+12-23 14:37:15.155  1522  1779 I SP.AiAi : Download stopped: captions_i18n_v0_mandatory:sound_recognition_v7, succeeded, size: 8693764
+12-23 14:37:15.159  1960  5912 W System.err: Seeding context with ref: 202187823
+12-23 14:37:15.159  1960  5912 I HttpGrpcBindableService: Downloading requested for URL 'https://storage.googleapis.com/captions/emotion_recognition_v4.zip'
+12-23 14:37:15.171  1522  1779 I SP.AiAi : Scheduling: download stopped, 0 started, 0 paused, 0 scheduled, 8 pending: manifests:kg_collections_table-21051103 {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 {W:C:I:l, bg}, manifests:spelling_correction-22110320 {W:C:I:l, bg}, captions_i18n_v0_mandatory:emotion_recognition_v4 @ {W:b:u:l, bg}, captions_i18n_v0_en-US:asr_en-US_v3056 @ {W:b:u:l, bg}, captions_i18n_v0_en-US:input_predictions_en-US_v4 @ {W:b:u:l, bg}
+12-23 14:37:15.502  1960  5912 I HttpGrpcBindableService: Responding with header information for URL 'https://storage.googleapis.com/captions/emotion_recognition_v4.zip'
+12-23 14:37:15.503  1522  5911 I AstreaHttpConnection: Started download from url='https://storage.googleapis.com/captions/emotion_recognition_v4.zip'
+12-23 14:37:16.945   713   868 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+12-23 14:37:17.611   713   817 D ActivityManager: freezing 1617 android.process.acore
+12-23 14:37:17.613   713   876 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+12-23 14:37:17.613   713   876 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+12-23 14:37:17.613   713   876 D InetDiagMessage: Destroyed live tcp sockets for uids={10104} in 0ms
+12-23 14:37:18.119  1960  5921 I HttpGrpcBindableService: [pfd-write] DOWNLOAD COMPLETE: Downloaded 20492528 bytes from URL [https://storage.googleapis.com/captions/emotion_recognition_v4.zip].
+12-23 14:37:18.119  1960  5921 W System.err: val in interceptor: null
+12-23 14:37:18.120  1522  5911 I AstreaHttpConnection: DOWNLOAD COMPLETE: Downloaded unknown number of bytes from https://storage.googleapis.com/captions/emotion_recognition_v4.zip.
+12-23 14:37:18.124  1960  5912 W System.err: Seeding context with ref: 12727237
+12-23 14:37:18.124  1960  5912 I HttpGrpcBindableService: Downloading requested for URL 'https://storage.googleapis.com/captions/soda-en-US-v3056.zip'
+12-23 14:37:18.126  1522  1779 I SP.AiAi : Download stopped: captions_i18n_v0_mandatory:emotion_recognition_v4, succeeded, size: 20492528
+12-23 14:37:18.141  1522  1779 I SP.AiAi : Scheduling: download stopped, 0 started, 0 paused, 0 scheduled, 7 pending: manifests:kg_collections_table-21051103 {W:C:I:l, bg}, manifests:text-classifier-annotator-272525175 {W:C:I:l, bg}, manifests:text-classifier-actions-1140547708 {W:C:I:l, bg}, manifests:text-classifier-langid-1941001461 {W:C:I:l, bg}, manifests:spelling_correction-22110320 {W:C:I:l, bg}, captions_i18n_v0_en-US:asr_en-US_v3056 @ {W:b:u:l, bg}, captions_i18n_v0_en-US:input_predictions_en-US_v4 @ {W:b:u:l, bg}
+12-23 14:37:18.248  1960  5912 I HttpGrpcBindableService: Responding with header information for URL 'https://storage.googleapis.com/captions/soda-en-US-v3056.zip'
+12-23 14:37:18.249  1522  5910 I AstreaHttpConnection: Started download from url='https://storage.googleapis.com/captions/soda-en-US-v3056.zip'
+12-23 14:37:18.337  1522  1928 I SP.AiAi : Sync for captions_i18n_v0_mandatory succeeded in 4250 ms: {added: [emotion_recognition_v4, sound_recognition_v7], removed: [sound_recognition_v1], metadata: false
+12-23 14:37:18.355  1522  1928 I SP.AiAi : GC for 'captions_i18n_v0_mandatory' (10) with ttl of 0 ms took 0 ms (0/0/0)
+12-23 14:37:18.355  1522  1928 I AiAiNowPlaying: Superpacks changed. Refreshing FA controller
+12-23 14:37:18.356  1522  1779 E SP.Service.AiAi: captions_i18n_v0_mandatory is opened by other clients. It will stay open until all clients close it.
+12-23 14:37:18.356  1522  5922 I AiAiCaptions: downloadSuperpack(): Sync of superpack 'captions_i18n_v0_mandatory' version 20240825 was completed but currently using active version 20210623
+12-23 14:37:18.356  1522  5922 I AiAiCaptions: downloadSuperpack(): Successfully downloaded superpack 'captions_i18n_v0_mandatory' version 20240825.
+12-23 14:37:18.671   713   876 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+12-23 14:37:18.671   713   876 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+12-23 14:37:18.671   713   876 D InetDiagMessage: Destroyed live tcp sockets for uids={10165} in 0ms
+12-23 14:37:18.672   713   876 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET, states=14
+12-23 14:37:18.673   713   876 D InetDiagMessage: Destroyed 0 sockets, proto=IPPROTO_TCP, family=AF_INET6, states=14
+12-23 14:37:18.673   713   876 D InetDiagMessage: Destroyed live tcp sockets for uids={20165} in 1ms
+12-23 14:37:19.953   713   868 I HalDevMgr: bestIfaceCreationProposal is null, requestIface=STA, existingIface=[name=wlan0 type=STA]
+12-23 14:37:20.009   984   984 I ClipboardListener: Clipboard overlay suppressed.
+12-23 14:37:20.011  1522  1782 I AiAiTranslate: C2T - not in a conversation
+12-23 14:37:20.669   713  1642 D OomAdjuster: Not killing cached processes
