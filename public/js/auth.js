@@ -40,6 +40,13 @@ async function renderLogin() {
                             <i class="bi bi-box-arrow-in-right"></i> Sign In
                         </button>
                     </form>
+                    <hr>
+                    <div class="text-center">
+                      <small class="text-muted">Having trouble connecting?</small><br>
+                      <button type="button" class="btn btn-link btn-sm" onclick="app.changeServerURL()">
+                        <i class="bi bi-cloud-arrow-down"></i> Change Server URL
+                      </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -158,17 +158,12 @@ async function mfaStartSetup() {
   const alertDiv = document.getElementById("mfaSetupAlert");
 
   try {
-    const response = await fetch(`${API_BASE_URL}/mfa/setup`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${api.getToken()}`,
-      },
+    console.log('[MFA] Starting MFA setup');
+    const data = await api.request('/mfa/setup', {
+      method: 'POST'
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (data.error) {
       throw new Error(data.error || "Failed to setup MFA");
     }
 
@@ -203,16 +198,13 @@ async function mfaVerifySetup() {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/mfa/verify`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${api.getToken()}`,
-      },
-      body: JSON.stringify({ token: code }),
+    console.log('[MFA] Verifying code:', code);
+    
+    // Use api.request() to ensure correct backend URL is used
+    const data = await api.request('/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token: code })
     });
-
-    const data = await response.json();
 
     if (!response.ok) {
       throw new Error(data.error || "Invalid code");
@@ -285,11 +277,9 @@ async function mfaSubmitLoginCode() {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    console.log('[MFA] Verifying MFA code with login');
+    const data = await api.request('/auth/login', {
+      method: 'POST',
       body: JSON.stringify({
         username: mfaState.username,
         password: mfaState.password,
@@ -297,9 +287,7 @@ async function mfaSubmitLoginCode() {
       }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (data.error) {
       throw new Error(data.error || "Invalid code");
     }
 
@@ -335,11 +323,9 @@ async function mfaSubmitBackupCode() {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    console.log('[MFA] Verifying backup code with login');
+    const data = await api.request('/auth/login', {
+      method: 'POST',
       body: JSON.stringify({
         username: mfaState.username,
         password: mfaState.password,
@@ -348,9 +334,7 @@ async function mfaSubmitBackupCode() {
       }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (data.error) {
       throw new Error(data.error || "Invalid backup code");
     }
 

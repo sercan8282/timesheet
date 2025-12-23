@@ -2,7 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#0080ff" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <title>Timesheet Management System</title>
     
     <!-- PWA Meta Tags -->
@@ -114,6 +116,13 @@
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
                 <li>
+                  <a class="dropdown-item" href="#" onclick="app.changeServerURL()">
+                    <i class="bi bi-cloud-arrow-down"></i>
+                    <span>Change Server URL</span>
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
                   <a
                     class="dropdown-item"
                     href="#"
@@ -121,6 +130,12 @@
                   >
                     <i class="bi bi-key"></i>
                     <span data-i18n="ui:change_password">Change Password</span>
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" onclick="app.loadPage('settings')">
+                    <i class="bi bi-gear"></i>
+                    Settings
                   </a>
                 </li>
                 <!-- Language selector hidden for now; keep structure for future use -->
@@ -146,7 +161,51 @@
       id="toastContainer"
     ></div>
 
+    <!-- Configuration Modal -->
+    <div class="modal fade" id="configModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">
+              <i class="bi bi-gear"></i> Backend Configuration
+            </h5>
+          </div>
+          <div class="modal-body">
+            <p class="text-muted">Configure the backend server URL for this application.</p>
+            <div class="mb-3">
+              <label for="backendUrlInput" class="form-label">Backend URL</label>
+              <input
+                type="text"
+                class="form-control"
+                id="backendUrlInput"
+                placeholder="https://urenregistratie.site"
+              />
+              <small class="text-muted">Example: https://urenregistratie.site or 192.168.1.100:3000</small>
+            </div>
+            <div class="alert alert-info" id="connectionStatus" style="display: none;">
+              <i class="bi bi-check-circle"></i> <span id="statusMessage"></span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="resetConfigBtn">
+              <i class="bi bi-arrow-counterclockwise"></i> Reset to Default
+            </button>
+            <button type="button" class="btn btn-primary" id="testConfigBtn">
+              <i class="bi bi-wifi"></i> Test Connection
+            </button>
+            <button type="button" class="btn btn-success" id="saveConfigBtn">
+              <i class="bi bi-check-lg"></i> Save & Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Scripts - LOAD IN CORRECT ORDER -->
+    <!-- CONFIG BLOCKER MUST BE FIRST - Before Bootstrap, before anything else -->
+    <script src="/js/config-blocker.js?v=20251223"></script>
+    
+    <!-- Bootstrap and utilities -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script src="/js/security.js?v=20251222"></script>
@@ -166,8 +225,11 @@
     <!-- Invoice Management -->
     <script src="/js/invoices.js?v=20251219v"></script>
 
-    <!-- App LAST -->
-    <script src="/js/app.js?v=20251219v"></script>
+    <!-- Settings Page -->
+    <script src="/js/settings.js?v=20251223"></script>
+
+    <!-- App LAST - will not start until config-blocker allows it -->
+    <script src="/js/app.js?v=20251224"></script>
     
     <!-- PWA Service Worker Registration -->
     <script>

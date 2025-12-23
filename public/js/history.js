@@ -5,19 +5,25 @@ function renderHistory() {
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                                <h5 class="mb-0"><i class="bi bi-clock-history"></i> <span data-i18n="ui:history.title">Submission History</span></h5>
-                                <div class="d-flex align-items-center gap-2">
-                                    <label class="form-label mb-0" for="historyYearFilter"><span data-i18n="ui:history.year">Year</span></label>
-                                    <select id="historyYearFilter" class="form-select form-select-sm" style="width: auto"></select>
-                                    <label class="form-label mb-0" for="historyWeekFilter"><span data-i18n="ui:history.week">Week</span></label>
-                                    <input id="historyWeekFilter" type="number" min="1" max="53" class="form-control form-control-sm" style="width: 90px" placeholder="e.g. 12">
-                                    <label class="form-label mb-0" for="companyFilter"><span data-i18n="ui:history.company">Company</span></label>
-                                    <select class="form-select form-select-sm" id="companyFilter" onchange="filterHistoryByCompany()" style="width: auto">
+                            <h5 class="mb-3"><i class="bi bi-clock-history"></i> <span data-i18n="ui:history.title">Submission History</span></h5>
+                            <div class="row g-2">
+                                <div class="col-6 col-md-auto">
+                                    <label class="form-label mb-2 d-block" for="historyYearFilter"><span data-i18n="ui:history.year">Year</span></label>
+                                    <select id="historyYearFilter" class="form-select form-select-sm"></select>
+                                </div>
+                                <div class="col-6 col-md-auto">
+                                    <label class="form-label mb-2 d-block" for="historyWeekFilter"><span data-i18n="ui:history.week">Week</span></label>
+                                    <input id="historyWeekFilter" type="number" min="1" max="53" class="form-control form-control-sm" placeholder="e.g. 12">
+                                </div>
+                                <div class="col-6 col-md-auto">
+                                    <label class="form-label mb-2 d-block" for="companyFilter"><span data-i18n="ui:history.company">Company</span></label>
+                                    <select class="form-select form-select-sm" id="companyFilter" onchange="filterHistoryByCompany()">
                                         <option value="" data-i18n="ui:history.all_companies">All Companies</option>
                                     </select>
-                                    <label class="form-label mb-0" for="historyPageSize"><span data-i18n="ui:history.page_size">Per page</span></label>
-                                    <select id="historyPageSize" class="form-select form-select-sm" onchange="changeHistoryPageSize()" style="width: auto">
+                                </div>
+                                <div class="col-6 col-md-auto">
+                                    <label class="form-label mb-2 d-block" for="historyPageSize"><span data-i18n="ui:history.page_size">Per page</span></label>
+                                    <select id="historyPageSize" class="form-select form-select-sm" onchange="changeHistoryPageSize()">
                                         <option value="10">10</option>
                                         <option value="25" selected>25</option>
                                         <option value="50">50</option>
