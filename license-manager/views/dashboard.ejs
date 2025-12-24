@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Licentiemanager - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 20px;
+        }
+        .sidebar {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            min-height: 100vh;
+        }
+        .sidebar .nav-link {
+            color: #333;
+            padding: 12px 20px;
+            border-left: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover {
+            background: #f8f9fa;
+            border-left-color: #667eea;
+        }
+        .sidebar .nav-link.active {
+            background: #f8f9fa;
+            border-left-color: #667eea;
+            color: #667eea;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px;
+        }
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px 10px 0 0;
+            padding: 20px;
+            font-weight: 600;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stat-card h4 {
+            color: #667eea;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .stat-card p {
+            color: #666;
+            margin: 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">
+                🔐 Licentiemanager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> <%= email %>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="/profile">Profiel</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout">Afmelden</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-lg-2 sidebar">
+                <div class="nav flex-column nav-pills" role="tablist">
+                    <a class="nav-link active" data-bs-toggle="pill" href="#dashboard" role="tab">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                    <a class="nav-link" data-bs-toggle="pill" href="#users" role="tab">
+                        <i class="bi bi-people"></i> Gebruikers
+                    </a>
+                    <a class="nav-link" data-bs-toggle="pill" href="#companies" role="tab">
+                        <i class="bi bi-building"></i> Bedrijven
+                    </a>
+                    <a class="nav-link" data-bs-toggle="pill" href="#licenses" role="tab">
+                        <i class="bi bi-file-earmark-text"></i> Licenties
+                    </a>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-10 content">
+                <div class="tab-content">
+                    <!-- Dashboard Tab -->
+                    <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                        <h2 class="mb-4">Dashboard</h2>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h4>0</h4>
+                                    <p>Actieve Gebruikers</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h4>0</h4>
+                                    <p>Bedrijven</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h4>0</h4>
+                                    <p>Actieve Licenties</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <h4>0</h4>
+                                    <p>Verlopen Licenties</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                Welkom
+                            </div>
+                            <div class="card-body">
+                                <p>Welkom in het Licentiemanagersysteem. Hier kunt u:</p>
+                                <ul>
+                                    <li>Gebruikers beheren</li>
+                                    <li>Bedrijven toevoegen</li>
+                                    <li>Licenties genereren en beheren</li>
+                                </ul>
+                                <p class="text-muted">Gebruik het menu aan de linkerkant om te navigeren.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Users Tab -->
+                    <div class="tab-pane fade" id="users" role="tabpanel">
+                        <h2 class="mb-4">Gebruikersbeheer</h2>
+                        <button class="btn btn-primary mb-3" id="btnAddUser">
+                            <i class="bi bi-plus-lg"></i> Nieuwe Gebruiker
+                        </button>
+                        <div class="card">
+                            <div class="card-header">
+                                Gebruikers
+                            </div>
+                            <div class="card-body">
+                                <div id="usersContent">
+                                    <p class="text-muted">Laden...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Companies Tab -->
+                    <div class="tab-pane fade" id="companies" role="tabpanel">
+                        <h2 class="mb-4">Bedrijfsbeheer</h2>
+                        <button class="btn btn-primary mb-3" id="btnAddCompany">
+                            <i class="bi bi-plus-lg"></i> Nieuw Bedrijf
+                        </button>
+                        <div class="card">
+                            <div class="card-header">
+                                Bedrijven
+                            </div>
+                            <div class="card-body">
+                                <div id="companiesContent">
+                                    <p class="text-muted">Laden...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Licenses Tab -->
+                    <div class="tab-pane fade" id="licenses" role="tabpanel">
+                        <h2 class="mb-4">Licentiesbeheer</h2>
+                        <button class="btn btn-primary mb-3" id="btnGenerateLicense">
+                            <i class="bi bi-plus-lg"></i> Nieuwe Licentie
+                        </button>
+                        <div class="card">
+                            <div class="card-header">
+                                Licenties
+                            </div>
+                            <div class="card-body">
+                                <div id="licensesContent">
+                                    <p class="text-muted">Laden...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Modal: Generieke Confirmatie -->
+    <div class="modal fade" id="confirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmTitle">Bevestiging</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="confirmMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="btnConfirmCancel">Annuleren</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmYes">Ja, doorgaan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Gebruiker Toevoegen -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nieuwe Gebruiker</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label for="addEmail" class="form-label">Email adres</label>
+                            <input type="email" class="form-control" id="addEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="addPassword" class="form-label">Wachtwoord</label>
+                            <input type="password" class="form-control" id="addPassword" placeholder="Min. 8 karakters" required>
+                        </div>
+                        <div id="addUserError" class="alert alert-danger" style="display: none;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="button" class="btn btn-primary" id="btnSaveUser">Toevoegen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Wachtwoord Resetten -->
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Wachtwoord Resetten</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="resetPasswordForm">
+                        <div class="mb-3">
+                            <label for="resetPassword" class="form-label">Nieuw Wachtwoord</label>
+                            <input type="password" class="form-control" id="resetPassword" placeholder="Min. 8 karakters" required>
+                        </div>
+                        <div id="resetPasswordError" class="alert alert-danger" style="display: none;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmReset">Opslaan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Bedrijf Toevoegen/Bewerken -->
+    <div class="modal fade" id="addCompanyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="companyModalTitle">Nieuw Bedrijf</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addCompanyForm">
+                        <div class="mb-3">
+                            <label for="companyName" class="form-label">Bedrijfsnaam *</label>
+                            <input type="text" class="form-control" id="companyName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="companyAddress" class="form-label">Adres</label>
+                            <input type="text" class="form-control" id="companyAddress">
+                        </div>
+                        <div class="mb-3">
+                            <label for="companyEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="companyEmail">
+                        </div>
+                        <div class="mb-3">
+                            <label for="companyContact" class="form-label">Contactpersoon</label>
+                            <input type="text" class="form-control" id="companyContact">
+                        </div>
+                        <div id="addCompanyError" class="alert alert-danger" style="display: none;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="button" class="btn btn-primary" id="btnSaveCompany">Opslaan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Licentie Genereren -->
+    <div class="modal fade" id="generateLicenseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nieuwe Licentie Genereren</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="generateLicenseForm">
+                        <div class="mb-3">
+                            <label for="licenseCompany" class="form-label">Bedrijf *</label>
+                            <select class="form-select" id="licenseCompany" required>
+                                <option value="">Selecteer een bedrijf</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Modules *</label>
+                            <div id="modulesContainer">
+                                <!-- Modules will be loaded here -->
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="licenseValidFrom" class="form-label">Geldend van *</label>
+                                    <input type="date" class="form-control" id="licenseValidFrom" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="licenseValidUntil" class="form-label">Geldend tot *</label>
+                                    <input type="date" class="form-control" id="licenseValidUntil" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="generateLicenseError" class="alert alert-danger" style="display: none;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmGenerateLicense">Genereren</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables
+        let users = [];
+        let companies = [];
+        let selectedUserId = null;
+        let selectedCompanyId = null;
+        let confirmCallback = null;
+
+        const addUserModal = new bootstrap.Modal(document.getElementById('addUserModal'));
+        const resetPasswordModal = new bootstrap.Modal(document.getElementById('resetPasswordModal'));
+        const addCompanyModal = new bootstrap.Modal(document.getElementById('addCompanyModal'));
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+
+        // Confirmation Dialog Helper
+        function showConfirm(title, message, callback, buttonText = 'Ja, doorgaan') {
+            document.getElementById('confirmTitle').textContent = title;
+            document.getElementById('confirmMessage').textContent = message;
+            document.getElementById('btnConfirmYes').textContent = buttonText;
+            confirmCallback = callback;
+            confirmModal.show();
+        }
+
+        document.getElementById('btnConfirmYes').addEventListener('click', () => {
+            confirmModal.hide();
+            if (confirmCallback) {
+                confirmCallback();
+            }
+        });
+
+        // ============ USERS SECTION ============
+
+        // Load users
+        function loadUsers() {
+            fetch('/api/users')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        users = data.users;
+                        renderUsers();
+                    }
+                })
+                .catch(err => console.error('Error loading users:', err));
+        }
+
+        // Render users table
+        function renderUsers() {
+            if (users.length === 0) {
+                document.getElementById('usersContent').innerHTML = '<p class="text-muted">Geen gebruikers gevonden</p>';
+                return;
+            }
+
+            const html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>MFA</th>
+                                <th>Status</th>
+                                <th>Aangemaakt</th>
+                                <th>Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${users.map(user => `
+                                <tr>
+                                    <td>${user.email}</td>
+                                    <td>
+                                        <span class="badge ${user.mfa_enabled ? 'bg-success' : 'bg-warning'}">
+                                            ${user.mfa_enabled ? 'Ingeschakeld' : 'Uit'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${user.is_active ? 'bg-success' : 'bg-danger'}">
+                                            ${user.is_active ? 'Actief' : 'Inactief'}
+                                        </span>
+                                    </td>
+                                    <td>${new Date(user.created_at).toLocaleDateString('nl-NL')}</td>
+                                    <td>
+                                        ${user.id !== 1 ? `
+                                            <button class="btn btn-sm btn-warning" onclick="resetPassword(${user.id}, '${user.email}')">
+                                                <i class="bi bi-key"></i> Wachtwoord
+                                            </button>
+                                            <button class="btn btn-sm ${user.is_active ? 'btn-danger' : 'btn-success'}" 
+                                                onclick="toggleUser(${user.id}, ${!user.is_active}, '${user.email}')">
+                                                <i class="bi ${user.is_active ? 'bi-lock' : 'bi-unlock'}"></i> 
+                                                ${user.is_active ? 'Deactiveren' : 'Activeren'}
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id}, '${user.email}')">
+                                                <i class="bi bi-trash"></i> Verwijderen
+                                            </button>
+                                        ` : '<span class="text-muted">Admin</span>'}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('usersContent').innerHTML = html;
+        }
+
+        // Add user button
+        document.getElementById('btnAddUser').addEventListener('click', () => {
+            document.getElementById('addUserForm').reset();
+            document.getElementById('addUserError').style.display = 'none';
+            addUserModal.show();
+        });
+
+        // Save user
+        document.getElementById('btnSaveUser').addEventListener('click', async () => {
+            const email = document.getElementById('addEmail').value.trim();
+            const password = document.getElementById('addPassword').value;
+            const errorDiv = document.getElementById('addUserError');
+
+            if (!email || !password) {
+                errorDiv.textContent = 'Email en wachtwoord verplicht';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addUserModal.hide();
+                    loadUsers();
+                } else {
+                    errorDiv.textContent = data.message || 'Fout bij aanmaken gebruiker';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Netwerk error';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // Reset password
+        function resetPassword(userId, email) {
+            selectedUserId = userId;
+            document.getElementById('resetPasswordForm').reset();
+            document.getElementById('resetPasswordError').style.display = 'none';
+            document.querySelector('#resetPasswordModal .modal-title').textContent = `Wachtwoord resetten voor ${email}`;
+            resetPasswordModal.show();
+        }
+
+        document.getElementById('btnConfirmReset').addEventListener('click', async () => {
+            const password = document.getElementById('resetPassword').value;
+            const errorDiv = document.getElementById('resetPasswordError');
+
+            if (!password) {
+                errorDiv.textContent = 'Wachtwoord verplicht';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/users/${selectedUserId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resetPasswordModal.hide();
+                    loadUsers();
+                } else {
+                    errorDiv.textContent = data.message || 'Fout bij resetten wachtwoord';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Netwerk error';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // Toggle user active status
+        function toggleUser(userId, makeActive, email) {
+            const action = makeActive ? 'activeren' : 'deactiveren';
+            showConfirm(
+                'Bevestiging',
+                `Wilt u ${email} echt ${action}?`,
+                async () => {
+                    try {
+                        const response = await fetch(`/api/users/${userId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ is_active: makeActive })
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            loadUsers();
+                        } else {
+                            showConfirm('Fout', data.message || 'Fout bij updaten', () => {}, 'OK');
+                        }
+                    } catch (err) {
+                        showConfirm('Fout', 'Netwerk error', () => {}, 'OK');
+                    }
+                },
+                makeActive ? 'Ja, activeren' : 'Ja, deactiveren'
+            );
+        }
+
+        // Delete user
+        function deleteUser(userId, email) {
+            showConfirm(
+                'Gebruiker verwijderen',
+                `Wilt u ${email} echt permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt.`,
+                async () => {
+                    try {
+                        const response = await fetch(`/api/users/${userId}`, {
+                            method: 'DELETE'
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            loadUsers();
+                        } else {
+                            showConfirm('Fout', data.message || 'Fout bij verwijderen', () => {}, 'OK');
+                        }
+                    } catch (err) {
+                        showConfirm('Fout', 'Netwerk error', () => {}, 'OK');
+                    }
+                },
+                'Ja, verwijderen'
+            );
+        }
+
+        // ============ COMPANIES SECTION ============
+
+        // Load companies
+        function loadCompanies() {
+            fetch('/api/companies')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        companies = data.companies;
+                        renderCompanies();
+                    }
+                })
+                .catch(err => console.error('Error loading companies:', err));
+        }
+
+        // Render companies table
+        function renderCompanies() {
+            if (companies.length === 0) {
+                document.getElementById('companiesContent').innerHTML = '<p class="text-muted">Geen bedrijven gevonden</p>';
+                return;
+            }
+
+            const html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Bedrijfsnaam</th>
+                                <th>Email</th>
+                                <th>Contactpersoon</th>
+                                <th>Aangemaakt</th>
+                                <th>Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${companies.map(company => `
+                                <tr>
+                                    <td>
+                                        <strong>${company.name}</strong><br>
+                                        <small class="text-muted">${company.address || '-'}</small>
+                                    </td>
+                                    <td>${company.email || '-'}</td>
+                                    <td>${company.contact_person || '-'}</td>
+                                    <td>${new Date(company.created_at).toLocaleDateString('nl-NL')}</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="editCompany(${company.id}, '${company.name}', '${company.address || ''}', '${company.email || ''}', '${company.contact_person || ''}')">
+                                            <i class="bi bi-pencil"></i> Bewerken
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteCompany(${company.id}, '${company.name}')">
+                                            <i class="bi bi-trash"></i> Verwijderen
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('companiesContent').innerHTML = html;
+        }
+
+        // Add company button
+        document.getElementById('btnAddCompany').addEventListener('click', () => {
+            selectedCompanyId = null;
+            document.getElementById('addCompanyForm').reset();
+            document.getElementById('addCompanyError').style.display = 'none';
+            document.getElementById('companyModalTitle').textContent = 'Nieuw Bedrijf';
+            addCompanyModal.show();
+        });
+
+        // Edit company
+        function editCompany(companyId, name, address, email, contact) {
+            selectedCompanyId = companyId;
+            document.getElementById('companyName').value = name;
+            document.getElementById('companyAddress').value = address;
+            document.getElementById('companyEmail').value = email;
+            document.getElementById('companyContact').value = contact;
+            document.getElementById('addCompanyError').style.display = 'none';
+            document.getElementById('companyModalTitle').textContent = `Bewerken: ${name}`;
+            addCompanyModal.show();
+        }
+
+        // Save company
+        document.getElementById('btnSaveCompany').addEventListener('click', async () => {
+            const name = document.getElementById('companyName').value.trim();
+            const address = document.getElementById('companyAddress').value.trim();
+            const email = document.getElementById('companyEmail').value.trim();
+            const contact = document.getElementById('companyContact').value.trim();
+            const errorDiv = document.getElementById('addCompanyError');
+
+            if (!name) {
+                errorDiv.textContent = 'Bedrijfsnaam is verplicht';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const method = selectedCompanyId ? 'PUT' : 'POST';
+                const url = selectedCompanyId ? `/api/companies/${selectedCompanyId}` : '/api/companies';
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        name, 
+                        address: address || null, 
+                        email: email || null, 
+                        contact_person: contact || null 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    addCompanyModal.hide();
+                    loadCompanies();
+                } else {
+                    errorDiv.textContent = data.message || 'Fout bij opslaan bedrijf';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Netwerk error';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // Delete company
+        function deleteCompany(companyId, companyName) {
+            showConfirm(
+                'Bedrijf verwijderen',
+                `Wilt u ${companyName} echt permanent verwijderen? Deze actie kan niet ongedaan worden gemaakt.`,
+                async () => {
+                    try {
+                        const response = await fetch(`/api/companies/${companyId}`, {
+                            method: 'DELETE'
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            loadCompanies();
+                        } else {
+                            showConfirm('Fout', data.message || 'Fout bij verwijderen', () => {}, 'OK');
+                        }
+                    } catch (err) {
+                        showConfirm('Fout', 'Netwerk error', () => {}, 'OK');
+                    }
+                },
+                'Ja, verwijderen'
+            );
+        }
+
+        // ============ LICENSES SECTION ============
+
+        let licenses = [];
+        const generateLicenseModal = new bootstrap.Modal(document.getElementById('generateLicenseModal'));
+
+        // Load licenses
+        function loadLicenses() {
+            fetch('/api/licenses')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        licenses = data.licenses;
+                        renderLicenses();
+                    }
+                })
+                .catch(err => console.error('Error loading licenses:', err));
+        }
+
+        // Render licenses table
+        function renderLicenses() {
+            if (licenses.length === 0) {
+                document.getElementById('licensesContent').innerHTML = '<p class="text-muted">Geen licenties gevonden</p>';
+                return;
+            }
+
+            const html = `
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Licentiesleutel</th>
+                                <th>Bedrijf</th>
+                                <th>Modules</th>
+                                <th>Status</th>
+                                <th>Geldend tot</th>
+                                <th>Acties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${licenses.map(license => {
+                                const modules = Array.isArray(license.modules) ? license.modules.join(', ') : license.modules;
+                                const statusBadge = license.is_active 
+                                    ? (license.is_valid ? '<span class="badge bg-success">Actief</span>' : '<span class="badge bg-warning">Verlopen</span>')
+                                    : '<span class="badge bg-danger">Ingetrokken</span>';
+                                
+                                return `
+                                    <tr>
+                                        <td><code>${license.license_key}</code></td>
+                                        <td>${license.company_name}</td>
+                                        <td><small>${modules}</small></td>
+                                        <td>${statusBadge}</td>
+                                        <td>${new Date(license.valid_until).toLocaleDateString('nl-NL')}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info" onclick="downloadLicense(${license.id})">
+                                                <i class="bi bi-download"></i> Download
+                                            </button>
+                                            ${license.is_active ? `
+                                                <button class="btn btn-sm btn-danger" onclick="revokeLicense(${license.id})">
+                                                    <i class="bi bi-x-circle"></i> Intrekken
+                                                </button>
+                                            ` : ''}
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('licensesContent').innerHTML = html;
+        }
+
+        // Load modules for license generation
+        async function loadModules() {
+            try {
+                const response = await fetch('/api/modules');
+                const data = await response.json();
+                if (data.success) {
+                    const container = document.getElementById('modulesContainer');
+                    container.innerHTML = data.modules.map(module => `
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="${module.id}" id="module_${module.id}" name="modules">
+                            <label class="form-check-label" for="module_${module.id}">
+                                ${module.name}
+                            </label>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                console.error('Error loading modules:', err);
+            }
+        }
+
+        // Load companies for license generation dropdown
+        function loadCompaniesForLicense() {
+            const select = document.getElementById('licenseCompany');
+            select.innerHTML = '<option value="">Laden...</option>';
+            
+            fetch('/api/companies')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        select.innerHTML = '<option value="">Selecteer een bedrijf</option>' +
+                            data.companies.map(comp => `<option value="${comp.id}">${comp.name}</option>`).join('');
+                    }
+                })
+                .catch(err => console.error('Error:', err));
+        }
+
+        // Generate license button
+        document.getElementById('btnGenerateLicense').addEventListener('click', () => {
+            document.getElementById('generateLicenseForm').reset();
+            document.getElementById('generateLicenseError').style.display = 'none';
+            
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            const inOneYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            
+            document.getElementById('licenseValidFrom').value = today;
+            document.getElementById('licenseValidUntil').value = inOneYear;
+            
+            loadModules();
+            loadCompaniesForLicense();
+            generateLicenseModal.show();
+        });
+
+        // Confirm generate license
+        document.getElementById('btnConfirmGenerateLicense').addEventListener('click', async () => {
+            const companyId = document.getElementById('licenseCompany').value;
+            const validFrom = document.getElementById('licenseValidFrom').value;
+            const validUntil = document.getElementById('licenseValidUntil').value;
+            const errorDiv = document.getElementById('generateLicenseError');
+            
+            const selectedModules = Array.from(document.querySelectorAll('input[name="modules"]:checked'))
+                .map(checkbox => checkbox.value);
+
+            if (!companyId || selectedModules.length === 0 || !validFrom || !validUntil) {
+                errorDiv.textContent = 'Alle velden invullen en minstens 1 module selecteren';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/licenses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        company_id: companyId,
+                        modules: selectedModules,
+                        valid_from: validFrom,
+                        valid_until: validUntil
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    generateLicenseModal.hide();
+                    loadLicenses();
+                    showConfirm(
+                        'Licentie Gegenereerd',
+                        `Licentie ${data.license.license_key} is succesvol gegenereerd!`,
+                        () => {},
+                        'OK'
+                    );
+                } else {
+                    errorDiv.textContent = data.message || 'Fout bij genereren licentie';
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Netwerk error';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        // Download license file
+        function downloadLicense(licenseId) {
+            window.location.href = `/api/licenses/${licenseId}/download`;
+        }
+
+        // Revoke license
+        function revokeLicense(licenseId) {
+            showConfirm(
+                'Licentie Intrekken',
+                'Wilt u deze licentie echt intrekken? Dit kan niet ongedaan worden gemaakt.',
+                async () => {
+                    try {
+                        const response = await fetch(`/api/licenses/${licenseId}/revoke`, {
+                            method: 'PUT'
+                        });
+
+                        const data = await response.json();
+                        if (data.success) {
+                            loadLicenses();
+                            showConfirm('Succes', data.message, () => {}, 'OK');
+                        } else {
+                            showConfirm('Fout', data.message || 'Fout bij intrekken', () => {}, 'OK');
+                        }
+                    } catch (err) {
+                        showConfirm('Fout', 'Netwerk error', () => {}, 'OK');
+                    }
+                },
+                'Ja, intrekken'
+            );
+        }
+    </script>
+
+    <script>
+        // Handle tab switching - load data when tabs are shown
+        document.querySelectorAll('a[data-bs-toggle="pill"]').forEach(tab => {
+            tab.addEventListener('shown.bs.tab', function(e) {
+                const targetId = e.target.getAttribute('href').substring(1);
+                if (targetId === 'users') {
+                    loadUsers();
+                } else if (targetId === 'companies') {
+                    loadCompanies();
+                } else if (targetId === 'licenses') {
+                    loadLicenses();
+                }
+            });
+        });
+
+        // Initial load for users tab (in case it's shown first)
+        loadUsers();
+        loadCompanies();
+        loadLicenses();
+    </script>
+</body>
+</html>

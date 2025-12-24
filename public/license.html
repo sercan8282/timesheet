@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Timesheet Licentiebeheer</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body { background: #f5f7fa; }
+    .container { max-width: 880px; }
+    .card { border: none; box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+    .badge { font-size: .9rem; }
+    code { user-select: all; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="/">Timesheet</a>
+      <span class="navbar-text">Licentiebeheer</span>
+    </div>
+  </nav>
+
+  <div class="container my-4">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header">Licentie Status</div>
+          <div class="card-body">
+            <div id="statusContent">
+              <p class="text-muted mb-0">Status wordt geladen...</p>
+            </div>
+            <button id="btnRefresh" class="btn btn-outline-primary mt-3">Vernieuwen</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-header">Licentie Importeren (JSON)</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="licenseFile" class="form-label">Licentiebestand (.json)</label>
+              <input type="file" class="form-control" id="licenseFile" accept="application/json" />
+            </div>
+            <div class="alert alert-danger d-none" id="uploadError"></div>
+            <button id="btnUpload" class="btn btn-primary">Uploaden & Activeren</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mt-4">
+      <div class="card-header">Beschikbare Modules</div>
+      <div class="card-body">
+        <ul id="modulesList" class="list-group list-group-flush"></ul>
+        <small class="text-muted d-block mt-2">Module toegang wordt afgedwongen door de server.</small>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function loadStatus() {
+      const res = await fetch('/api/license/status');
+      const data = await res.json();
+      const el = document.getElementById('statusContent');
+
+      if (!data.loaded) {
+        el.innerHTML = `<div class='alert alert-warning mb-0'>Geen licentie geladen</div>`;
+      } else {
+        const badge = data.isValid ? `<span class='badge bg-success'>Geldig</span>` : `<span class='badge bg-warning'>Verlopen</span>`;
+        const modules = (data.modules || []).map(m => `<span class='badge bg-secondary me-1'>${m}</span>`).join('');
+        el.innerHTML = `
+          <p><strong>Bedrijf:</strong> ${data.company}</p>
+          <p><strong>Geldig van:</strong> ${new Date(data.validFrom).toLocaleDateString('nl-NL')}</p>
+          <p><strong>Geldig tot:</strong> ${new Date(data.validUntil).toLocaleDateString('nl-NL')} ${badge}</p>
+          <p><strong>Modules:</strong><br>${modules || '<span class="text-muted">geen</span>'}</p>
+        `;
+      }
+    }
+
+    async function uploadLicense() {
+      const fileInput = document.getElementById('licenseFile');
+      const errorDiv = document.getElementById('uploadError');
+      errorDiv.classList.add('d-none');
+      errorDiv.textContent = '';
+
+      if (!fileInput.files || !fileInput.files[0]) {
+        errorDiv.textContent = 'Selecteer een JSON licentiebestand.';
+        errorDiv.classList.remove('d-none');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('licenseFile', fileInput.files[0]);
+
+      try {
+        const res = await fetch('/api/license/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!data.success && data.error) {
+          errorDiv.textContent = data.error;
+          errorDiv.classList.remove('d-none');
+          return;
+        }
+        await loadStatus();
+        alert('Licentie geactiveerd');
+      } catch (e) {
+        errorDiv.textContent = 'Upload mislukt: ' + e.message;
+        errorDiv.classList.remove('d-none');
+      }
+    }
+
+    async function loadModules() {
+      const res = await fetch('/api/license/status');
+      const data = await res.json();
+      const list = document.getElementById('modulesList');
+      const mods = data.modules || [];
+      list.innerHTML = mods.length
+        ? mods.map(m => `<li class='list-group-item d-flex justify-content-between align-items-center'>${m}<span class='badge bg-success'>Actief</span></li>`).join('')
+        : `<li class='list-group-item text-muted'>Geen modules actief</li>`;
+    }
+
+    document.getElementById('btnRefresh').addEventListener('click', () => { loadStatus(); loadModules(); });
+    document.getElementById('btnUpload').addEventListener('click', uploadLicense);
+
+    loadStatus();
+    loadModules();
+  </script>
+</body>
+</html>

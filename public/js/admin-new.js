@@ -90,6 +90,9 @@
       case "api-keys":
         await loadApiKeysManagement();
         break;
+      case "license":
+        await loadLicenseManagement();
+        break;
       case "menu":
         await loadMenuManagement();
         break;
@@ -270,6 +273,138 @@
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="5" class="text-danger">${escapeHtml(err.message)}</td></tr>`;
     }
+  }
+
+  // License Management
+  async function loadLicenseManagement() {
+    const container = document.getElementById("adminContent");
+    container.innerHTML = `
+      <div class="admin-hero">
+        <div>
+          <h5 class="mb-1"><i class="bi bi-file-lock"></i> <span>Licentie Beheer</span></h5>
+          <small>Bekijk, beheer en importeer licenties.</small>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-6">
+          <div class="glass-card p-3 shadow-soft">
+            <h6 class="mb-3"><i class="bi bi-info-circle"></i> Licentie Status</h6>
+            <div id="licenseStatusBox" class="alert alert-info mb-3">
+              Status wordt geladen...
+            </div>
+            <div>
+              <p class="text-muted small"><strong>Modules:</strong></p>
+              <div id="licenseModulesBox">
+                <span class="badge bg-secondary">Laden...</span>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline-primary mt-3" id="refreshLicenseBtn">
+              <i class="bi bi-arrow-clockwise"></i> Vernieuwen
+            </button>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="glass-card p-3 shadow-soft">
+            <h6 class="mb-3"><i class="bi bi-cloud-arrow-up"></i> Licentie Importeren</h6>
+            <div class="mb-3">
+              <label for="licenseFileInput" class="form-label small">Licentiebestand (.json)</label>
+              <input type="file" class="form-control form-control-sm" id="licenseFileInput" accept="application/json" />
+            </div>
+            <div id="licenseUploadError" class="alert alert-danger d-none mb-2" role="alert"></div>
+            <div id="licenseUploadSuccess" class="alert alert-success d-none mb-2" role="alert"></div>
+            <button class="btn btn-sm btn-primary" id="uploadLicenseBtn">
+              <i class="bi bi-upload"></i> Uploaden & Activeren
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Load license status
+    async function loadLicenseStatus() {
+      try {
+        const res = await fetch('/api/license/status');
+        const data = await res.json();
+        const statusBox = document.getElementById('licenseStatusBox');
+        const modulesBox = document.getElementById('licenseModulesBox');
+
+        if (!data.loaded) {
+          statusBox.innerHTML = `<div class="alert alert-warning mb-0"><i class="bi bi-exclamation-triangle"></i> Geen licentie ingeladen</div>`;
+          modulesBox.innerHTML = `<span class="badge bg-secondary">Geen</span>`;
+        } else {
+          const badge = data.isValid ? `<span class="badge bg-success">Geldig</span>` : `<span class="badge bg-danger">Verlopen</span>`;
+          const from = new Date(data.validFrom).toLocaleDateString('nl-NL');
+          const until = new Date(data.validUntil).toLocaleDateString('nl-NL');
+          statusBox.innerHTML = `
+            <p class="mb-1"><strong>Bedrijf:</strong> ${escapeHtml(data.company || '-')}</p>
+            <p class="mb-1"><strong>Geldig:</strong> ${from} tot ${until} ${badge}</p>
+          `;
+          const modules = (data.modules || []);
+          modulesBox.innerHTML = modules.length 
+            ? modules.map(m => `<span class="badge bg-success">${escapeHtml(m)}</span>`).join(' ')
+            : `<span class="badge bg-secondary">Geen modules</span>`;
+        }
+      } catch (err) {
+        document.getElementById('licenseStatusBox').innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(err.message)}</div>`;
+      }
+    }
+
+    // Upload license
+    async function uploadLicense() {
+      const fileInput = document.getElementById('licenseFileInput');
+      const errorBox = document.getElementById('licenseUploadError');
+      const successBox = document.getElementById('licenseUploadSuccess');
+      const btn = document.getElementById('uploadLicenseBtn');
+      
+      errorBox.classList.add('d-none');
+      successBox.classList.add('d-none');
+
+      if (!fileInput.files || !fileInput.files[0]) {
+        errorBox.textContent = 'Selecteer eerst een licentiebestand.';
+        errorBox.classList.remove('d-none');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploaden...';
+
+      try {
+        const formData = new FormData();
+        formData.append('licenseFile', fileInput.files[0]);
+
+        const res = await fetch('/api/license/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          errorBox.textContent = data.error || 'Upload mislukt';
+          errorBox.classList.remove('d-none');
+          return;
+        }
+
+        successBox.innerHTML = '<i class="bi bi-check-circle"></i> Licentie succesvol geimporteerd!';
+        successBox.classList.remove('d-none');
+        fileInput.value = '';
+        
+        // Reload status after 1 second
+        setTimeout(loadLicenseStatus, 1000);
+      } catch (err) {
+        errorBox.textContent = 'Upload fout: ' + err.message;
+        errorBox.classList.remove('d-none');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-upload"></i> Uploaden & Activeren';
+      }
+    }
+
+    document.getElementById('refreshLicenseBtn').addEventListener('click', loadLicenseStatus);
+    document.getElementById('uploadLicenseBtn').addEventListener('click', uploadLicense);
+    await loadLicenseStatus();
   }
 
   function renderMenuEditor(items) {
@@ -2182,6 +2317,11 @@
                   <li class="nav-item">
                     <a class="nav-link" href="#" data-tab="api-keys" onclick="switchAdminTab('api-keys'); return false;">
                       <i class="bi bi-key"></i> API Keys
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="license" onclick="switchAdminTab('license'); return false;">
+                      <i class="bi bi-file-lock"></i> Licentie
                     </a>
                   </li>
                   <!-- Menu tab intentionally hidden for now; functionality retained for future use -->

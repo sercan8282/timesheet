@@ -6,6 +6,7 @@ const rateLimit = require("express-rate-limit");
 const bodyParser = require("body-parser");
 const path = require("path");
 const fs = require("fs");
+const fileUpload = require("express-fileupload");
 
 const authRoutes = require("./routes/auth");
 const userRoutes = require("./routes/user");
@@ -18,6 +19,7 @@ const mfaRoutes = require("./routes/mfa");
 const uiRoutes = require("./routes/ui");
 const translateRoutes = require("./routes/translate");
 const db = require("./config/database");
+const licenseCheck = require("./middleware/license-check");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -313,6 +315,7 @@ app.use(cors(corsOptions));
 // Body parser
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(fileUpload());
 
 // Disable caching for all static files (especially JS files)
 app.use((req, res, next) => {
@@ -332,15 +335,16 @@ app.use("/api/auth", authRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/mfa", mfaRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/submission", submissionRoutes);
+// Enforce module licensing for feature routes
+app.use("/api/submission", licenseCheck.requireModule("leave"), submissionRoutes);
 app.use("/api/admin/companies", companyRoutes);
-app.use("/api/admin/vehicles", vehicleRoutes);
-app.use("/api/admin/planning", planningRoutes);
+app.use("/api/admin/vehicles", licenseCheck.requireModule("fleet"), vehicleRoutes);
+app.use("/api/admin/planning", licenseCheck.requireModule("planning"), planningRoutes);
 app.use("/api/translate", translateRoutes);
 
 // Invoice routes
 const invoiceRoutes = require("./routes/invoice");
-app.use("/api/admin/invoices", invoiceRoutes);
+app.use("/api/admin/invoices", licenseCheck.requireModule("invoices"), invoiceRoutes);
 app.use("/api/ui", uiRoutes);
 
 // Public branding endpoint (no auth required)
@@ -390,6 +394,65 @@ app.get("/api/docs", (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.send(html);
 });
+
+// ============ LICENSE ROUTES ============
+
+// Get license status
+app.get("/api/license/status", (req, res) => {
+  const status = licenseCheck.getLicenseStatus();
+  res.json(status);
+});
+
+// Upload and activate license
+app.post("/api/license/upload", (req, res) => {
+  try {
+    if (!req.files || !req.files.licenseFile) {
+      return res.status(400).json({ success: false, error: "No file uploaded" });
+    }
+
+    const licenseFile = req.files.licenseFile;
+    const licenseContent = JSON.parse(licenseFile.data.toString());
+
+    // Verify the license signature and format directly
+    if (!licenseContent.key || !licenseContent.data || !licenseContent.signature) {
+      return res.status(400).json({ success: false, error: "Invalid license file format" });
+    }
+
+    // Verify signature
+    if (!licenseCheck.licenseManager.verifySignature(licenseContent.key, licenseContent.data, licenseContent.signature)) {
+      return res.status(400).json({ success: false, error: "License signature invalid - file may be tampered" });
+    }
+
+    // Check if license is not expired
+    if (!licenseCheck.licenseManager.isLicenseValid(licenseContent.data)) {
+      return res.status(400).json({ success: false, error: "License has expired" });
+    }
+
+    // Store the license
+    const storedResult = licenseCheck.licenseManager.storeLicense(licenseContent, `license-${Date.now()}.json`);
+    
+    if (!storedResult.success) {
+      return res.status(500).json({ success: false, error: storedResult.error });
+    }
+
+    // Update active license
+    const activateResult = licenseCheck.activateLicense(licenseContent, storedResult.path);
+    
+    res.json(activateResult);
+  } catch (err) {
+    res.status(400).json({ success: false, error: `Invalid license file: ${err.message}` });
+  }
+});
+
+// Check if module is available
+app.get("/api/license/check/:module", (req, res) => {
+  const { module } = req.params;
+  const result = licenseCheck.checkLicense(module);
+  res.json(result);
+});
+
+// Initialize license on startup
+licenseCheck.initializeLicense();
 
 // Serve static files AFTER API routes
 app.use(express.static(path.join(__dirname, "public")));

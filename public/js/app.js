@@ -319,7 +319,7 @@ class App {
     initLogin();
   }
 
-  showApp() {
+  async showApp() {
     console.log("[DEBUG showApp] this.user:", this.user);
     console.log("[DEBUG showApp] this.user.isAdmin:", this.user.isAdmin);
     console.log(
@@ -331,19 +331,31 @@ class App {
     document.getElementById("userName").textContent = this.user.fullName;
     window.currentUser = this.user;
 
-    // Show/hide admin menus
+    // Show/hide admin menus based on license
     const adminMenu = document.getElementById("nav-admin");
     const invoicesMenu = document.getElementById("nav-invoices");
     const revenueMenu = document.getElementById("nav-revenue");
     console.log("[DEBUG showApp] adminMenu element found:", !!adminMenu);
 
+    // Get license status to check available modules
+    let licenseStatus = { modules: [] };
+    try {
+      const res = await fetch('/api/license/status');
+      licenseStatus = await res.json();
+    } catch (e) {
+      console.warn("[DEBUG showApp] Could not fetch license status:", e.message);
+    }
+
+    const hasInvoicesModule = licenseStatus.modules && licenseStatus.modules.includes('invoices');
+    const hasRevenueModule = licenseStatus.modules && licenseStatus.modules.includes('revenue');
+
     if (this.user.isAdmin) {
       console.log(
-        "[DEBUG showApp] Setting nav-admin, nav-invoices, nav-revenue to display: block"
+        "[DEBUG showApp] Setting nav-admin to display: block"
       );
       if (adminMenu) adminMenu.style.display = "block";
-      if (invoicesMenu) invoicesMenu.style.display = "block";
-      if (revenueMenu) revenueMenu.style.display = "block";
+      if (invoicesMenu) invoicesMenu.style.display = hasInvoicesModule ? "block" : "none";
+      if (revenueMenu) revenueMenu.style.display = hasRevenueModule ? "block" : "none";
     } else {
       console.log(
         "[DEBUG showApp] Setting nav-admin and nav-invoices to display: none"
