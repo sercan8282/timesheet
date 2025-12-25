@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Licentiemanager - MFA Instellen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .mfa-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+        }
+        .mfa-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .mfa-header h1 {
+            color: #333;
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .qr-code-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .qr-code-container img {
+            max-width: 250px;
+            height: auto;
+        }
+        .secret-key {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            margin: 20px 0;
+            word-break: break-all;
+            font-weight: 600;
+            color: #667eea;
+        }
+        .form-control {
+            border-radius: 5px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-verify {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 5px;
+            width: 100%;
+            color: white;
+            margin-top: 10px;
+        }
+        .btn-verify:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .alert {
+            margin-bottom: 20px;
+        }
+        .instructions {
+            background: #e7f3ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="mfa-container">
+        <div class="mfa-header">
+            <h1>🔐 Multi-Factor Authenticatie</h1>
+            <p>Bescherm uw account met MFA</p>
+        </div>
+
+        <div class="instructions">
+            <strong>Stappen:</strong>
+            <ol class="mb-0">
+                <li>Scan de QR-code met een authenticator-app (Google Authenticator, Microsoft Authenticator, Authy)</li>
+                <li>Voer de 6-cijferige code in die in de app wordt weergegeven</li>
+                <li>Klik op "Verifiëren"</li>
+            </ol>
+        </div>
+
+        <% if (error) { %>
+            <div class="alert alert-danger">
+                <%= error %>
+            </div>
+        <% } %>
+
+        <div class="qr-code-container">
+            <% if (qrCode) { %>
+                <img src="<%= qrCode %>" alt="QR Code">
+            <% } %>
+        </div>
+
+        <div>
+            <p class="text-muted text-center mb-2">Of voer deze sleutel handmatig in:</p>
+            <div class="secret-key">
+                <%= secret %>
+            </div>
+        </div>
+
+        <form id="mfaForm">
+            <div class="form-group">
+                <label for="token" class="form-label">Verificatiecode (6 cijfers)</label>
+                <input 
+                    type="text" 
+                    class="form-control" 
+                    id="token" 
+                    name="token" 
+                    placeholder="000000"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <button type="submit" class="btn btn-verify">
+                <span id="verifyText">Verifiëren & Inloggen</span>
+                <span id="loadingSpinner" style="display: none;">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Bezig met verifiëren...
+                </span>
+            </button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('mfaForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const token = document.getElementById('token').value;
+            const verifyText = document.getElementById('verifyText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const button = document.querySelector('button[type="submit"]');
+
+            verifyText.style.display = 'none';
+            loadingSpinner.style.display = 'inline';
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/mfa-setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ token })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert(data.message || 'Verificatie mislukt');
+                    verifyText.style.display = 'inline';
+                    loadingSpinner.style.display = 'none';
+                    button.disabled = false;
+                    document.getElementById('token').value = '';
+                    document.getElementById('token').focus();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Er is een fout opgetreden');
+                verifyText.style.display = 'inline';
+                loadingSpinner.style.display = 'none';
+                button.disabled = false;
+            }
+        });
+
+        // Only allow digits
+        document.getElementById('token').addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+        });
+    </script>
+</body>
+</html>

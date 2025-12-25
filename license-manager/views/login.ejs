@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Licentiemanager - Inloggen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-header h1 {
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            border-radius: 5px;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        }
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 5px;
+            width: 100%;
+            color: white;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        .alert {
+            margin-bottom: 20px;
+        }
+        .loading-spinner {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🔐 Licentiemanager</h1>
+            <p>Administratiepaneel</p>
+        </div>
+
+        <% if (message) { %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <%= message %>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        <% } %>
+
+        <form id="loginForm" method="POST" action="/login">
+            <div class="form-group">
+                <label for="email" class="form-label">Email adres</label>
+                <input 
+                    type="email" 
+                    class="form-control" 
+                    id="email" 
+                    name="email" 
+                    placeholder="admin@example.com"
+                    required
+                    autofocus
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password" class="form-label">Wachtwoord</label>
+                <input 
+                    type="password" 
+                    class="form-control" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Voer uw wachtwoord in"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn btn-login">
+                <span id="loginText">Inloggen</span>
+                <span id="loadingSpinner" class="loading-spinner">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Bezig met inloggen...
+                </span>
+            </button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            const loginText = document.getElementById('loginText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            loginText.style.display = 'none';
+            loadingSpinner.style.display = 'inline';
+            document.querySelector('button[type="submit"]').disabled = true;
+        });
+    </script>
+</body>
+</html>
