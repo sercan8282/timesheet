@@ -8,15 +8,12 @@ const path = require('path');
  */
 
 class LicenseManager {
-    constructor(licensesDir = path.join(__dirname, '..', '..', 'license-files')) {
+    constructor(licensesDir = path.join(__dirname, '..', 'license-files')) {
         this.licensesDir = licensesDir;
-        this.licensesDir.split(path.sep).reduce((current, next) => {
-            const newPath = path.join(current, next);
-            if (!fs.existsSync(newPath)) {
-                fs.mkdirSync(newPath);
-            }
-            return newPath;
-        });
+        // Ensure directory exists
+        if (!fs.existsSync(this.licensesDir)) {
+            fs.mkdirSync(this.licensesDir, { recursive: true });
+        }
     }
 
     /**
