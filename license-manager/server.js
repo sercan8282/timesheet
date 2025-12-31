@@ -6,8 +6,37 @@ const sqlite3 = require('sqlite3').verbose();
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const licenseUtil = require('./utils/license');
+const fs = require('fs');
+const LICENSE_CACHE_PATH = path.join(__dirname, 'license-cache.json');
 
 const app = express();
+
+// Persistent license cache
+let cachedLicense = null;
+function loadLicenseFromCache() {
+    if (fs.existsSync(LICENSE_CACHE_PATH)) {
+        try {
+            const data = fs.readFileSync(LICENSE_CACHE_PATH, 'utf-8');
+            cachedLicense = JSON.parse(data);
+            console.log('✓ License loaded from cache');
+        } catch (err) {
+            console.error('Error reading license cache:', err);
+        }
+    }
+}
+
+function saveLicenseToCache(license) {
+    try {
+        fs.writeFileSync(LICENSE_CACHE_PATH, JSON.stringify(license, null, 2));
+        cachedLicense = license;
+        console.log('✓ License saved to cache');
+    } catch (err) {
+        console.error('Error saving license cache:', err);
+    }
+}
+
+// Load license from cache on startup
+loadLicenseFromCache();
 
 // Database setup
 const db = new sqlite3.Database(path.join(__dirname, '..', 'data.db'), (err) => {
@@ -517,28 +546,28 @@ app.get('/api/modules', requireAuth, requireMFA, (req, res) => {
 
 // Get all licenses (API)
 app.get('/api/licenses', requireAuth, requireMFA, (req, res) => {
-    const sql = `
-        SELECT l.*, c.name as company_name 
-        FROM licenses l 
-        JOIN companies c ON l.company_id = c.id 
-        ORDER BY l.created_at DESC
-    `;
-    
-    db.all(sql, (err, licenses) => {
-        if (err) {
-            return res.status(500).json({ success: false, message: 'Database error' });
-        }
-        
-        // Parse modules JSON for each license
-        const parsedLicenses = licenses.map(lic => ({
-            ...lic,
-            modules: JSON.parse(lic.modules || '[]'),
-            is_valid: new Date() <= new Date(lic.valid_until),
-            days_remaining: Math.ceil((new Date(lic.valid_until) - new Date()) / (1000 * 60 * 60 * 24))
-        }));
-        
-        res.json({ success: true, licenses: parsedLicenses });
-    });
+    if (cachedLicense) {
+        res.json({ success: true, licenses: [cachedLicense] });
+    } else {
+        const sql = `
+            SELECT l.*, c.name as company_name 
+            FROM licenses l 
+            JOIN companies c ON l.company_id = c.id 
+            ORDER BY l.created_at DESC
+        `;
+        db.all(sql, (err, licenses) => {
+            if (err) {
+                return res.status(500).json({ success: false, message: 'Database error' });
+            }
+            const parsedLicenses = licenses.map(lic => ({
+                ...lic,
+                modules: JSON.parse(lic.modules || '[]'),
+                is_valid: new Date() <= new Date(lic.valid_until),
+                days_remaining: Math.ceil((new Date(lic.valid_until) - new Date()) / (1000 * 60 * 60 * 24))
+            }));
+            res.json({ success: true, licenses: parsedLicenses });
+        });
+    }
 });
 
 // Generate new license
@@ -568,7 +597,6 @@ app.post('/api/licenses', requireAuth, requireMFA, (req, res) => {
 
         // Generate license key
         const licenseKey = licenseUtil.generateLicenseKey();
-        
         // Create license data
         const licenseData = licenseUtil.createLicenseData(
             company.name,
@@ -576,10 +604,8 @@ app.post('/api/licenses', requireAuth, requireMFA, (req, res) => {
             valid_from,
             valid_until
         );
-
         // Create signed license
         const signedLicense = licenseUtil.createSignedLicense(licenseKey, licenseData);
-
         // Store in database
         db.run(
             `INSERT INTO licenses (company_id, license_key, modules, valid_from, valid_until, is_active, created_by) 
@@ -589,7 +615,18 @@ app.post('/api/licenses', requireAuth, requireMFA, (req, res) => {
                 if (err) {
                     return res.status(500).json({ success: false, message: 'Fout bij aanmaken licentie' });
                 }
-
+                // Save to cache
+                saveLicenseToCache({
+                    id: this.lastID,
+                    license_key: licenseKey,
+                    company_name: company.name,
+                    modules: modules,
+                    valid_from: valid_from,
+                    valid_until: valid_until,
+                    is_active: true,
+                    is_valid: true,
+                    signature: signedLicense.signature
+                });
                 res.json({
                     success: true,
                     message: 'Licentie gegenereerd',

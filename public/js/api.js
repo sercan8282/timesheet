@@ -978,43 +978,86 @@ class API {
 
   // Template Elements
   async addTemplateElement(templateId, formData) {
-    const response = await fetch(
-      `${API_BASE_URL}/admin/invoices/templates/${templateId}/elements`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-        body: formData,
-      }
-    );
+    const baseUrl = this._getBaseUrl();
+    let response;
+    // Detect FormData vs JSON
+    if (formData instanceof FormData) {
+      response = await fetch(
+        `${baseUrl}/admin/invoices/templates/${templateId}/elements`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            // Content-Type niet zelf zetten bij FormData!
+          },
+          body: formData,
+        }
+      );
+    } else {
+      response = await fetch(
+        `${baseUrl}/admin/invoices/templates/${templateId}/elements`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${this.token}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+    }
 
     if (!response.ok) {
-      const error = await response.json();
+      const error = await response.json().catch(() => ({}));
       throw new Error(error.error || "Failed to add element");
     }
 
     return response.json();
   }
 
-  async updateTemplateElement(templateId, elementId, formData) {
+  async updateTemplateElement(templateId, elementId, data, isMultipart = true) {
+    const headers = {
+      Authorization: `Bearer ${this.token}`,
+    };
+    
+    let body;
+    if (!isMultipart) {
+      // JSON request
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(data);
+    } else {
+      // FormData - browser sets correct Content-Type with boundary
+      body = data;
+    }
+
     const response = await fetch(
-      `${API_BASE_URL}/admin/invoices/templates/${templateId}/elements/${elementId}`,
+      `${this._getBaseUrl()}/admin/invoices/templates/${templateId}/elements/${elementId}`,
       {
         method: "PUT",
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-        body: formData,
+        headers: headers,
+        body: body,
       }
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to update element");
+      let errorText;
+      try {
+        errorText = await response.text();
+        const error = JSON.parse(errorText);
+        throw new Error(error.error || "Failed to update element");
+      } catch (e) {
+        console.error('Server response:', errorText || e.message);
+        throw new Error(`Server error: ${response.status} - ${errorText ? errorText.substring(0, 200) : e.message}`);
+      }
     }
 
-    return response.json();
+    const responseText = await response.text();
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      console.error('Invalid JSON response:', responseText);
+      throw new Error(`Invalid server response: ${responseText.substring(0, 200)}`);
+    }
   }
 
   async deleteTemplateElement(templateId, elementId) {

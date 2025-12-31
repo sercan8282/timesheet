@@ -195,6 +195,12 @@ router.post(
   auth,
   uploadPdf.single("pdf"),
   async (req, res) => {
+      // Debug: log alle binnenkomende form-data en files
+      console.log('--- [ELEMENT ADD DEBUG] ---');
+      console.log('req.body:', req.body);
+      console.log('req.files:', req.files);
+      if (req.file) console.log('req.file:', req.file);
+      console.log('--------------------------');
     try {
       const tpl = await db.get("SELECT * FROM import_templates WHERE id = ?", [
         req.params.id,
@@ -717,13 +723,24 @@ router.post("/fonts", auth, uploadFont.single("font"), async (req, res) => {
 });
 
 // Add element to template
+// Add element to template
 router.post(
   "/templates/:templateId/elements",
   auth,
-  upload.single("image"),
   async (req, res) => {
     try {
       const { templateId } = req.params;
+      
+      // Log incoming request
+      console.log('[ELEMENT ADD] Content-Type:', req.headers['content-type']);
+      console.log('[ELEMENT ADD] Body keys:', Object.keys(req.body));
+      console.log('[ELEMENT ADD] Files:', req.files ? Object.keys(req.files) : 'none');
+
+      if (!req.body || Object.keys(req.body).length === 0) {
+        console.error('[ELEMENT ADD ERROR] Empty body');
+        return res.status(400).json({ error: 'Geen data ontvangen' });
+      }
+
       const {
         element_type,
         label,
@@ -741,8 +758,30 @@ router.post(
       } = req.body;
 
       let image_path = null;
-      if (req.file) {
-        image_path = "/uploads/invoices/" + req.file.filename;
+      
+      // Check for uploaded file (express-fileupload)
+      if (req.files && req.files.image) {
+        const imageFile = req.files.image;
+        const uploadDir = path.join(__dirname, "../public/uploads/invoices");
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const filename = "invoice-" + uniqueSuffix + path.extname(imageFile.name);
+        const filepath = path.join(uploadDir, filename);
+        
+        await imageFile.mv(filepath);
+        image_path = "/uploads/invoices/" + filename;
+        console.log('[ELEMENT ADD] File uploaded:', image_path);
+      } else if (req.body.image_path) {
+        // Voor dupliceren: gebruik bestaande image_path
+        image_path = req.body.image_path;
+        console.log('[ELEMENT ADD] Using existing image_path:', image_path);
+      }
+
+      if (!element_type || !label) {
+        console.error('[ELEMENT ADD ERROR] Missing required fields');
+        return res.status(400).json({ error: 'Element type en label zijn verplicht' });
       }
 
       const result = await db.run(
@@ -769,14 +808,22 @@ router.post(
         ]
       );
 
+      const insertId = result.lastID || result.lastId || result.id;
+      console.log('[ELEMENT ADD] Insert result:', { insertId, result });
+      
+      if (!insertId) {
+        throw new Error('Geen ID geretourneerd na insert');
+      }
+
       const newElement = await db.get(
         "SELECT * FROM invoice_template_elements WHERE id = ?",
-        [result.id]
+        [insertId]
       );
 
-      res.status(201).json(newElement);
+      console.log('[ELEMENT ADD] Success:', newElement ? newElement.id : 'NOT FOUND');
+      res.json(newElement);
     } catch (error) {
-      console.error("Error adding element:", error);
+      console.error("[ELEMENT ADD ERROR]", error);
       res.status(500).json({ error: "Fout bij toevoegen van element" });
     }
   }
@@ -786,10 +833,14 @@ router.post(
 router.put(
   "/templates/:templateId/elements/:elementId",
   auth,
-  upload.single("image"),
   async (req, res) => {
     try {
       const { elementId } = req.params;
+      
+      console.log('[ELEMENT UPDATE] Content-Type:', req.headers['content-type']);
+      console.log('[ELEMENT UPDATE] Body keys:', Object.keys(req.body));
+      console.log('[ELEMENT UPDATE] Files:', req.files ? Object.keys(req.files) : 'none');
+
       const {
         element_type,
         label,
@@ -818,8 +869,11 @@ router.put(
 
       let image_path = currentElement.image_path;
 
-      // If new image uploaded, delete old one and use new one
-      if (req.file) {
+      // Check for uploaded file (express-fileupload)
+      if (req.files && req.files.image) {
+        const imageFile = req.files.image;
+        
+        // Delete old image if exists
         if (currentElement.image_path) {
           const oldImagePath = path.join(
             __dirname,
@@ -828,9 +882,22 @@ router.put(
           );
           if (fs.existsSync(oldImagePath)) {
             fs.unlinkSync(oldImagePath);
+            console.log('[ELEMENT UPDATE] Deleted old image:', oldImagePath);
           }
         }
-        image_path = "/uploads/invoices/" + req.file.filename;
+        
+        // Upload new image
+        const uploadDir = path.join(__dirname, "../public/uploads/invoices");
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        const filename = "invoice-" + uniqueSuffix + path.extname(imageFile.name);
+        const filepath = path.join(uploadDir, filename);
+        
+        await imageFile.mv(filepath);
+        image_path = "/uploads/invoices/" + filename;
+        console.log('[ELEMENT UPDATE] New image uploaded:', image_path);
       }
 
       await db.run(

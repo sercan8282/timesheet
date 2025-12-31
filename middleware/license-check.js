@@ -12,19 +12,32 @@ let activeLicense = null;
  * Initialize license - load from stored licenses
  */
 function initializeLicense() {
+    // Probeer eerst de actieve licentie te laden
+    const activePath = require('path').join(licenseManager.licensesDir, 'active-license.json');
+    if (require('fs').existsSync(activePath)) {
+        const result = licenseManager.loadLicense(activePath);
+        if (result.valid && result.license) {
+            activeLicense = result.license;
+            console.log(`✓ Active license loaded: ${result.license.data.company}`);
+            console.log(`  Modules: ${result.license.data.modules.join(', ')}`);
+            console.log(`  Valid until: ${new Date(result.license.data.validUntil).toLocaleDateString()}`);
+            return true;
+        }
+    }
+    // Fallback: zoek naar een andere geldige licentie
     const licenses = licenseManager.getStoredLicenses();
-    
     for (const filename in licenses) {
         const licenseResult = licenses[filename];
         if (licenseResult.valid && licenseResult.license) {
             activeLicense = licenseResult.license;
+            // Sla deze direct op als actieve licentie
+            licenseManager.storeLicense(activeLicense, 'active-license.json');
             console.log(`✓ License loaded: ${licenseResult.license.data.company}`);
             console.log(`  Modules: ${licenseResult.license.data.modules.join(', ')}`);
             console.log(`  Valid until: ${new Date(licenseResult.license.data.validUntil).toLocaleDateString()}`);
             return true;
         }
     }
-    
     console.warn('⚠️  No valid license found');
     return false;
 }
@@ -124,19 +137,21 @@ function getLicenseStatus() {
  * Upload and activate a license
  */
 function activateLicense(licenseContent, filename = null) {
-    const result = licenseManager.loadLicense(filename);
-    
+    // Sla de licentie altijd op als actieve licentie
+    licenseManager.storeLicense(licenseContent, 'active-license.json');
+    const result = licenseManager.loadLicense(
+        require('path').join(licenseManager.licensesDir, 'active-license.json')
+    );
     if (!result.valid) {
         return {
             success: false,
             error: result.error
         };
     }
-
     activeLicense = result.license;
     return {
         success: true,
-        message: 'License activated successfully',
+        message: 'License activated and saved as active-license.json',
         license: getLicenseStatus()
     };
 }
