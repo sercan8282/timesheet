@@ -1864,110 +1864,89 @@ const invoiceManager = {
     const order = document.getElementById("element-order").value;
     const textAlignH = document.querySelector('input[name="text-align-h"]:checked')?.value || "left";
 
-    const formData = new FormData();
-    // If the user selected "Afbeelding", we treat it specially and do not require text content
-    if (originalType === "image") {
-      const section = document.getElementById("element-image-section")?.value || "image";
-      type = section; // element_type becomes the chosen section or 'image' for body
-      formData.append("element_type", type);
-      formData.append("label", label);
-      formData.append("position_order", order);
-      formData.append("text_align_h", textAlignH);
+    // Check of er een bestand wordt geüpload
+    const imageFileEl = document.getElementById("element-image");
+    const imageFile = imageFileEl?.files?.[0];
+    const hasFile = imageFile && imageFile.size > 0;
 
-      const imageFile = document.getElementById("element-image")?.files?.[0];
-      if (!imageFile) {
+    let requestBody;
+
+    // Als er een bestand is, gebruik FormData
+    if (hasFile) {
+      const formData = new FormData();
+      
+      if (originalType === "image") {
+        const section = document.getElementById("element-image-section")?.value || "image";
+        type = section;
+        formData.append("element_type", String(type));
+        formData.append("label", String(label || ""));
+        formData.append("position_order", String(order || "0"));
+        formData.append("text_align_h", String(textAlignH || "left"));
+        formData.append("image", imageFile);
+        
+        const imageAlign = document.getElementById("element-image-align")?.value || "left";
+        const imageWidth = document.getElementById("element-image-width")?.value || "150";
+        formData.append("image_align", String(imageAlign));
+        formData.append("image_width", String(imageWidth));
+        formData.append("image_height", "0");
+      } else {
+        formData.append("element_type", String(type));
+        formData.append("label", String(label || ""));
+        formData.append("position_order", String(order || "0"));
+        formData.append("text_align_h", String(textAlignH || "left"));
+        formData.append("image", imageFile);
+        formData.append("image_align", "left");
+        formData.append("image_width", "150");
+        formData.append("image_height", "0");
+
+        // Als er ook content is (tekst met logo)
+        const content = document.getElementById("element-content")?.value;
+        if (content) {
+          formData.append("content", String(content));
+          const fontSize = document.getElementById("element-font-size")?.value || "14";
+          const fontColor = document.getElementById("element-font-color-text")?.value || document.getElementById("element-font-color")?.value || "#000000";
+          const fontFamily = document.getElementById("element-font-family")?.value || "inherit";
+          const fontWeight = document.getElementById("element-font-weight")?.value || "normal";
+          formData.append("font_size", String(fontSize));
+          formData.append("font_color", String(fontColor));
+          formData.append("font_family", String(fontFamily));
+          formData.append("font_weight", String(fontWeight));
+        }
+      }
+      requestBody = formData;
+    } else {
+      // Geen bestand - gebruik JSON
+      if (originalType === "image") {
         showToast(t("ui", "invoice.select_image"), "error");
         return;
       }
-      formData.append("image", imageFile);
 
-      const alignEl = document.getElementById("element-image-align");
-      const widthEl = document.getElementById("element-image-width");
-      const imageAlign = alignEl ? alignEl.value : "left";
-      const imageWidth = widthEl ? widthEl.value : 150;
-      formData.append("image_align", imageAlign || "left");
-      formData.append("image_width", imageWidth || 150);
-
-      try {
-        await api.addTemplateElement(templateId, formData);
-        showToast(t("ui", "invoice.element_added"), "success");
-        await this.editTemplate(templateId);
-      } catch (error) {
-        console.error("Error adding element:", error);
-        showToast(
-          `${t("ui", "invoice.element_add_failed")}: ${error.message}`,
-          "error"
-        );
-      }
-      return; // prevent falling through to text handling
-    }
-
-    // Default path: non-image elements
-    formData.append("element_type", type);
-    formData.append("label", label);
-    formData.append("position_order", order);
-    formData.append("text_align_h", textAlignH);
-
-    // Handle text-based types (including new layout types)
-    if (
-      type === "text" ||
-      type.startsWith("top_") ||
-      type.startsWith("address_") ||
-      type.startsWith("footer_")
-    ) {
-      const content = document.getElementById("element-content").value;
-      const fontSize = document.getElementById("element-font-size").value;
-      const fontColor = document.getElementById("element-font-color-text")?.value || document.getElementById("element-font-color").value;
-      const fontFamily = document.getElementById("element-font-family").value;
-      const fontWeight = document.getElementById("element-font-weight").value;
-
+      const content = document.getElementById("element-content")?.value;
       if (!content) {
         showToast(t("ui", "invoice.text_required"), "error");
         return;
       }
 
-      formData.append("content", content);
-      formData.append("font_size", fontSize);
-      formData.append("font_color", fontColor);
-      formData.append("font_family", fontFamily);
-      formData.append("font_weight", fontWeight);
-      // Optional image for layout/text sections (e.g., logo in top columns)
-      const imageFileOptional = document.getElementById("element-image")?.files?.[0];
-      if (imageFileOptional) {
-        formData.append("image", imageFileOptional);
-      }
-    } else if (type === "sender" || type === "title") {
-      const content = document.getElementById("element-content").value;
-      const fontSize = document.getElementById("element-font-size").value;
-      const fontColor = document.getElementById("element-font-color-text")?.value || document.getElementById("element-font-color").value;
-      const fontWeight = document.getElementById("element-font-weight").value;
+      const fontSize = document.getElementById("element-font-size")?.value || "14";
+      const fontColor = document.getElementById("element-font-color-text")?.value || document.getElementById("element-font-color")?.value || "#000000";
+      const fontFamily = document.getElementById("element-font-family")?.value || "inherit";
+      const fontWeight = document.getElementById("element-font-weight")?.value || "normal";
 
-      if (!content) {
-        showToast(t("ui", "invoice.text_required"), "error");
-        return;
-      }
-
-      formData.append("content", content);
-      formData.append("font_size", fontSize);
-      formData.append("font_color", fontColor);
-      formData.append("font_weight", fontWeight);
-    } else if (type === "image") {
-      const imageFile = document.getElementById("element-image").files[0];
-      if (!imageFile) {
-        showToast(t("ui", "invoice.select_image"), "error");
-        return;
-      }
-      formData.append("image", imageFile);
-      const alignEl = document.getElementById("element-image-align");
-      const widthEl = document.getElementById("element-image-width");
-      const imageAlign = alignEl ? alignEl.value : "left";
-      const imageWidth = widthEl ? widthEl.value : 150;
-      formData.append("image_align", imageAlign || "left");
-      formData.append("image_width", imageWidth || 150);
+      requestBody = {
+        element_type: type,
+        label: label || "",
+        position_order: order || 0,
+        text_align_h: textAlignH || "left",
+        content: content,
+        font_size: fontSize,
+        font_color: fontColor,
+        font_family: fontFamily,
+        font_weight: fontWeight
+      };
     }
 
     try {
-      await api.addTemplateElement(templateId, formData);
+      await api.addTemplateElement(templateId, requestBody);
       showToast(t("ui", "invoice.element_added"), "success");
       await this.editTemplate(templateId);
     } catch (error) {
@@ -2264,50 +2243,81 @@ const invoiceManager = {
     const newElementType = document.getElementById("edit-element-type").value;
     const textAlignH = document.querySelector('input[name="edit-text-align-h"]:checked')?.value || "left";
 
-    const formData = new FormData();
-    formData.append("label", label);
-    formData.append("position_order", order);
-    formData.append("element_type", newElementType);
-    formData.append("text_align_h", textAlignH);
+    // Bepaal of we een bestand uploaden
+    const imageFile = document.getElementById("edit-element-image")?.files[0];
+    const hasImageUpload = imageFile && imageFile.size > 0;
 
-    if (element.element_type === "image" || 
-        (element.element_type.startsWith("top_") && element.image_path) ||
-        (element.element_type.startsWith("address_") && element.image_path)) {
-      const imageFile = document.getElementById("edit-element-image")?.files[0];
-      if (imageFile) {
-        formData.append("image", imageFile);
+    let requestBody;
+    let isMultipart = false;
+
+    if (hasImageUpload) {
+      // Alleen multipart als er écht een bestand is
+      isMultipart = true;
+      const formData = new FormData();
+      formData.append("label", String(label || ""));
+      formData.append("position_order", String(order || "0"));
+      formData.append("element_type", String(newElementType || ""));
+      formData.append("text_align_h", String(textAlignH || "left"));
+      formData.append("image", imageFile);
+      
+      if (element.element_type === "image" || 
+          (element.element_type.startsWith("top_") && element.image_path) ||
+          (element.element_type.startsWith("address_") && element.image_path)) {
+        const imageAlign = document.getElementById("edit-element-image-align")?.value;
+        const imageWidth = document.getElementById("edit-element-image-width")?.value;
+        const imageHeight = document.getElementById("edit-element-image-height")?.value;
+        formData.append("image_align", String(imageAlign || element.image_align || "left"));
+        formData.append("image_width", String(imageWidth || element.image_width || "150"));
+        formData.append("image_height", String(imageHeight || element.image_height || "0"));
       }
-      const imageAlign = document.getElementById("edit-element-image-align")?.value;
-      const imageWidth = document.getElementById("edit-element-image-width")?.value;
-      const imageHeight = document.getElementById("edit-element-image-height")?.value;
-      formData.append("image_align", imageAlign || element.image_align || "left");
-      formData.append("image_width", imageWidth || element.image_width || 150);
-      formData.append("image_height", imageHeight || element.image_height || 0);
+      requestBody = formData;
     } else {
-      const content = document.getElementById("edit-element-content")?.value;
-      const fontSize = document.getElementById("edit-element-font-size")?.value;
-      const fontColor = document.getElementById("edit-element-font-color-text")?.value || document.getElementById("edit-element-font-color")?.value;
-      const fontWeight = document.getElementById("edit-element-font-weight")?.value;
-      const fontFamily = document.getElementById("edit-element-font-family")?.value;
+      // Gebruik JSON als er geen bestand is
+      isMultipart = false;
+      const data = {
+        label: label || "",
+        position_order: order || 0,
+        element_type: newElementType || "",
+        text_align_h: textAlignH || "left"
+      };
 
-      if (content !== undefined && content !== null) {
-        if (!content.trim()) {
-          showToast("Tekst inhoud is verplicht", "error");
-          return;
+      if (element.element_type === "image" || 
+          (element.element_type.startsWith("top_") && element.image_path) ||
+          (element.element_type.startsWith("address_") && element.image_path)) {
+        const imageAlign = document.getElementById("edit-element-image-align")?.value;
+        const imageWidth = document.getElementById("edit-element-image-width")?.value;
+        const imageHeight = document.getElementById("edit-element-image-height")?.value;
+        data.image_align = imageAlign || element.image_align || "left";
+        data.image_width = imageWidth || element.image_width || 150;
+        data.image_height = imageHeight || element.image_height || 0;
+      } else {
+        const content = document.getElementById("edit-element-content")?.value;
+        const fontSize = document.getElementById("edit-element-font-size")?.value;
+        const fontColor = document.getElementById("edit-element-font-color-text")?.value || document.getElementById("edit-element-font-color")?.value;
+        const fontWeight = document.getElementById("edit-element-font-weight")?.value;
+        const fontFamily = document.getElementById("edit-element-font-family")?.value;
+
+        if (content !== undefined && content !== null) {
+          if (!content.trim()) {
+            showToast("Tekst inhoud is verplicht", "error");
+            return;
+          }
+          data.content = content;
+          data.font_size = fontSize || 14;
+          data.font_color = fontColor || "#000000";
+          data.font_weight = fontWeight || "normal";
+          if (fontFamily) data.font_family = fontFamily;
         }
-        formData.append("content", content);
-        formData.append("font_size", fontSize || 14);
-        formData.append("font_color", fontColor || "#000000");
-        formData.append("font_weight", fontWeight || "normal");
-        if (fontFamily) formData.append("font_family", fontFamily);
       }
+      requestBody = data;
     }
 
     try {
       await api.updateTemplateElement(
         this.currentTemplate.id,
         elementId,
-        formData
+        requestBody,
+        isMultipart
       );
       showToast(t("ui", "invoice.element_updated"), "success");
 
@@ -2523,27 +2533,31 @@ const invoiceManager = {
         is_default: 0, // Never set copy as default
       });
 
-      // Duplicate all elements
+      // Duplicate all elements - gebruik altijd JSON en laat backend de image_path hergebruiken
       if (fullTemplate.elements && fullTemplate.elements.length > 0) {
         for (const element of fullTemplate.elements) {
-          const formData = new FormData();
-          formData.append("element_type", element.element_type);
-          formData.append("label", element.label || "");
-          formData.append("content", element.content || "");
-          formData.append("position_order", element.position_order || 0);
-          formData.append("font_size", element.font_size || 14);
-          formData.append("font_color", element.font_color || "#000000");
-          formData.append("font_weight", element.font_weight || "normal");
-          if (element.font_family) {
-            formData.append("font_family", element.font_family);
-          }
-          formData.append(
-            "calculation_formula",
-            element.calculation_formula || ""
-          );
-
-          // Note: images won't be duplicated (would need file download), but that's OK
-          await api.addTemplateElement(newTemplate.id, formData);
+          console.log('[DUPLICATE] Adding element:', element.label, 'type:', element.element_type, 'has image:', !!element.image_path);
+          
+          // Stuur gewone JSON met alle velden inclusief image_path
+          const data = {
+            element_type: element.element_type,
+            label: element.label || "",
+            content: element.content || "",
+            position_order: element.position_order || 0,
+            font_size: element.font_size || 14,
+            font_color: element.font_color || "#000000",
+            font_weight: element.font_weight || "normal",
+            font_family: element.font_family || null,
+            calculation_formula: element.calculation_formula || "",
+            image_align: element.image_align || "left",
+            image_width: element.image_width || 150,
+            image_height: element.image_height || 0,
+            text_align_h: element.text_align_h || "left",
+            // Bewaar image_path zodat het naar dezelfde afbeelding verwijst
+            image_path: element.image_path || null,
+          };
+          
+          await api.addTemplateElement(newTemplate.id, data);
         }
       }
 
