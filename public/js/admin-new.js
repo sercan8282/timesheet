@@ -6112,13 +6112,7 @@
     try {
       const blob = await api.exportPlanningPDF(currentPlanningWeek);
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `planning-week-${currentPlanningWeek}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      URL.revokeObjectURL(url);
-      a.remove();
+      window.open(url, "_blank");
     } catch (error) {
       alert("PDF export mislukt: " + error.message);
     }
