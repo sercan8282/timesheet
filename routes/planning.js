@@ -480,7 +480,7 @@ router.get("/week/:weekNumber/export-pdf", async (req, res) => {
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="planning-week-${weekNumber}.pdf"`
+      `inline; filename=planning-week-${weekNumber}.pdf`
     );
     res.send(pdfBuffer);
   } catch (error) {

@@ -23,6 +23,7 @@ async function generatePlanningPDF(weekNumber) {
           u.phone AS driver_phone,
           u.adr AS driver_adr,
           u.mega_kast AS driver_mega_kast,
+          u.note AS driver_note,
           COALESCE(v.license_plate, fv.license_plate) AS license_plate,
           c.name AS company_name
         FROM planning_schedules ps
@@ -35,10 +36,6 @@ async function generatePlanningPDF(weekNumber) {
         [weekNumber]
       );
 
-      // Get branding
-      const branding = await db.get("SELECT * FROM branding_settings LIMIT 1");
-      const companyName = branding?.company_name || "Timesheet System";
-
       // Header
       doc
         .fontSize(18)
@@ -46,9 +43,6 @@ async function generatePlanningPDF(weekNumber) {
         .text(`Weekplanning - Week ${weekNumber}`, {
           align: "center",
         });
-      doc.fontSize(12).font("Helvetica").text(companyName, {
-        align: "center",
-      });
       doc.moveDown(0.5);
 
       // Group by company and day
@@ -211,7 +205,16 @@ async function generatePlanningPDF(weekNumber) {
             }
 
             x = tableLeft;
-            const rowHeight = 18;
+            
+            // Calculate row height based on combined planning and driver notes
+            const notesParts = [];
+            if (entry.notes) notesParts.push(entry.notes);
+            if (entry.driver_note) notesParts.push(`(${entry.driver_note})`);
+            const notesText = notesParts.join(" ") || "-";
+            const notesHeight = doc.heightOfString(notesText, {
+              width: colWidths.notes - 10,
+            });
+            const rowHeight = Math.max(18, notesHeight + 8);
 
             doc.rect(x, y, colWidths.company, rowHeight).stroke();
             doc.text(company.name || "-", x + 5, y + 4, {
@@ -269,7 +272,7 @@ async function generatePlanningPDF(weekNumber) {
             x += colWidths.day;
 
             doc.rect(x, y, colWidths.notes, rowHeight).stroke();
-            doc.text(entry.notes || "-", x + 5, y + 4, {
+            doc.text(notesText, x + 5, y + 4, {
               width: colWidths.notes - 10,
             });
 
