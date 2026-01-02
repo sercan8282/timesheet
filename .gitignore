@@ -4,3 +4,4 @@ database.sqlite
 *.log
 .DS_Store
 uploads/
+license-files/
