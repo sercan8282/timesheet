@@ -1838,6 +1838,48 @@ async function applyTemplateMappings(text, templateId) {
 }
 
 // Helper: extract fields from PDF text using heuristics
+// Utility function to remove common field labels from extracted values
+function cleanFieldValue(value) {
+  if (!value) return value;
+  
+  const str = String(value).trim();
+  
+  // Remove common prefixes like "Factuurnummer:", "Datum:", "Order:", etc.
+  const cleaners = [
+    /^(Factuurnummer|Factuurdatum|Invoicenummer|Invoice\s*Number|Invoicedatum|Invoice\s*Date|Ordernummer|Order|Orderdatum|Order\s*Date|Klant|Customer|Debiteur|Datum|Date|Referentie|Reference)\s*[:\-]?\s*/i,
+    /^(BTW\s*(?:nummer|nr|no)?|VAT|Bedrag|Amount|Totaal|Total|Subtotaal|Subtotal|Uren|Hours|Km|Aantal|Quantity)\s*[:\-]?\s*/i,
+  ];
+  
+  let cleaned = str;
+  for (const cleaner of cleaners) {
+    cleaned = cleaned.replace(cleaner, '').trim();
+    if (cleaned !== str) break;
+  }
+  
+  return cleaned || value;
+}
+
+// Utility function to ensure date format is always YYYY-MM-DD
+function normalizeDateFormat(dateStr) {
+  if (!dateStr) return dateStr;
+  
+  const str = String(dateStr).trim();
+  
+  // Already in YYYY-MM-DD format
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return str;
+  }
+  
+  // DD-MM-YYYY or DD/MM/YYYY format
+  const ddMmMatch = str.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+  if (ddMmMatch) {
+    const [, day, month, year] = ddMmMatch;
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  }
+  
+  return str;
+}
+
 function extractInvoiceDataFromText(text) {
   // Normalize repeated separators like 08/12//2025
   const normalized = String(text)
@@ -1857,14 +1899,18 @@ function extractInvoiceDataFromText(text) {
     /(20\d{2}[\/-]\d{2}[\/-]\d{2})/, // Only match years starting with 20xx
   ];
   let invoice_date = null;
+  console.log('[EXTRACT] Starting date extraction. Text length:', text.length);
   for (const rx of dateRegexes) {
     const m = normalized.match(rx);
     if (m) {
       invoice_date = m[m.length - 1].replace(/\//g, "-");
+      console.log('[EXTRACT] Found date:', invoice_date);
       // Normalize to YYYY-MM-DD if given as DD-MM-YYYY
       const parts = invoice_date.split("-");
+      console.log('[EXTRACT] Date parts:', parts, 'first part length:', parts[0].length);
       if (parts[0].length === 2) {
         invoice_date = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        console.log('[EXTRACT] Normalized to:', invoice_date);
       }
       // Validate year is reasonable (between 2000 and 2100)
       const yearParts = invoice_date.split("-");
@@ -2533,9 +2579,13 @@ function extractInvoiceDataFromText(text) {
     }, 0);
   }
 
+  console.log('[EXTRACT] Before normalization - invoice_date:', invoice_date);
+  const normalizedDate = normalizeDateFormat(invoice_date) || new Date().toISOString().slice(0, 10);
+  console.log('[EXTRACT] After normalization - normalizedDate:', normalizedDate);
+
   return {
-    invoice_date: invoice_date || new Date().toISOString().slice(0, 10),
-    customer_name: customer_name || null,
+    invoice_date: normalizedDate,
+    customer_name: cleanFieldValue(customer_name) || null,
     subtotal: Number.isFinite(subtotal) ? Number(subtotal.toFixed(2)) : null,
     vat_amount: Number.isFinite(vat_amount)
       ? Number(vat_amount.toFixed(2))
@@ -2543,7 +2593,7 @@ function extractInvoiceDataFromText(text) {
     total_amount: Number.isFinite(total_amount)
       ? Number(total_amount.toFixed(2))
       : null,
-    invoice_number: invoice_number || null,
+    invoice_number: cleanFieldValue(invoice_number) || null,
     line_items: line_items,
     totals: {
       total_km: totalKmFromPdf,
@@ -2871,6 +2921,11 @@ router.post("/import-pdf", auth, async (req, res) => {
 
     // Get invoice_type from request body (Verkoop or Inkoop)
     const invoice_type = req.body.invoice_type === 'Inkoop' ? 'Inkoop' : 'Verkoop';
+
+    console.log('[IMPORT-PDF] About to insert invoice:');
+    console.log('  - invoice_number:', invoice_number);
+    console.log('  - extracted.invoice_date:', extracted.invoice_date);
+    console.log('  - template_id:', template_id);
 
     const result = await db.run(
       `INSERT INTO invoices 
