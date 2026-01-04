@@ -312,9 +312,9 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Body parser
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Body parser - increase limit for base64-encoded PDF uploads (10MB + 33% overhead)
+app.use(bodyParser.json({ limit: '20mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '20mb' }));
 app.use(fileUpload());
 
 // Disable caching for all static files (especially JS files)
@@ -331,21 +331,40 @@ app.use((req, res, next) => {
 });
 
 // API Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/user", userRoutes);
-app.use("/api/mfa", mfaRoutes);
-app.use("/api/admin", adminRoutes);
-// Enforce module licensing for feature routes
-app.use("/api/submission", licenseCheck.requireModule("leave"), submissionRoutes);
-app.use("/api/admin/companies", companyRoutes);
-app.use("/api/admin/vehicles", licenseCheck.requireModule("fleet"), vehicleRoutes);
-app.use("/api/admin/planning", licenseCheck.requireModule("planning"), planningRoutes);
-app.use("/api/translate", translateRoutes);
+console.log('Loading API routes...');
+try {
+  app.use("/api/auth", authRoutes);
+  console.log('✓ Auth routes loaded');
+  app.use("/api/user", userRoutes);
+  console.log('✓ User routes loaded');
+  app.use("/api/mfa", mfaRoutes);
+  console.log('✓ MFA routes loaded');
+  app.use("/api/admin", adminRoutes);
+  console.log('✓ Admin routes loaded');
+  // Enforce module licensing for feature routes
+  app.use("/api/submission", licenseCheck.requireModule("leave"), submissionRoutes);
+  console.log('✓ Submission routes loaded');
+  app.use("/api/admin/companies", companyRoutes);
+  console.log('✓ Companies routes loaded');
+  app.use("/api/admin/vehicles", licenseCheck.requireModule("fleet"), vehicleRoutes);
+  console.log('✓ Vehicles routes loaded');
+  app.use("/api/admin/planning", licenseCheck.requireModule("planning"), planningRoutes);
+  console.log('✓ Planning routes loaded');
+  app.use("/api/translate", translateRoutes);
+  console.log('✓ Translate routes loaded');
 
-// Invoice routes
-const invoiceRoutes = require("./routes/invoice");
-app.use("/api/admin/invoices", licenseCheck.requireModule("invoices"), invoiceRoutes);
-app.use("/api/ui", uiRoutes);
+  // Invoice routes
+  const invoiceRoutes = require("./routes/invoice");
+  console.log('✓ Invoice routes module loaded');
+  app.use("/api/admin/invoices", licenseCheck.requireModule("invoices"), invoiceRoutes);
+  console.log('✓ Invoice routes registered');
+  app.use("/api/ui", uiRoutes);
+  console.log('✓ UI routes loaded');
+} catch (err) {
+  console.error('✗ Error loading routes:', err.message);
+  console.error(err.stack);
+  process.exit(1);
+}
 
 // Public branding endpoint (no auth required)
 app.get("/api/branding", async (req, res) => {
@@ -469,7 +488,39 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+console.log(`[SERVER] About to call app.listen() on port ${PORT}...`);
+const server = app.listen(PORT, '127.0.0.1', () => {
+  console.log(`✓ Server listening on http://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
+});
+
+console.log('[SERVER] app.listen() returned, waiting for listening event...');
+
+server.on('listening', () => {
+  console.log('[SERVER] Server listening event fired!');
+});
+
+server.on('error', (err) => {
+  console.error('✗ Server error:', err.code, err.message);
+  console.error(err.stack);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`✗ Port ${PORT} is already in use`);
+  }
+  // process.exit(1); // DISABLED for debugging
+});
+
+console.log('[SERVER] Error and listening handlers attached');
+
+// Catch any uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('✗ Uncaught exception:', err.message);
+  console.error(err.stack);
+  // process.exit(1); // DISABLED for debugging
+});
+
+// Catch any unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('✗ Unhandled rejection at:', promise);
+  console.error('Reason:', reason);
+  // process.exit(1); // DISABLED for debugging
 });

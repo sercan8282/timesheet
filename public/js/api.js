@@ -239,7 +239,7 @@ class API {
 
   async getSubmissionPDF(submissionId) {
     const response = await fetch(
-      `${API_BASE_URL}/submission/submissions/${submissionId}/pdf`,
+      `${this._getBaseUrl()}/submission/submissions/${submissionId}/pdf`,
       {
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -256,7 +256,7 @@ class API {
 
   async getAdminSubmissionPDF(submissionId) {
     const response = await fetch(
-      `${API_BASE_URL}/admin/submissions/${submissionId}/pdf`,
+      `${this._getBaseUrl()}/admin/submissions/${submissionId}/pdf`,
       {
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -273,7 +273,7 @@ class API {
 
   async getAdminSubmissionXLSX(submissionId) {
     const response = await fetch(
-      `${API_BASE_URL}/admin/submissions/${submissionId}/xlsx`,
+      `${this._getBaseUrl()}/admin/submissions/${submissionId}/xlsx`,
       {
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -290,7 +290,7 @@ class API {
 
   async getSubmissionXLSX(submissionId) {
     const response = await fetch(
-      `${API_BASE_URL}/submission/submissions/${submissionId}/xlsx`,
+      `${this._getBaseUrl()}/submission/submissions/${submissionId}/xlsx`,
       {
         headers: {
           Authorization: `Bearer ${this.token}`,
@@ -328,7 +328,7 @@ class API {
   }
 
   async previewPDF(timesheetIds) {
-    const response = await fetch(`${API_BASE_URL}/submission/preview-pdf`, {
+    const response = await fetch(`${this._getBaseUrl()}/submission/preview-pdf`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -345,7 +345,7 @@ class API {
   }
 
   async previewXLSX(timesheetIds) {
-    const response = await fetch(`${API_BASE_URL}/submission/preview-xlsx`, {
+    const response = await fetch(`${this._getBaseUrl()}/submission/preview-xlsx`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -635,7 +635,7 @@ class API {
 
   async uploadLogo(formData) {
     const response = await fetch(
-      `${API_BASE_URL}/admin/branding-settings/logo`,
+      `${this._getBaseUrl()}/admin/branding-settings/logo`,
       {
         method: "POST",
         headers: {
@@ -824,7 +824,7 @@ class API {
 
   async exportPlanningPDF(weekNumber) {
     const response = await fetch(
-      `${API_BASE_URL}/admin/planning/week/${weekNumber}/export-pdf`,
+      `${this._getBaseUrl()}/admin/planning/week/${weekNumber}/export-pdf`,
       {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -879,7 +879,7 @@ class API {
 
   async uploadBrandingLogo(formData) {
     const response = await fetch(
-      `${API_BASE_URL}/admin/branding-settings/logo`,
+      `${this._getBaseUrl()}/admin/branding-settings/logo`,
       {
         method: "POST",
         headers: {
@@ -910,7 +910,7 @@ class API {
 
   // Public endpoints
   async getPublicBranding() {
-    const response = await fetch(`${API_BASE_URL}/branding`);
+    const response = await fetch(`${this._getBaseUrl()}/branding`);
     return response.json();
   }
 
@@ -964,7 +964,7 @@ class API {
   }
 
   async uploadInvoiceFont(formData) {
-    const response = await fetch(`${API_BASE_URL}/admin/invoices/fonts`, {
+    const response = await fetch(`${this._getBaseUrl()}/admin/invoices/fonts`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.token}`,
@@ -1111,7 +1111,7 @@ class API {
 
   async downloadInvoicePDF(id) {
     const response = await fetch(
-      `${API_BASE_URL}/admin/invoices/invoices/${id}/download-pdf`,
+      `${this._getBaseUrl()}/admin/invoices/invoices/${id}/download-pdf`,
       {
         method: "GET",
         headers: {
@@ -1176,14 +1176,28 @@ class API {
   }
 
   async uploadImportTemplateSample(id, formData) {
+    // Extract file from FormData
+    const file = formData.get("pdf");
+    
+    // Convert file to base64
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    
+    // Send as JSON with base64
+    const payload = {
+      pdf_data: base64,
+      filename: file.name,
+    };
+    
     const response = await fetch(
-      `${API_BASE_URL}/admin/invoices/import-templates/${id}/sample`,
+      `${this._getBaseUrl()}/admin/invoices/import-templates/${id}/sample`,
       {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${this.token}`,
         },
-        body: formData,
+        body: JSON.stringify(payload),
       }
     );
     const data = await response.json().catch(() => ({ error: "Server error" }));
@@ -1216,19 +1230,58 @@ class API {
   }
 
   async autoDetectImportPdf(formData) {
-    // allow caller to append template_id before calling
-    const response = await fetch(
-      `${API_BASE_URL}/admin/invoices/import-templates/auto-detect`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${this.token}`,
-        },
-        body: formData,
-      }
-    );
+    // Convert FormData to JSON with base64-encoded PDF
+    // This avoids multipart/form-data parsing issues
+    const url = `${this._getBaseUrl()}/admin/invoices/import-templates/auto-detect`;
+    console.log('[API] Auto-detect URL:', url);
+    
+    // Extract file and fields from FormData
+    const file = formData.get('pdf');
+    const templateId = formData.get('template_id');
+    
+    if (!file) {
+      throw new Error('Geen bestand opgegeven');
+    }
+    
+    console.log('[API] Converting file to base64...', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+    
+    // Convert file to base64
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    
+    const payload = {
+      pdf_data: base64,
+      filename: file.name,
+      template_id: templateId ? parseInt(templateId) : null
+    };
+    
+    console.log('[API] Sending PDF as base64, size:', base64.length);
+    
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${this.token}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
-    const data = await response.json().catch(() => ({ error: "Server error" }));
+    console.log('[API] Auto-detect response status:', response.status);
+    
+    let data;
+    try {
+      data = await response.json();
+      console.log('[API] Auto-detect parsed JSON:', data);
+    } catch (e) {
+      const text = await response.text();
+      console.error('[API] Failed to parse JSON, raw response:', text.substring(0, 500));
+      data = { error: "Server error: " + text.substring(0, 200) };
+    }
+    
     if (!response.ok) {
       throw new Error(data.error || "Auto-detect mislukt");
     }
@@ -1237,12 +1290,32 @@ class API {
 
   // Invoice PDF Import
   async importInvoicePDF(formData) {
-    const response = await fetch(`${API_BASE_URL}/admin/invoices/import-pdf`, {
+    // Extract form fields from FormData object
+    const file = formData.get("pdf");
+    const template_id = formData.get("template_id");
+    const ai_template_id = formData.get("ai_template_id");
+    const invoice_type = formData.get("invoice_type");
+    
+    // Convert file to base64
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    
+    // Send as JSON with base64
+    const payload = {
+      pdf_data: base64,
+      filename: file.name,
+      template_id: template_id ? parseInt(template_id) : null,
+      ai_template_id: ai_template_id ? parseInt(ai_template_id) : null,
+      invoice_type: invoice_type || "Verkoop",
+    };
+    
+    const response = await fetch(`${this._getBaseUrl()}/admin/invoices/import-pdf`, {
       method: "POST",
       headers: {
+        "Content-Type": "application/json",
         Authorization: `Bearer ${this.token}`,
       },
-      body: formData,
+      body: JSON.stringify(payload),
     });
 
     // Expect JSON response
@@ -1263,7 +1336,7 @@ class API {
   subscribeUpdateStatus(onMessage) {
     const token = localStorage.getItem("token");
     const qs = token ? `?token=${encodeURIComponent(token)}` : "";
-    const url = `${API_BASE_URL}/admin/system/update/status${qs}`;
+    const url = `${this._getBaseUrl()}/admin/system/update/status${qs}`;
     const es = new EventSource(url);
     es.onmessage = (evt) => {
       if (!evt || typeof onMessage !== "function") return;
