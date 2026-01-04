@@ -25,11 +25,13 @@ async function generatePlanningPDF(weekNumber) {
           u.mega_kast AS driver_mega_kast,
           u.note AS driver_note,
           COALESCE(v.license_plate, fv.license_plate) AS license_plate,
-          c.name AS company_name
+          c.name AS company_name,
+          fv2.truck_type AS fleet_truck_type
         FROM planning_schedules ps
         LEFT JOIN users u ON u.id = ps.driver_id
         LEFT JOIN vehicles v ON v.id = ps.vehicle_id
         LEFT JOIN fleet_vehicles fv ON fv.id = ps.vehicle_id
+        LEFT JOIN fleet_vehicles fv2 ON fv2.rit_number = ps.route_number
         LEFT JOIN companies c ON c.id = ps.company_id
         WHERE ps.week_number = ? AND ps.is_active = 1
         ORDER BY ps.company_id, ps.day_of_week, ps.route_number`,
@@ -247,16 +249,25 @@ async function generatePlanningPDF(weekNumber) {
             x += colWidths.adr;
 
             doc.rect(x, y, colWidths.truck, rowHeight).stroke();
-            doc.text(
-              entry.driver_mega_kast === "mega_and_kast"
-                ? "Mega+Kast"
-                : entry.driver_mega_kast === "nvt"
-                ? "N.v.t."
-                : "Mega",
-              x + 5,
-              y + 4,
-              { width: colWidths.truck - 10 }
-            );
+            // Use fleet truck type if available (from route number), otherwise fall back to planning mega_kast
+            let truckType = entry.fleet_truck_type || entry.mega_kast;
+            
+            // Normalize the truck type for display
+            if (truckType === "mega_and_kast" || truckType === "Mega + Kast") {
+              truckType = "Mega+Kast";
+            } else if (truckType === "nvt" || truckType === "N.v.t.") {
+              truckType = "N.v.t.";
+            } else if (truckType === "only_mega" || truckType === "Mega" || truckType === "Alleen Mega") {
+              truckType = "Mega";
+            } else if (truckType === "Motorwagen") {
+              truckType = "Motorwagen";
+            } else if (truckType === "Kast") {
+              truckType = "Kast";
+            } else {
+              truckType = truckType || "Mega";
+            }
+            
+            doc.text(truckType, x + 5, y + 4, { width: colWidths.truck - 10 });
             x += colWidths.truck;
 
             doc.rect(x, y, colWidths.phone, rowHeight).stroke();
