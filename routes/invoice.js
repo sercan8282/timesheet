@@ -193,27 +193,34 @@ router.post("/import-templates", auth, async (req, res) => {
 router.post(
   "/import-templates/:id/sample",
   auth,
-  uploadPdf.single("pdf"),
   async (req, res) => {
-      // Debug: log alle binnenkomende form-data en files
-      console.log('--- [ELEMENT ADD DEBUG] ---');
-      console.log('req.body:', req.body);
-      console.log('req.files:', req.files);
-      if (req.file) console.log('req.file:', req.file);
-      console.log('--------------------------');
     try {
       const tpl = await db.get("SELECT * FROM import_templates WHERE id = ?", [
         req.params.id,
       ]);
       if (!tpl)
         return res.status(404).json({ error: "Template niet gevonden" });
-      if (!req.file) {
+      
+      // Accept JSON payload with base64-encoded PDF
+      const { pdf_data } = req.body;
+      if (!pdf_data) {
         return res.status(400).json({ error: "Geen PDF geüpload" });
       }
 
-      const relativePath = `/uploads/invoices/imports/${path.basename(
-        req.file.path
-      )}`;
+      // Decode base64 to buffer and parse to verify it's valid
+      const fileBuffer = Buffer.from(pdf_data, 'base64');
+      const parsed = await pdfParse(fileBuffer);
+      
+      // Save to disk
+      const uploadDir = path.join(__dirname, "../public/uploads/invoices/imports");
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      const filename = `sample-${req.params.id}-${Date.now()}.pdf`;
+      const filepath = path.join(uploadDir, filename);
+      fs.writeFileSync(filepath, fileBuffer);
+      
+      const relativePath = `/uploads/invoices/imports/${filename}`;
       await db.run(
         "UPDATE import_templates SET sample_pdf_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         [relativePath, req.params.id]
@@ -2587,20 +2594,23 @@ async function generateNextInvoiceNumber() {
 router.post(
   "/import-templates/auto-detect",
   auth,
-  uploadPdf.single("pdf"),
   async (req, res) => {
     try {
-      if (!req.file) {
+      // Accept JSON payload with base64-encoded PDF instead of FormData
+      // This avoids multipart/form-data boundary parsing issues
+      const { pdf_data, filename, template_id } = req.body;
+      
+      if (!pdf_data) {
         return res.status(400).json({ error: "Geen PDF geüpload" });
       }
+      
+      // Decode base64 to buffer
+      console.log('[AUTO-DETECT] Decoding base64 PDF...');
+      const fileBuffer = Buffer.from(pdf_data, 'base64');
+      console.log('[AUTO-DETECT] Decoded buffer size:', fileBuffer.length);
+      const templateId = template_id ? parseInt(template_id) : null;
 
-      const fileBuffer = fs.readFileSync(req.file.path);
       const parsed = await pdfParse(fileBuffer);
-      const templateId = req.body?.template_id
-        ? parseInt(req.body.template_id)
-        : req.query?.template_id
-        ? parseInt(req.query.template_id)
-        : null;
 
       const extracted = extractInvoiceDataFromText(parsed.text || "");
 
@@ -2740,8 +2750,8 @@ router.post(
       res.json({
         success: true,
         file: {
-          filename: req.file.originalname,
-          size: req.file.size,
+          filename: filename || "invoice.pdf",
+          size: fileBuffer.length,
         },
         fields,
         line_items,
@@ -2766,13 +2776,15 @@ router.post(
 );
 
 // Import PDF and create invoice
-router.post("/import-pdf", auth, uploadPdf.single("pdf"), async (req, res) => {
+router.post("/import-pdf", auth, async (req, res) => {
   try {
-    if (!req.file) {
+    // Accept JSON payload with base64-encoded PDF
+    const { pdf_data } = req.body;
+    if (!pdf_data) {
       return res.status(400).json({ error: "Geen PDF geüpload" });
     }
 
-    const fileBuffer = fs.readFileSync(req.file.path);
+    const fileBuffer = Buffer.from(pdf_data, 'base64');
     const parsed = await pdfParse(fileBuffer);
     let extracted = extractInvoiceDataFromText(parsed.text || "");
 
@@ -2845,10 +2857,17 @@ router.post("/import-pdf", auth, uploadPdf.single("pdf"), async (req, res) => {
       ? extracted.vat_amount
       : Number((extracted.total_amount - subtotal).toFixed(2));
 
+    // Generate filename and save PDF to disk
+    const filename = `import-${Date.now()}.pdf`;
+    const uploadDir = path.join(__dirname, "../public/uploads/invoices/imports");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    const filepath = path.join(uploadDir, filename);
+    fs.writeFileSync(filepath, fileBuffer);
+    
     // Store the original PDF path
-    const originalPdfPath = `/uploads/invoices/imports/${path.basename(
-      req.file.path
-    )}`;
+    const originalPdfPath = `/uploads/invoices/imports/${filename}`;
 
     // Get invoice_type from request body (Verkoop or Inkoop)
     const invoice_type = req.body.invoice_type === 'Inkoop' ? 'Inkoop' : 'Verkoop';
@@ -2865,7 +2884,7 @@ router.post("/import-pdf", auth, uploadPdf.single("pdf"), async (req, res) => {
         subtotal,
         vat_amount,
         extracted.total_amount,
-        `Geïmporteerd van PDF: ${path.basename(req.file.originalname)}${
+        `Geïmporteerd van PDF: ${req.body.filename || "invoice.pdf"}${
           original_invoice_number
             ? ` | Origineel factuurnummer: ${original_invoice_number}`
             : ""

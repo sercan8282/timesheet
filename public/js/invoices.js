@@ -331,8 +331,23 @@ const invoiceManager = {
       }
 
       const file = input.files[0];
+      console.log('[INVOICES] Auto-detect file selected:', {
+        name: file?.name,
+        size: file?.size,
+        type: file?.type,
+        exists: !!file
+      });
+
+      if (!file) {
+        console.error('[INVOICES] File is null/undefined!');
+        if (!silent) showToast("Geen bestand geselecteerd", "error");
+        return null;
+      }
+
       const formData = new FormData();
       formData.append("pdf", file);
+      console.log('[INVOICES] FormData created, checking contents...');
+      console.log('[INVOICES] FormData has pdf field:', formData.has("pdf"));
 
       // pass optional AI import template id
       const aiTemplateId = document.getElementById(
@@ -340,6 +355,7 @@ const invoiceManager = {
       )?.value;
       if (aiTemplateId) {
         formData.append("template_id", aiTemplateId);
+        console.log('[INVOICES] Added template_id:', aiTemplateId);
       }
 
       const btn = document.getElementById("autoDetectBtn");
