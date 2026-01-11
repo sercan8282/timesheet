@@ -88,6 +88,13 @@ else
 fi
 
 # 5) DB init (idempotent; uses INSERT OR IGNORE)
+log "Initializing database..."
+# Get service user from systemd service if available
+SVC_USER=$(sudo systemctl cat timesheet.service 2>/dev/null | grep "^User=" | cut -d= -f2 || echo "root")
+log "Database init user: $SVC_USER"
+sudo -u "$SVC_USER" -H bash -lc "cd '$PROJECT_DIR' && npm run init-db" || true
+
+log "DB init (idempotent; uses INSERT OR IGNORE)"
 log "Running init-db (idempotent)"; run "npm run init-db" || true
 
 # 6) Start/Restart app with proper wait and health check
