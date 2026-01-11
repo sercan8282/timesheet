@@ -165,11 +165,15 @@ chmod 640 "$INSTALL_DIR/.env"
 echo "\n💾 Initializing database..."
 sudo -u "$SVC_USER" -H bash -lc "cd '$INSTALL_DIR' && npm run init-db"
 
+# Ensure DB file exists and has correct ownership
 if [[ ! -f "$DB_PATH" ]]; then
   echo "❌ Database not created at $DB_PATH"; exit 1
 fi
-chown "$SVC_USER":"$SVC_USER" "$DB_PATH"
-chmod 640 "$DB_PATH"
+
+# Fix ownership and permissions (use sudo to ensure they stick)
+sudo chown "$SVC_USER":"$SVC_USER" "$DB_PATH"
+sudo chmod 640 "$DB_PATH"
+echo "✅ Database ownership set: $SVC_USER"
 
 # Optional: create system_config defaults in one pass if script exists
 if [[ -f "$INSTALL_DIR/scripts/setup-system-config.js" ]]; then
