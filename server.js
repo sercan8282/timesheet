@@ -273,6 +273,8 @@ app.use(
     },
     crossOriginEmbedderPolicy: false, // Disable for CDN resources
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    hsts: false, // HSTS managed by Nginx
+    xssFilter: false, // X-XSS-Protection managed by Nginx
   })
 );
 

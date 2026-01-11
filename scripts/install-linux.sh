@@ -250,6 +250,17 @@ if [[ "$USE_LE" == "y" || "$USE_LE" == "yes" ]]; then
   systemctl reload nginx || systemctl restart nginx
   # Interactive issuance (certbot will prompt for email and terms)
   certbot --nginx -d "$DOMAIN" --redirect || true
+
+  # Harden the generated HTTPS server block with security headers
+  if [[ -f "$NGINX_SITE" ]]; then
+    # Insert headers and proxy/body settings if missing
+    perl -0777 -i -pe '
+      s/(server\s*\{[^}]*?ssl_ciphers[^;]*;\s*)/
+$1    ssl_prefer_server_ciphers on;\n    ssl_session_cache shared:SSL:10m;\n    ssl_session_timeout 10m;\n\n    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;\n    add_header X-Content-Type-Options "nosniff" always;\n    add_header X-Frame-Options "SAMEORIGIN" always;\n    add_header Referrer-Policy "no-referrer" always;\n    add_header X-XSS-Protection "1; mode=block" always;\n    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;\n\n    client_max_body_size 20m;\n\n/si;
+      s/(location\s+\/\s*\{\s*\n\s*proxy_pass[^\n]*\n\s*proxy_http_version[^\n]*\n\s*proxy_set_header\s+Upgrade[^\n]*\n\s*proxy_set_header\s+Connection[^\n]*\n\s*proxy_set_header\s+Host[^\n]*\n)/
+$1        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n/si;
+    ' "$NGINX_SITE"
+  fi
 else
   echo "\n🔐 Configuring custom SSL certificates..."
   if [[ ! -f "$CERT_PATH" || ! -f "$KEY_PATH" ]]; then
