@@ -4,17 +4,22 @@
  */
 
 const Config = {
-  // Default backend URL
-  defaultUrl: 'https://urenregistratie.site',
   storageKey: 'timesheet_backend_url',
   
   /**
    * Get the current backend URL
-   * Returns stored URL or default if not set
+   * Returns stored URL override if set, otherwise dynamically detects from current origin
    */
   getBackendUrl() {
+    // Check if user has manually overridden the URL (e.g., for testing)
     const stored = localStorage.getItem(this.storageKey);
-    return stored || this.defaultUrl;
+    if (stored) {
+      return stored;
+    }
+    
+    // Default: use current origin (works for any domain/port)
+    // This automatically adapts to: localhost:3000, urenregistratie.site, etc.
+    return window.location.origin;
   },
   
   /**
@@ -29,10 +34,11 @@ const Config = {
     // Remove trailing slash
     url = url.replace(/\/$/, '');
     
-    localStorage.setItem(this.storageKey, url);
-    return url;
-  },
-  
+    localStoragynamic detection (remove override)
+   */
+  resetToDefault() {
+    localStorage.removeItem(this.storageKey);
+    console.log('✅ Reset to dynamic URL detection. Will use:', window.location.origin
   /**
    * Reset to default URL
    */

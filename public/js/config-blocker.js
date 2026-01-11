@@ -7,7 +7,7 @@ console.log('[BLOCKER] Loaded');
 
 window.appReadyToInit = false;
 
-// Global config
+// Global config - dynamically detects backend URL
 // Normalize and store the backend URL so we never end up with plain hostnames
 const storedUrl = localStorage.getItem('timesheet_backend_url');
 const normalizeUrl = (url) => {
@@ -18,12 +18,19 @@ const normalizeUrl = (url) => {
 };
 
 window.AppConfig = {
-  backendUrl: normalizeUrl(storedUrl) || 'https://urenregistratie.site',
-  getBackendUrl() { return this.backendUrl; },
+  // Getter: returns stored override or current origin
+  getBackendUrl() {
+    const stored = localStorage.getItem('timesheet_backend_url');
+    if (stored) {
+      return stored;
+    }
+    // Auto-detect: use current origin (works for any deployment)
+    return window.location.origin;
+  },
   setBackendUrl(url) {
     const normalized = normalizeUrl(url);
-    this.backendUrl = normalized;
     localStorage.setItem('timesheet_backend_url', normalized);
+    console.log('✅ Backend URL set to:', normalized);
   },
   testConnection: async function() {
     if (!this.backendUrl) return false;

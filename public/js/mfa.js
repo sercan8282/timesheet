@@ -206,8 +206,10 @@ async function mfaVerifySetup() {
       body: JSON.stringify({ token: code })
     });
 
-    if (!response.ok) {
-      throw new Error(data.error || "Invalid code");
+    console.log('[MFA] Verify response:', data);
+
+    if (!data || !data.success) {
+      throw new Error(data?.error || "Invalid code");
     }
 
     // Show backup codes

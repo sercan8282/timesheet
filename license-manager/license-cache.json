@@ -1,0 +1,17 @@
+{
+  "id": 4,
+  "license_key": "LIC-MK9PMBHI-E538ED98CF1D0FC2",
+  "company_name": "EU TRANSPORT",
+  "modules": [
+    "leave",
+    "fleet",
+    "planning",
+    "invoices",
+    "revenue"
+  ],
+  "valid_from": "2026-01-11",
+  "valid_until": "2053-12-31",
+  "is_active": true,
+  "is_valid": true,
+  "signature": "788594b201e72044e0ada88b70762001ed93e6eb4b93c534678add4823388a83"
+}

@@ -2390,4 +2390,394 @@ router.post("/users/:id/reset-password", async (req, res) => {
   }
 });
 
+// ========== SYSTEM CONFIGURATION ==========
+
+const secrets = require("../utils/secrets");
+
+// Get all system configuration
+router.get("/system-config", async (req, res) => {
+  try {
+    const configs = await db.all(`
+      SELECT key, value, encrypted, description, is_secret, updated_at
+      FROM system_config
+      ORDER BY key
+    `);
+
+    // Mask secret values
+    const maskedConfigs = configs.map(config => ({
+      ...config,
+      value: config.is_secret ? '***' : config.value,
+      display_value: config.is_secret ? '(Set - hidden for security)' : config.value
+    }));
+
+    res.json(maskedConfigs);
+  } catch (error) {
+    console.error("Error fetching system config:", error);
+    res.status(500).json({ error: "Failed to fetch configuration" });
+  }
+});
+
+// Get specific config value (for internal use)
+router.get("/system-config/:key", async (req, res) => {
+  try {
+    const config = await db.get(
+      "SELECT * FROM system_config WHERE key = ?",
+      [req.params.key]
+    );
+
+    if (!config) {
+      return res.status(404).json({ error: "Configuration not found" });
+    }
+
+    // Don't expose secret values
+    if (config.is_secret) {
+      return res.json({
+        key: config.key,
+        value: "***",
+        display_value: "(Set - hidden for security)"
+      });
+    }
+
+    res.json(config);
+  } catch (error) {
+    console.error("Error fetching config:", error);
+    res.status(500).json({ error: "Failed to fetch configuration" });
+  }
+});
+
+// Update system configuration
+router.post("/system-config", async (req, res) => {
+  try {
+    const { key, value } = req.body;
+
+    if (!key || value === undefined) {
+      return res.status(400).json({ error: "Key and value are required" });
+    }
+
+    // Validate key exists
+    const existing = await db.get(
+      "SELECT * FROM system_config WHERE key = ?",
+      [key]
+    );
+
+    if (!existing) {
+      return res.status(400).json({ error: `Unknown configuration key: ${key}` });
+    }
+
+    // Skip empty secrets (don't overwrite with empty values)
+    if (existing.is_secret && (!value || value.trim() === '')) {
+      return res.status(400).json({ 
+        error: "Cannot set an empty secret. Leave unchanged if you don't want to modify it." 
+      });
+    }
+
+    // Encrypt secret values before storing
+    let valueToStore = value;
+    if (existing.is_secret && value) {
+      try {
+        const encrypted = secrets.encryptSecret(value);
+        valueToStore = secrets.formatForStorage(encrypted);
+      } catch (error) {
+        console.error('Encryption error:', error);
+        return res.status(500).json({ error: "Failed to encrypt secret" });
+      }
+    }
+
+    // Update the configuration
+    await db.run(
+      `UPDATE system_config 
+       SET value = ?, encrypted = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE key = ?`,
+      [valueToStore, existing.is_secret ? 1 : 0, key]
+    );
+
+    // Log the change (don't log secret values)
+    if (existing.is_secret) {
+      console.log(`✓ Admin updated secret config: ${key}`);
+    } else {
+      console.log(`✓ Admin updated config: ${key} = ${value}`);
+    }
+
+    res.json({ 
+      success: true, 
+      message: `Configuration '${key}' updated successfully`,
+      requiresRestart: key === 'JWT_SECRET' || key === 'APP_DOMAIN' || key === 'APP_URL'
+    });
+  } catch (error) {
+    console.error("Error updating system config:", error);
+    res.status(500).json({ error: "Failed to update configuration" });
+  }
+});
+
+// Update multiple configurations at once
+router.post("/system-config/batch", async (req, res) => {
+  try {
+    const { configs } = req.body;
+
+    if (!Array.isArray(configs)) {
+      return res.status(400).json({ error: "configs must be an array" });
+    }
+
+    let requiresRestart = false;
+    const results = [];
+
+    for (const { key, value } of configs) {
+      const existing = await db.get(
+        "SELECT * FROM system_config WHERE key = ?",
+        [key]
+      );
+
+      if (!existing) {
+        results.push({ key, error: "Unknown configuration key" });
+        continue;
+      }
+
+      await db.run(
+        `UPDATE system_config 
+         SET value = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE key = ?`,
+        [value, key]
+      );
+
+      if (key === 'JWT_SECRET' || key === 'APP_DOMAIN' || key === 'APP_URL') {
+        requiresRestart = true;
+      }
+
+      results.push({ key, success: true });
+    }
+
+    res.json({ 
+      success: true, 
+      results,
+      requiresRestart,
+      message: "Batch update completed"
+    });
+  } catch (error) {
+    console.error("Error batch updating config:", error);
+    res.status(500).json({ error: "Failed to update configurations" });
+  }
+});
+
+// Test domain/URL connectivity
+router.post("/system-config/test-domain", async (req, res) => {
+  try {
+    const { domain } = req.body;
+
+    if (!domain) {
+      return res.status(400).json({ error: "Domain is required" });
+    }
+
+    // Simple validation
+    const isValid = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(:[0-9]{1,5})?$/.test(domain) ||
+                   domain === 'localhost' ||
+                   /^localhost:[0-9]{1,5}$/.test(domain) ||
+                   /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:[0-9]{1,5})?$/.test(domain);
+
+    if (!isValid) {
+      return res.status(400).json({ error: "Invalid domain format" });
+    }
+
+    res.json({ 
+      valid: true, 
+      domain,
+      message: "Domain format is valid"
+    });
+  } catch (error) {
+    console.error("Error validating domain:", error);
+    res.status(500).json({ error: "Failed to validate domain" });
+  }
+});
+
+// Get decrypted secret (internal use only)
+// This is used by the application to retrieve secrets at runtime
+router.get("/system-config/secret/:key", async (req, res) => {
+  try {
+    const config = await db.get(
+      "SELECT * FROM system_config WHERE key = ? AND is_secret = 1",
+      [req.params.key]
+    );
+
+    if (!config) {
+      return res.status(404).json({ error: "Secret not found" });
+    }
+
+    // Decrypt the secret
+    let decryptedValue = config.value;
+    if (config.encrypted && config.value) {
+      try {
+        decryptedValue = secrets.decryptSecret(config.value);
+      } catch (error) {
+        console.error('Decryption error:', error);
+        return res.status(500).json({ error: "Failed to decrypt secret" });
+      }
+    }
+
+    // Log access to sensitive configuration
+    console.log(`[CONFIG] Secret accessed: ${req.params.key}`);
+
+    res.json({
+      key: config.key,
+      value: decryptedValue
+    });
+  } catch (error) {
+    console.error("Error fetching secret:", error);
+    res.status(500).json({ error: "Failed to fetch secret" });
+  }
+});
+
+// ========== LET'S ENCRYPT CERTIFICATE MANAGEMENT ==========
+
+const letsencrypt = require("../utils/letsencrypt");
+
+// Initialize Let's Encrypt on first use
+letsencrypt.init().catch(err => console.error("Failed to init Let's Encrypt:", err));
+
+// List available certificates
+router.get("/letsencrypt/certificates", async (req, res) => {
+  try {
+    const certs = await letsencrypt.listCertificates();
+    res.json(certs);
+  } catch (error) {
+    console.error("Error listing certificates:", error);
+    res.status(500).json({ error: "Failed to list certificates" });
+  }
+});
+
+// Get certificate info
+router.get("/letsencrypt/certificate/:domain", async (req, res) => {
+  try {
+    const info = await letsencrypt.getCertificateInfo(req.params.domain);
+    if (!info) {
+      return res.status(404).json({ error: "Certificate not found" });
+    }
+    res.json(info);
+  } catch (error) {
+    console.error("Error fetching certificate:", error);
+    res.status(500).json({ error: "Failed to fetch certificate info" });
+  }
+});
+
+// Request a new Let's Encrypt certificate
+router.post("/letsencrypt/request-certificate", async (req, res) => {
+  try {
+    const { domain, email } = req.body;
+
+    if (!domain || !email) {
+      return res.status(400).json({ error: "Domain and email are required" });
+    }
+
+    // Validate domain format
+    const isValid = /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(:[0-9]{1,5})?$/.test(domain) ||
+                   /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(:[0-9]{1,5})?$/.test(domain);
+
+    if (!isValid) {
+      return res.status(400).json({ error: "Invalid domain format" });
+    }
+
+    // Don't allow localhost/IP addresses with Let's Encrypt (LE doesn't support them)
+    if (domain === "localhost" || /^127\./.test(domain) || /^192\.168\./.test(domain)) {
+      return res.status(400).json({ 
+        error: "Let's Encrypt doesn't support localhost or private IP addresses. Use a valid domain.",
+        suggestion: "For local testing, use a self-signed certificate instead."
+      });
+    }
+
+    console.log(`[ADMIN] Requesting Let's Encrypt certificate for ${domain}`);
+
+    // Request certificate
+    const result = await letsencrypt.requestCertificate(domain, email, true);
+
+    res.json({
+      success: result.success !== false,
+      domain,
+      message: result.message,
+      certificatePath: result.certPath || "/certs/" + domain,
+      requestId: result.orderId,
+      challenges: result.challenges
+    });
+
+  } catch (error) {
+    console.error("[LE] Certificate request error:", error);
+    res.status(500).json({ 
+      error: "Failed to request certificate",
+      details: error.message 
+    });
+  }
+});
+
+// Generate self-signed certificate (for testing/fallback)
+router.post("/letsencrypt/self-signed", async (req, res) => {
+  try {
+    const { domain } = req.body;
+
+    if (!domain) {
+      return res.status(400).json({ error: "Domain is required" });
+    }
+
+    console.log(`[ADMIN] Generating self-signed certificate for ${domain}`);
+
+    const result = await letsencrypt.generateSelfSignedCertificate(domain);
+
+    // Update system config with cert paths
+    await db.run(
+      `UPDATE system_config 
+       SET value = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE key = 'SSL_CERT_PATH'`,
+      [result.certPath]
+    );
+
+    await db.run(
+      `UPDATE system_config 
+       SET value = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE key = 'SSL_ENABLED'`,
+      ["1"]
+    );
+
+    res.json({
+      success: true,
+      domain,
+      message: "Self-signed certificate generated successfully",
+      certificatePath: result.certPath,
+      keyPath: result.keyPath,
+      requiresRestart: true
+    });
+
+  } catch (error) {
+    console.error("[LE] Self-signed certificate error:", error);
+    res.status(500).json({ 
+      error: "Failed to generate self-signed certificate",
+      details: error.message 
+    });
+  }
+});
+
+// Switch Let's Encrypt mode
+router.post("/letsencrypt/mode", async (req, res) => {
+  try {
+    const { mode } = req.body; // 'staging' or 'production'
+
+    if (!["staging", "production"].includes(mode)) {
+      return res.status(400).json({ error: "Mode must be 'staging' or 'production'" });
+    }
+
+    if (mode === "production") {
+      letsencrypt.switchToProduction();
+      console.log("[LE] Switched to production mode");
+    } else {
+      letsencrypt.switchToStaging();
+      console.log("[LE] Switched to staging mode");
+    }
+
+    res.json({
+      success: true,
+      mode,
+      message: `Switched to ${mode} Let's Encrypt`
+    });
+
+  } catch (error) {
+    console.error("Error switching LE mode:", error);
+    res.status(500).json({ error: "Failed to switch mode" });
+  }
+});
+
 module.exports = router;

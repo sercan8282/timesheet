@@ -499,7 +499,7 @@ class App {
   }
 
   changeServerURL() {
-    const currentUrl = window.AppConfig ? window.AppConfig.getBackendUrl() : 'https://urenregistratie.site';
+    const currentUrl = window.AppConfig ? window.AppConfig.getBackendUrl() : window.location.origin;
     
     const modalHtml = `
       <div class="modal fade" id="serverUrlModal" tabindex="-1">

@@ -99,6 +99,9 @@
       case "translations":
         await loadTranslationsManagement();
         break;
+      case "configuration":
+        await loadConfigurationManagement();
+        break;
       default:
         if (container) {
           container.innerHTML = '<div class="alert alert-info">Module not found</div>';
@@ -2322,6 +2325,11 @@
                   <li class="nav-item">
                     <a class="nav-link" href="#" data-tab="license" onclick="switchAdminTab('license'); return false;">
                       <i class="bi bi-file-lock"></i> Licentie
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="#" data-tab="configuration" onclick="switchAdminTab('configuration'); return false;">
+                      <i class="bi bi-sliders"></i> Configuration
                     </a>
                   </li>
                   <!-- Menu tab intentionally hidden for now; functionality retained for future use -->
@@ -7140,6 +7148,343 @@
   console.log(
     "[ADMIN] Admin module loaded successfully - all functions exported to window"
   );
+
+  // ===== SYSTEM CONFIGURATION =====
+  async function loadConfigurationManagement() {
+    const container = document.getElementById("adminContent");
+    container.innerHTML = `
+      <div class="row">
+        <div class="col-12">
+          <div class="alert alert-info">
+            <i class="bi bi-exclamation-triangle"></i>
+            <strong>System Configuration</strong><br>
+            Configure domain, SSL certificates, and secrets here.
+          </div>
+          <div id="configAlert"></div>
+          <div id="configContent" class="mt-3">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    try {
+      const response = await fetch('/api/admin/system-config', {
+        headers: {
+          'Authorization': 'Bearer ' + api.getToken()
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to load configuration');
+      }
+
+      const configs = await response.json();
+      renderConfigurationUI(configs);
+    } catch (error) {
+      console.error('Error loading config:', error);
+      document.getElementById('configContent').innerHTML = `
+        <div class="alert alert-danger">
+          Error loading configuration: ${error.message}
+        </div>
+      `;
+    }
+  }
+
+  function renderConfigurationUI(configs) {
+    const configMap = {};
+    configs.forEach(cfg => {
+      configMap[cfg.key] = cfg;
+    });
+
+    const html = `
+      <form id="configForm">
+        <div class="row">
+          <div class="col-lg-6">
+            <!-- Domain & URL Settings -->
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-globe"></i> Domain & URL</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">Application Domain</label>
+                  <input type="text" class="form-control" name="APP_DOMAIN" 
+                    value="${configMap['APP_DOMAIN']?.value || 'localhost:3000'}"
+                    placeholder="example.com or localhost:3000">
+                  <small class="text-muted">Domain where application is hosted (without protocol)</small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Full Application URL</label>
+                  <input type="text" class="form-control" name="APP_URL" 
+                    value="${configMap['APP_URL']?.value || 'http://localhost:3000'}"
+                    placeholder="http://example.com or https://example.com">
+                  <small class="text-muted">Full URL including protocol (http or https)</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="testDomain()">
+                  <i class="bi bi-wifi"></i> Test Domain
+                </button>
+              </div>
+            </div>
+
+            <!-- SSL Settings -->
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-lock"></i> SSL/HTTPS</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="SSL_ENABLED" id="sslEnabled"
+                      ${configMap['SSL_ENABLED']?.value === '1' ? 'checked' : ''}>
+                    <label class="form-check-label" for="sslEnabled">Enable SSL/HTTPS</label>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">SSL Certificate Path</label>
+                  <input type="text" class="form-control" name="SSL_CERT_PATH" 
+                    value="${configMap['SSL_CERT_PATH']?.value || ''}"
+                    placeholder="/etc/letsencrypt/live/example.com/fullchain.pem"
+                    disabled>
+                  <small class="text-muted">Path to SSL certificate (read-only, managed by Let's Encrypt)</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-6">
+            <!-- Secrets -->
+            <div class="card mb-3">
+              <div class="card-header bg-danger text-white">
+                <h6 class="mb-0"><i class="bi bi-shield-lock"></i> Security Secrets</h6>
+              </div>
+              <div class="card-body">
+                <div class="alert alert-warning">
+                  <i class="bi bi-exclamation-circle"></i> 
+                  Changing these values will affect authentication and security!
+                </div>
+                
+                <div class="mb-3">
+                  <label class="form-label">JWT Secret</label>
+                  <input type="password" class="form-control" name="JWT_SECRET" 
+                    value="${configMap['JWT_SECRET']?.value || ''}"
+                    placeholder="Enter a strong, random secret">
+                  <small class="text-muted">Used for token signing. Leave empty to keep current value.</small>
+                  <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="generateRandomSecret('JWT_SECRET')">
+                    <i class="bi bi-arrow-repeat"></i> Generate Random
+                  </button>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label">Database Password</label>
+                  <input type="password" class="form-control" name="DB_PASSWORD" 
+                    value="${configMap['DB_PASSWORD']?.value || ''}"
+                    placeholder="Database connection password">
+                  <small class="text-muted">Leave empty if not using remote database.</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Let's Encrypt -->
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-certificate"></i> Let's Encrypt</h6>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <label class="form-label">Let's Encrypt Email</label>
+                  <input type="email" class="form-control" name="LETSENCRYPT_EMAIL" 
+                    value="${configMap['LETSENCRYPT_EMAIL']?.value || ''}"
+                    placeholder="admin@example.com">
+                  <small class="text-muted">Email for certificate registration and renewal notices</small>
+                </div>
+
+                <div class="mb-3">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="LETSENCRYPT_ENABLED" id="letsencryptEnabled"
+                      ${configMap['LETSENCRYPT_ENABLED']?.value === '1' ? 'checked' : ''}>
+                    <label class="form-check-label" for="letsencryptEnabled">Enable Automatic Renewal</label>
+                  </div>
+                </div>
+
+                <button type="button" class="btn btn-sm btn-outline-success" onclick="requestLetsEncryptCertificate()">
+                  <i class="bi bi-download"></i> Request Certificate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-4">
+          <div class="col-12">
+            <button type="submit" class="btn btn-success">
+              <i class="bi bi-save"></i> Save Configuration
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="location.reload()">
+              <i class="bi bi-x-lg"></i> Cancel
+            </button>
+          </div>
+        </div>
+      </form>
+    `;
+
+    document.getElementById('configContent').innerHTML = html;
+
+    document.getElementById('configForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await saveConfiguration();
+    });
+  }
+
+  async function saveConfiguration() {
+    const form = document.getElementById('configForm');
+    const formData = new FormData(form);
+    const alertDiv = document.getElementById('configAlert');
+    
+    try {
+      const configs = [];
+      
+      // Collect form data
+      for (const [key, value] of formData.entries()) {
+        configs.push({ key, value });
+      }
+
+      // Add checkbox values that might not be in formData
+      const sslEnabled = document.getElementById('sslEnabled')?.checked ? '1' : '0';
+      const letsencryptEnabled = document.getElementById('letsencryptEnabled')?.checked ? '1' : '0';
+      
+      configs.push({ key: 'SSL_ENABLED', value: sslEnabled });
+      configs.push({ key: 'LETSENCRYPT_ENABLED', value: letsencryptEnabled });
+
+      const response = await fetch('/api/admin/system-config/batch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + api.getToken()
+        },
+        body: JSON.stringify({ configs })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to save configuration');
+      }
+
+      alertDiv.innerHTML = `
+        <div class="alert alert-success">
+          <i class="bi bi-check-circle"></i> Configuration saved successfully!
+          ${result.requiresRestart ? '<br><small>Some changes require a server restart to take effect.</small>' : ''}
+        </div>
+      `;
+
+      setTimeout(() => {
+        alertDiv.innerHTML = '';
+      }, 4000);
+
+    } catch (error) {
+      console.error('Error saving config:', error);
+      alertDiv.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-circle"></i> Error: ${error.message}
+        </div>
+      `;
+    }
+  }
+
+  window.testDomain = async function() {
+    const domain = document.querySelector('input[name="APP_DOMAIN"]').value;
+    if (!domain) {
+      alert('Please enter a domain first');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/system-config/test-domain', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + api.getToken()
+        },
+        body: JSON.stringify({ domain })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('✓ Domain format is valid: ' + domain);
+      } else {
+        alert('✗ Domain validation failed: ' + result.error);
+      }
+    } catch (error) {
+      alert('Error testing domain: ' + error.message);
+    }
+  };
+
+  window.generateRandomSecret = function(fieldName) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let secret = '';
+    for (let i = 0; i < 32; i++) {
+      secret += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.querySelector(`input[name="${fieldName}"]`).value = secret;
+  };
+
+  window.requestLetsEncryptCertificate = async function() {
+    const domain = document.querySelector('input[name="APP_DOMAIN"]').value;
+    const email = document.querySelector('input[name="LETSENCRYPT_EMAIL"]').value;
+
+    if (!domain || !email) {
+      alert('Please fill in both domain and email first');
+      return;
+    }
+
+    if (!confirm(`Request Let's Encrypt certificate for ${domain}?\n\nThis will take a few minutes...`)) {
+      return;
+    }
+
+    const alertDiv = document.getElementById('configAlert');
+    alertDiv.innerHTML = `
+      <div class="alert alert-info">
+        <div class="spinner-border spinner-border-sm me-2"></div>
+        Requesting certificate for ${domain}...
+      </div>
+    `;
+
+    try {
+      const response = await fetch('/api/admin/letsencrypt/request-certificate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + api.getToken()
+        },
+        body: JSON.stringify({ domain, email })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alertDiv.innerHTML = `
+          <div class="alert alert-success">
+            <i class="bi bi-check-circle"></i> Certificate requested successfully!<br>
+            <small>Certificate path: ${result.certPath}</small>
+          </div>
+        `;
+      } else {
+        throw new Error(result.error || 'Certificate request failed');
+      }
+    } catch (error) {
+      alertDiv.innerHTML = `
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-circle"></i> Error: ${error.message}
+        </div>
+      `;
+    }
+  };
+
+  window.loadConfigurationManagement = loadConfigurationManagement;
 
   // Mark admin as loaded
   window.adminModuleReady = true;

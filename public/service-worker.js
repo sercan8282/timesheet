@@ -47,9 +47,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Skip POST, PUT, DELETE, PATCH requests - only cache GET/HEAD
+  if (event.request.method !== 'GET' && event.request.method !== 'HEAD') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
+        // Only cache successful GET/HEAD responses
+        if (!response || response.status !== 200 || response.type === 'error') {
+          return response;
+        }
+
         // Clone the response
         const responseClone = response.clone();
         
