@@ -3450,6 +3450,19 @@ class Database {
           FOREIGN KEY (template_id) REFERENCES invoice_templates(id) ON DELETE CASCADE
         )
       `);
+
+      // System configuration
+      this.db.run(`
+        CREATE TABLE IF NOT EXISTS system_config (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key TEXT UNIQUE NOT NULL,
+          value TEXT,
+          encrypted INTEGER DEFAULT 0,
+          description TEXT,
+          is_secret INTEGER DEFAULT 0,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
     });
   }
 
