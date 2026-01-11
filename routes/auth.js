@@ -138,6 +138,7 @@ router.post(
           companyName: primaryCompany?.name || user.company_name,
           companyPauseTime:
             primaryCompany?.pause_time || user.company_pause_time,
+          mfaEnabled: user.mfa_enabled === 1,
           userCompanies: userCompanies.map((c) => ({
             id: c.id,
             name: c.name,
@@ -166,6 +167,7 @@ router.post(
           company_name: primaryCompany?.name || user.company_name,
           company_pause_time:
             primaryCompany?.pause_time || user.company_pause_time,
+          mfaEnabled: user.mfa_enabled === 1,
           userCompanies: userCompanies.map((c) => ({
             id: c.id,
             name: c.name,

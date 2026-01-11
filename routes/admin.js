@@ -2394,9 +2394,30 @@ router.post("/users/:id/reset-password", async (req, res) => {
 
 const secrets = require("../utils/secrets");
 
+// Helper: enforce MFA for admin accounts on sensitive config routes
+async function ensureAdminMfa(req, res) {
+  try {
+    if (!req.user || req.user.role !== "admin") return true;
+    const user = await db.get("SELECT mfa_enabled FROM users WHERE id = ?", [req.user.id]);
+    if (!user || user.mfa_enabled !== 1) {
+      res
+        .status(403)
+        .json({ error: "Admin MFA is required to access configuration. Enable MFA first." });
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("MFA enforcement error:", err);
+    res.status(500).json({ error: "Failed to validate admin MFA" });
+    return false;
+  }
+}
+
 // Get all system configuration
 router.get("/system-config", async (req, res) => {
   try {
+    if (!(await ensureAdminMfa(req, res))) return;
+
     const configs = await db.all(`
       SELECT key, value, encrypted, description, is_secret, updated_at
       FROM system_config
@@ -2420,6 +2441,8 @@ router.get("/system-config", async (req, res) => {
 // Get specific config value (for internal use)
 router.get("/system-config/:key", async (req, res) => {
   try {
+    if (!(await ensureAdminMfa(req, res))) return;
+
     const config = await db.get(
       "SELECT * FROM system_config WHERE key = ?",
       [req.params.key]
@@ -2448,6 +2471,8 @@ router.get("/system-config/:key", async (req, res) => {
 // Update system configuration
 router.post("/system-config", async (req, res) => {
   try {
+    if (!(await ensureAdminMfa(req, res))) return;
+
     const { key, value } = req.body;
 
     if (!key || value === undefined) {
@@ -2462,6 +2487,22 @@ router.post("/system-config", async (req, res) => {
 
     if (!existing) {
       return res.status(400).json({ error: `Unknown configuration key: ${key}` });
+    }
+
+    // Validation by key
+    const validators = {
+      APP_DOMAIN: (v) => /^(?:[a-zA-Z0-9.-]+)(?::\d{2,5})?$/.test(v),
+      APP_URL: (v) => /^https?:\/\/[^\s]+$/.test(v),
+      SSL_ENABLED: (v) => v === '0' || v === '1' || v === 0 || v === 1,
+      SSL_CERT_PATH: (v) => typeof v === 'string' && v.length < 512,
+      SSL_KEY_PATH: (v) => typeof v === 'string' && v.length < 512,
+      JWT_SECRET: (v) => typeof v === 'string' && v.length >= 32,
+      DB_PASSWORD: (v) => typeof v === 'string',
+      LETSENCRYPT_EMAIL: (v) => /.+@.+\..+/.test(v) || v === ''
+    };
+
+    if (validators[key] && !validators[key](value)) {
+      return res.status(400).json({ error: `Invalid value for ${key}` });
     }
 
     // Skip empty secrets (don't overwrite with empty values)
@@ -2491,6 +2532,28 @@ router.post("/system-config", async (req, res) => {
       [valueToStore, existing.is_secret ? 1 : 0, key]
     );
 
+    // Ensure audit_log table exists
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        action TEXT,
+        config_key TEXT,
+        old_value TEXT,
+        new_value TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Fetch old value for audit (masked for secrets)
+    const oldVal = existing.is_secret ? '(secret updated)' : existing.value;
+    const newVal = existing.is_secret ? '(secret updated)' : String(value);
+    await db.run(
+      `INSERT INTO audit_log (user_id, action, config_key, old_value, new_value)
+       VALUES (?, ?, ?, ?, ?)`,
+      [req.user && req.user.id ? req.user.id : null, 'UPDATE_CONFIG', key, oldVal, newVal]
+    );
+
     // Log the change (don't log secret values)
     if (existing.is_secret) {
       console.log(`✓ Admin updated secret config: ${key}`);
@@ -2512,6 +2575,8 @@ router.post("/system-config", async (req, res) => {
 // Update multiple configurations at once
 router.post("/system-config/batch", async (req, res) => {
   try {
+    if (!(await ensureAdminMfa(req, res))) return;
+
     const { configs } = req.body;
 
     if (!Array.isArray(configs)) {
@@ -2532,6 +2597,23 @@ router.post("/system-config/batch", async (req, res) => {
         continue;
       }
 
+      // Validation by key (reuse simple validators)
+      const validators = {
+        APP_DOMAIN: (v) => /^(?:[a-zA-Z0-9.-]+)(?::\d{2,5})?$/.test(v),
+        APP_URL: (v) => /^https?:\/\/[^\s]+$/.test(v),
+        SSL_ENABLED: (v) => v === '0' || v === '1' || v === 0 || v === 1,
+        SSL_CERT_PATH: (v) => typeof v === 'string' && v.length < 512,
+        SSL_KEY_PATH: (v) => typeof v === 'string' && v.length < 512,
+        JWT_SECRET: (v) => typeof v === 'string' && v.length >= 32,
+        DB_PASSWORD: (v) => typeof v === 'string',
+        LETSENCRYPT_EMAIL: (v) => /.+@.+\..+/.test(v) || v === ''
+      };
+
+      if (validators[key] && !validators[key](value)) {
+        results.push({ key, error: `Invalid value for ${key}` });
+        continue;
+      }
+
       await db.run(
         `UPDATE system_config 
          SET value = ?, updated_at = CURRENT_TIMESTAMP
@@ -2542,6 +2624,13 @@ router.post("/system-config/batch", async (req, res) => {
       if (key === 'JWT_SECRET' || key === 'APP_DOMAIN' || key === 'APP_URL') {
         requiresRestart = true;
       }
+
+      // Audit
+      await db.run(
+        `INSERT INTO audit_log (user_id, action, config_key, old_value, new_value)
+         VALUES (?, ?, ?, ?, ?)`,
+        [req.user && req.user.id ? req.user.id : null, 'UPDATE_CONFIG', key, existing.is_secret ? '(secret updated)' : existing.value, existing.is_secret ? '(secret updated)' : String(value)]
+      );
 
       results.push({ key, success: true });
     }
@@ -2592,6 +2681,8 @@ router.post("/system-config/test-domain", async (req, res) => {
 // This is used by the application to retrieve secrets at runtime
 router.get("/system-config/secret/:key", async (req, res) => {
   try {
+    if (!(await ensureAdminMfa(req, res))) return;
+
     const config = await db.get(
       "SELECT * FROM system_config WHERE key = ? AND is_secret = 1",
       [req.params.key]

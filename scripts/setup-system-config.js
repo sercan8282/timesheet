@@ -66,7 +66,7 @@ async function setupSystemConfig() {
       },
       {
         key: 'JWT_SECRET',
-        value: process.env.JWT_SECRET || 'change-me-in-admin-panel',
+        value: process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex'),
         encrypted: 1,
         description: 'JWT authentication secret',
         is_secret: 1

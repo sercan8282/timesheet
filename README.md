@@ -135,6 +135,77 @@ Server running on http://localhost:3000
 Environment: development
 ```
 
+## Linux Automated Install (Production)
+
+Use the automated installer to deploy on Ubuntu/Debian with Nginx, SSL, a dedicated service account, and secure defaults. It installs the app under `/var/www/timesheet` and proxies via Nginx.
+
+### Prerequisites
+- DNS A record for your domain pointing to the server
+- Ports 80 and 443 open (firewall)
+- Root/sudo access
+
+### Quick Install
+
+Option A — Run directly from GitHub:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/sercan8282/timesheet/main/scripts/install-linux.sh -o install-linux.sh
+sudo bash install-linux.sh
+```
+
+Option B — From cloned repo:
+
+```bash
+sudo git clone https://github.com/sercan8282/timesheet /var/www/timesheet
+sudo bash /var/www/timesheet/scripts/install-linux.sh
+```
+
+### What it asks and configures
+- Domain (e.g., `timesheet.example.com`)
+- SSL choice: Let’s Encrypt (certbot) or custom certificate paths
+- Service account username (default `timesheetapp`)
+- Database filename (default `database.sqlite`) stored in `/var/www/timesheet`
+- Admin username and a strong admin password (min 12 chars)
+
+### What it installs and sets up
+- System packages: git, sqlite3, Node.js (NodeSource 24.x), nginx, ufw, certbot (if LE)
+- App dependencies: `npm install` (production)
+- Security: Generates strong `JWT_SECRET` and `ENCRYPTION_KEY`, writes `.env` (mode 640)
+- Database: Runs `npm run init-db` and sets `DB_PATH` to the absolute path
+- Service: Creates `timesheet.service` (systemd) running as the service account
+- Nginx: Reverse proxy to port 3000, HTTP→HTTPS redirect, SSL via LE or your certs
+
+### Firewall setup (UFW)
+The installer will configure UFW automatically. If you need to apply or verify manually:
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw --force enable
+sudo ufw status verbose
+```
+
+### Verify after install
+```bash
+systemctl status timesheet.service
+journalctl -u timesheet.service -e
+nginx -t && sudo systemctl reload nginx
+curl -I http://your-domain
+curl -I https://your-domain
+ls -l /var/www/timesheet/.env /var/www/timesheet/database.sqlite
+```
+
+### Update code later
+```bash
+sudo -u timesheetapp -H bash -lc "cd /var/www/timesheet && git pull --ff-only && npm install --only=prod && npm run init-db"
+sudo systemctl restart timesheet.service
+```
+
+### Change domain/SSL later
+You can adjust runtime configuration via the Admin panel. For SSL certificate changes using custom certs, update the Nginx site config under `/etc/nginx/sites-available/` and reload Nginx.
+
+
 ### Step 7: Access the Application
 
 1. Open your web browser

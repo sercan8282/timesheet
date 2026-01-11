@@ -1,6 +1,7 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const db = require("../config/database");
+const { encryptPassword } = require("../utils/encryption");
 
 // Wait for database to be ready
 function waitForDatabase() {
@@ -52,22 +53,24 @@ async function initializeDatabase() {
     const smtpExists = await db.get("SELECT * FROM smtp_settings LIMIT 1");
 
     if (!smtpExists) {
-      // Create default SMTP settings from .env
+      // Create default SMTP settings from .env (encrypt password at rest)
+      const encryptedPass = encryptPassword(process.env.SMTP_PASS || "");
       await db.run(
-        `INSERT INTO smtp_settings (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, email_from, email_to)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO smtp_settings (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_pass, smtp_pass_encrypted, email_from, email_to)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           process.env.SMTP_HOST || "smtp.office365.com",
           parseInt(process.env.SMTP_PORT) || 587,
           process.env.SMTP_SECURE === "true" ? 1 : 0,
           process.env.SMTP_USER || "",
-          process.env.SMTP_PASS || "",
+          "", // leave plaintext field empty
+          encryptedPass || null,
           process.env.EMAIL_FROM || "",
           process.env.EMAIL_TO || "info@eutransport.nl",
         ]
       );
 
-      console.log("✓ SMTP settings initialized");
+      console.log("✓ SMTP settings initialized (password encrypted)");
     } else {
       console.log("✓ SMTP settings already exist");
     }
