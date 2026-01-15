@@ -1920,7 +1920,9 @@ const invoiceManager = {
         if (content) {
           formData.append("content", String(content));
           const fontSize = document.getElementById("element-font-size")?.value || "14";
-          const fontColor = document.getElementById("element-font-color-text")?.value || document.getElementById("element-font-color")?.value || "#000000";
+          const fontColorInput = document.getElementById("element-font-color")?.value;
+          const fontColorText = document.getElementById("element-font-color-text")?.value;
+          const fontColor = fontColorText || fontColorInput || "#000000";
           const fontFamily = document.getElementById("element-font-family")?.value || "inherit";
           const fontWeight = document.getElementById("element-font-weight")?.value || "normal";
           formData.append("font_size", String(fontSize));
@@ -1944,7 +1946,9 @@ const invoiceManager = {
       }
 
       const fontSize = document.getElementById("element-font-size")?.value || "14";
-      const fontColor = document.getElementById("element-font-color-text")?.value || document.getElementById("element-font-color")?.value || "#000000";
+      const fontColorInput = document.getElementById("element-font-color")?.value;
+      const fontColorText = document.getElementById("element-font-color-text")?.value;
+      const fontColor = fontColorText || fontColorInput || "#000000";
       const fontFamily = document.getElementById("element-font-family")?.value || "inherit";
       const fontWeight = document.getElementById("element-font-weight")?.value || "normal";
 
@@ -2238,6 +2242,25 @@ const invoiceManager = {
       true
     );
 
+    // Sync color picker with text input for edit modal
+    const colorInput = document.getElementById("edit-element-font-color");
+    const colorTextInput = document.getElementById("edit-element-font-color-text");
+    
+    if (colorInput && colorTextInput) {
+      // Sync color picker -> text input
+      colorInput.addEventListener('input', (e) => {
+        colorTextInput.value = e.target.value;
+      });
+      
+      // Sync text input -> color picker
+      colorTextInput.addEventListener('input', (e) => {
+        const value = e.target.value.trim();
+        if (/^#[0-9A-Fa-f]{6}$/.test(value)) {
+          colorInput.value = value;
+        }
+      });
+    }
+
     // Show modal
     const modal = new bootstrap.Modal(
       document.getElementById("editElementModal")
@@ -2309,7 +2332,9 @@ const invoiceManager = {
       } else {
         const content = document.getElementById("edit-element-content")?.value;
         const fontSize = document.getElementById("edit-element-font-size")?.value;
-        const fontColor = document.getElementById("edit-element-font-color-text")?.value || document.getElementById("edit-element-font-color")?.value;
+        const fontColorInput = document.getElementById("edit-element-font-color")?.value;
+        const fontColorText = document.getElementById("edit-element-font-color-text")?.value;
+        const fontColor = fontColorText || fontColorInput || "#000000";
         const fontWeight = document.getElementById("edit-element-font-weight")?.value;
         const fontFamily = document.getElementById("edit-element-font-family")?.value;
 
@@ -2320,7 +2345,7 @@ const invoiceManager = {
           }
           data.content = content;
           data.font_size = fontSize || 14;
-          data.font_color = fontColor || "#000000";
+          data.font_color = fontColor;
           data.font_weight = fontWeight || "normal";
           if (fontFamily) data.font_family = fontFamily;
         }
