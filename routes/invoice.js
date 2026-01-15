@@ -907,6 +907,7 @@ router.put(
         console.log('[ELEMENT UPDATE] New image uploaded:', image_path);
       }
 
+      // Preserve existing styling when fields are omitted (e.g. multipart requests that only upload a file)
       await db.run(
         `UPDATE invoice_template_elements 
        SET element_type = ?, label = ?, content = ?, image_path = ?, position_order = ?, 
@@ -914,20 +915,20 @@ router.put(
            updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
         [
-          element_type || currentElement.element_type,
-          label || null,
-          content || null,
+          element_type ?? currentElement.element_type,
+          label ?? currentElement.label ?? null,
+          content ?? currentElement.content ?? null,
           image_path,
-          position_order || 0,
-          font_size || 14,
-          font_color || "#000000",
-          font_weight || "normal",
-          font_family || currentElement.font_family || null,
-          image_align || currentElement.image_align || "left",
-          image_width || currentElement.image_width || 150,
-          image_height || currentElement.image_height || 0,
-          calculation_formula || null,
-          text_align_h || currentElement.text_align_h || "left",
+          position_order ?? currentElement.position_order ?? 0,
+          font_size ?? currentElement.font_size ?? 14,
+          font_color ?? currentElement.font_color ?? "#000000",
+          font_weight ?? currentElement.font_weight ?? "normal",
+          font_family ?? currentElement.font_family ?? null,
+          image_align ?? currentElement.image_align ?? "left",
+          image_width ?? currentElement.image_width ?? 150,
+          image_height ?? currentElement.image_height ?? 0,
+          calculation_formula ?? currentElement.calculation_formula ?? null,
+          text_align_h ?? currentElement.text_align_h ?? "left",
           elementId,
         ]
       );
