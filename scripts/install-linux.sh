@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Timesheet Linux Installer
 # - Installs to /var/www/timesheet
-# - Clones code from https://github.com/sercan8282/timesheet
+# - Clones code from repository (user provides URL)
 # - Creates a dedicated service account
 # - Installs Node.js (NodeSource 24.x), git, sqlite3, nginx, certbot
 # - Generates secure secrets and .env
@@ -25,11 +25,48 @@ if [[ "$OS_ID" != "ubuntu" && "$OS_ID" != "debian" ]]; then
 fi
 
 ########################################
-# Prompts
+# Target directory setup
 ########################################
+TARGET_DIR="/var/www/timesheet"
+
 echo "\n===== Timesheet Installer (Linux) =====\n"
 
-INSTALL_DIR="/var/www/timesheet"
+# Check if /var/www exists, create if not
+if [[ ! -d "/var/www" ]]; then
+  echo "📁 Creating /var/www directory..."
+  mkdir -p /var/www
+  chmod 755 /var/www
+fi
+
+# Check if target directory exists, create if not
+if [[ ! -d "$TARGET_DIR" ]]; then
+  echo "📁 Creating target directory: $TARGET_DIR"
+  mkdir -p "$TARGET_DIR"
+  chmod 755 "$TARGET_DIR"
+else
+  echo "✓ Target directory exists: $TARGET_DIR"
+fi
+
+# Change to target directory
+CURRENT_DIR="$(pwd)"
+if [[ "$CURRENT_DIR" != "$TARGET_DIR" ]]; then
+  echo "📂 Changing to target directory: $TARGET_DIR"
+  cd "$TARGET_DIR"
+else
+  echo "✓ Already in target directory: $TARGET_DIR"
+fi
+
+INSTALL_DIR="$TARGET_DIR"
+
+########################################
+# Prompts
+########################################
+read -rp "Git repository URL (e.g., https://github.com/user/repo.git): " REPO_URL
+REPO_URL=${REPO_URL// /}
+if [[ -z "$REPO_URL" ]]; then
+  echo "❌ Repository URL is required."; exit 1
+fi
+
 read -rp "Domain (e.g., example.com): " DOMAIN
 DOMAIN=${DOMAIN// /}
 if [[ -z "$DOMAIN" ]]; then
@@ -90,19 +127,44 @@ if ! id "$SVC_USER" >/dev/null 2>&1; then
   adduser --system --group --home "$INSTALL_DIR" "$SVC_USER" || true
 fi
 
+# Ensure target directory ownership
+echo "🔧 Setting ownership of $INSTALL_DIR to $SVC_USER..."
+chown -R "$SVC_USER":"$SVC_USER" "$INSTALL_DIR" 2>/dev/null || true
+
 ########################################
 # Clone repository
 ########################################
 echo "\n📁 Preparing app directory at $INSTALL_DIR ..."
-mkdir -p "$INSTALL_DIR"
 if [[ ! -d "$INSTALL_DIR/.git" ]]; then
-  echo "\n🔗 Cloning https://github.com/sercan8282/timesheet ..."
-  git clone https://github.com/sercan8282/timesheet "$INSTALL_DIR"
+  echo "\n🔗 Cloning $REPO_URL into $INSTALL_DIR ..."
+  # Clone into temp directory first, then move contents
+  TEMP_CLONE="/tmp/timesheet-clone-$$"
+  git clone "$REPO_URL" "$TEMP_CLONE"
+  
+  # Move all files including hidden ones
+  shopt -s dotglob
+  mv "$TEMP_CLONE"/* "$INSTALL_DIR/" 2>/dev/null || true
+  mv "$TEMP_CLONE"/.* "$INSTALL_DIR/" 2>/dev/null || true
+  shopt -u dotglob
+  
+  # Clean up temp directory
+  rm -rf "$TEMP_CLONE"
+  
+  echo "✓ Repository cloned successfully"
 else
   echo "Repo already cloned in $INSTALL_DIR; pulling latest changes..."
-  (cd "$INSTALL_DIR" && git pull --ff-only)
+  cd "$INSTALL_DIR"
+  
+  # Configure git safe.directory if needed
+  if ! git config --get safe.directory >/dev/null 2>&1; then
+    echo "🔧 Adding safe.directory exception for $INSTALL_DIR"
+    git config --global --add safe.directory "$INSTALL_DIR"
+  fi
+  
+  git pull --ff-only || echo "⚠️ Could not pull latest changes (may have local modifications)"
 fi
 
+# Ensure proper ownership after clone/pull
 chown -R "$SVC_USER":"$SVC_USER" "$INSTALL_DIR"
 chmod 755 "$INSTALL_DIR"
 
@@ -222,13 +284,13 @@ server {
     listen 80;
     server_name DOMAIN_REPLACE;
 
-  # Basic hardening for HTTP (still redirecting to HTTPS)
-  add_header X-Content-Type-Options "nosniff" always;
-  add_header X-Frame-Options "SAMEORIGIN" always;
-  add_header Referrer-Policy "no-referrer" always;
-  add_header X-XSS-Protection "1; mode=block" always;
+    # Basic hardening for HTTP (still redirecting to HTTPS)
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header X-XSS-Protection "1; mode=block" always;
 
-  client_max_body_size 20m;
+    client_max_body_size 20m;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -236,9 +298,9 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
     }
 }
@@ -274,7 +336,7 @@ else
 server {
     listen 80;
     server_name $DOMAIN;
-    return 301 https://$host$request_uri;
+    return 301 https://\$host\$request_uri;
 }
 
 server {
@@ -285,30 +347,30 @@ server {
     ssl_certificate_key $KEY_PATH;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers HIGH:!aNULL:!MD5;
-  ssl_prefer_server_ciphers on;
-  ssl_session_cache shared:SSL:10m;
-  ssl_session_timeout 10m;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
 
     # Security headers
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header Referrer-Policy "no-referrer" always;
-  add_header X-XSS-Protection "1; mode=block" always;
-  add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
 
-  client_max_body_size 20m;
+    client_max_body_size 20m;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
     }
 }
 EOF
