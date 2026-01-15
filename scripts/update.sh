@@ -50,6 +50,12 @@ else
   run "git init"
 fi
 
+# Fix git safe.directory if needed
+if ! git config --get safe.directory >/dev/null 2>&1; then
+  log "Adding safe.directory exception for $PROJECT_DIR"
+  run "git config --global --add safe.directory '$PROJECT_DIR'"
+fi
+
 # Ensure origin URL
 if git remote get-url origin >/dev/null 2>&1; then
   CUR_URL="$(git remote get-url origin)"
@@ -198,15 +204,6 @@ if command -v pm2 >/dev/null 2>&1; then
       "$PM2_BIN" logs "$APP_NAME" --lines 100 --nostream 2>&1 || true
       log "PM2 info:"
       "$PM2_BIN" info "$APP_NAME" 2>&1 || true
-      exit 1
-    fi
-      log "PM2 status: $PM2_STATUS (attempt $RETRY_COUNT/$MAX_RETRIES)"
-      sleep 1
-    done
-    
-    if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
-      log "ERROR: App did not reach online status after ${MAX_RETRIES}s"
-      "$PM2_BIN" logs "$APP_NAME" --lines 50 --nostream || true
       exit 1
     fi
     
