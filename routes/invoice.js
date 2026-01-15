@@ -2771,12 +2771,12 @@ router.post(
             return {
               description: item.description || "",
               item_date: item.item_date || null,
-              item_km: item.item_km ?? null,
-              item_hours: item.item_hours ?? null,
-              item_rate: item.item_rate ?? null,
-              quantity: item.quantity ?? 1,
-              unit_price: item.unit_price ?? 0,
-              line_total: item.line_total ?? null,
+              item_km: item.item_km !== undefined ? item.item_km : null,
+              item_hours: item.item_hours !== undefined ? item.item_hours : null,
+              item_rate: item.item_rate !== undefined ? item.item_rate : null,
+              quantity: item.quantity !== undefined ? item.quantity : 1,
+              unit_price: item.unit_price !== undefined ? item.unit_price : 0,
+              line_total: item.line_total !== undefined ? item.line_total : null,
               computed_line_total: Number.isFinite(computedLine)
                 ? Number(computedLine.toFixed(2))
                 : null,
