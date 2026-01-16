@@ -23,28 +23,35 @@ async function initializeDatabase() {
     ]);
 
     if (!adminExists) {
-      // Create default admin user
-      const hashedPassword = await bcrypt.hash(
-        process.env.ADMIN_PASSWORD || "Admin@123456",
-        10
-      );
+      // Create default admin user ONLY if no users table has data
+      const userCount = await db.get("SELECT COUNT(*) as count FROM users");
+      
+      if (userCount && userCount.count === 0) {
+        // Table exists but is empty, safe to create admin
+        const hashedPassword = await bcrypt.hash(
+          process.env.ADMIN_PASSWORD || "Admin@123456",
+          10
+        );
 
-      await db.run(
-        "INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)",
-        [
-          process.env.ADMIN_USERNAME || "admin",
-          hashedPassword,
-          "Administrator",
-          "admin",
-        ]
-      );
+        await db.run(
+          "INSERT INTO users (username, password, full_name, role) VALUES (?, ?, ?, ?)",
+          [
+            process.env.ADMIN_USERNAME || "admin",
+            hashedPassword,
+            "Administrator",
+            "admin",
+          ]
+        );
 
-      console.log("✓ Admin user created");
-      console.log(`  Username: ${process.env.ADMIN_USERNAME || "admin"}`);
-      console.log(
-        `  Password: ${process.env.ADMIN_PASSWORD || "Admin@123456"}`
-      );
-      console.log("  PLEASE CHANGE THE PASSWORD AFTER FIRST LOGIN!");
+        console.log("✓ Admin user created");
+        console.log(`  Username: ${process.env.ADMIN_USERNAME || "admin"}`);
+        console.log(
+          `  Password: ${process.env.ADMIN_PASSWORD || "Admin@123456"}`
+        );
+        console.log("  PLEASE CHANGE THE PASSWORD AFTER FIRST LOGIN!");
+      } else {
+        console.log("✓ Admin user already exists or users table has data");
+      }
     } else {
       console.log("✓ Admin user already exists");
     }
