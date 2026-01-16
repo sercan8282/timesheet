@@ -6608,8 +6608,8 @@
 
           <div class="mb-3">
             <label class="form-label">Wachtwoord / Token</label>
-            <input type="password" class="form-control" id="smtpPass" placeholder="••••••••">
-            <small class="form-text text-muted">Voor Gmail: gebruik een App Password. Voor Microsoft 365: gebruik Client Secret.</small>
+            <input type="password" class="form-control" id="smtpPass" placeholder="Laat leeg om huidig wachtwoord te behouden">
+            <small class="form-text text-muted">Voor Gmail: gebruik een App Password. Voor Microsoft 365: gebruik Client Secret. Laat dit veld leeg als je het wachtwoord niet wilt wijzigen.</small>
           </div>
 
           <div id="oauthSection" style="display:none;">
@@ -6626,7 +6626,8 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Client Secret</label>
-              <input type="password" class="form-control" id="oauthClientSecret" placeholder="••••••••">
+              <input type="password" class="form-control" id="oauthClientSecret" placeholder="Laat leeg om huidig secret te behouden">
+              <small class="form-text text-muted">Laat dit veld leeg als je het Client Secret niet wilt wijzigen.</small>
             </div>
             <div class="mb-3">
               <label class="form-label">OAuth Scope (optioneel)</label>
@@ -6689,6 +6690,9 @@
         document.getElementById("emailFrom").value = settings.email_from || "";
         document.getElementById("emailTo").value = settings.email_to || "";
 
+        // Password fields are intentionally left empty for security (backend doesn't return them)
+        // Users only need to fill them when changing the password
+
         // Signature
         document.getElementById("signatureEnabled").checked = !!settings.signature_enabled;
         document.getElementById("signatureHtml").value = settings.signature_html || "";
@@ -6732,13 +6736,18 @@
         10
       ),
       smtp_user: document.getElementById("smtpUser").value.trim(),
-      smtp_pass: document.getElementById("smtpPass").value,
       email_from: document.getElementById("emailFrom").value.trim(),
       email_to: document.getElementById("emailTo").value.trim(),
       auth_type: authType,
       signature_enabled: document.getElementById("signatureEnabled").checked ? 1 : 0,
       signature_html: document.getElementById("signatureHtml").value,
     };
+
+    // Only include password if it's not empty (to preserve existing password)
+    const smtpPass = document.getElementById("smtpPass").value;
+    if (smtpPass && smtpPass.trim()) {
+      payload.smtp_pass = smtpPass.trim();
+    }
 
     if (authType === "oauth2") {
       payload.oauth_tenant_id = document
@@ -6747,8 +6756,13 @@
       payload.oauth_client_id = document
         .getElementById("oauthClientId")
         .value.trim();
-      payload.oauth_client_secret =
-        document.getElementById("oauthClientSecret").value;
+      
+      // Only include client secret if it's not empty
+      const clientSecret = document.getElementById("oauthClientSecret").value;
+      if (clientSecret && clientSecret.trim()) {
+        payload.oauth_client_secret = clientSecret.trim();
+      }
+      
       payload.oauth_scope = document.getElementById("oauthScope").value.trim();
     }
 

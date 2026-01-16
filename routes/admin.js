@@ -1510,8 +1510,10 @@ router.get("/smtp-settings", async (req, res) => {
     const settings = await db.get("SELECT * FROM smtp_settings LIMIT 1");
 
     if (settings) {
-      // Don't send password to frontend
+      // Don't send passwords/secrets to frontend
       delete settings.smtp_pass;
+      delete settings.smtp_pass_encrypted;
+      delete settings.oauth_client_secret;
     }
 
     res.json(settings || {});
