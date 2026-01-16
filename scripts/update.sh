@@ -21,18 +21,7 @@ cd "$PROJECT_DIR"
 
 log "Project dir: $PROJECT_DIR"
 
-# 1) Stop app (if running)
-if command -v pm2 >/dev/null 2>&1; then
-  if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-    log "Stopping PM2 app: $APP_NAME"; run "pm2 stop $APP_NAME" || true
-  else
-    log "PM2 app $APP_NAME not found (will start after update)"
-  fi
-else
-  log "PM2 not found; skipping stop"
-fi
-
-# 2) Backup DB
+# 1) Backup DB
 if [ -f "$PROJECT_DIR/database.sqlite" ]; then
   mkdir -p "$PROJECT_DIR/backups"
   TS="$(date +%Y%m%d-%H%M%S)"
@@ -42,7 +31,7 @@ else
   log "No database.sqlite found (fresh install?)"
 fi
 
-# 3) Git remote & branch
+# 2) Git remote & branch
 if git rev-parse --git-dir >/dev/null 2>&1; then
   log "Git repo detected"
 else
@@ -86,21 +75,21 @@ log "Default branch detected: $DEFAULT_BRANCH"
 run "git checkout '$DEFAULT_BRANCH'" || true
 log "Pulling latest code"; run "git pull --ff-only origin '$DEFAULT_BRANCH'"
 
-# 4) Dependencies
+# 3) Dependencies
 if [ -f "$PROJECT_DIR/package-lock.json" ]; then
   log "Installing deps via npm ci"; run "npm ci"
 else
   log "Installing deps via npm install"; run "npm install"
 fi
 
-# 5) DB schema migration (SAFE - does not delete data)
+# 4) DB schema migration (SAFE - does not delete data)
 log "Verifying database schema and initial settings..."
 log "Running init-db (idempotent; only adds missing defaults)"
 npm run init-db || {
   log "WARNING: Database initialization had issues, but continuing..."
 }
 
-# 6) Start/Restart app with proper wait and health check
+# 5) Start/Restart app with proper wait and health check
 if command -v pm2 >/dev/null 2>&1; then
   PM2_BIN="$(command -v pm2 2>/dev/null || which pm2 2>/dev/null || echo '')"
   if [ -n "$PM2_BIN" ]; then
@@ -237,7 +226,7 @@ else
   exit 1
 fi
 
-# 7) Final health checks
+# 6) Final health checks
 log "Final health verification"
 if command -v curl >/dev/null 2>&1; then
   if curl -sf "https://$DOMAIN/api/health" >/dev/null 2>&1; then
