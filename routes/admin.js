@@ -1505,12 +1505,13 @@ router.put("/submissions/:id", async (req, res) => {
 });
 
 // Get SMTP settings
+// Get SMTP settings (passwords removed for security)
 router.get("/smtp-settings", async (req, res) => {
   try {
     const settings = await db.get("SELECT * FROM smtp_settings LIMIT 1");
 
     if (settings) {
-      // Don't send passwords/secrets to frontend
+      // Don't send passwords/secrets to frontend for security
       delete settings.smtp_pass;
       delete settings.smtp_pass_encrypted;
       delete settings.oauth_client_secret;

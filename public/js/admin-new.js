@@ -6725,6 +6725,7 @@
       authType === "oauth2" ? "block" : "none";
   }
 
+  // Fix: Only send password field if user entered a value (preserves existing password in DB)
   async function saveSMTPSettings() {
     const alertDiv = document.getElementById("smtpAlert");
     const authType = document.getElementById("smtpAuthType").value;
