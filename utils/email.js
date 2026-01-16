@@ -172,11 +172,21 @@ async function buildTransporter(settings) {
   console.log("[SMTP DEBUG] Basic Auth - Port:", settings.smtp_port);
   console.log("[SMTP DEBUG] Basic Auth - Secure:", useSecure);
   console.log("[SMTP DEBUG] Basic Auth - User:", settings.smtp_user);
+  console.log("[SMTP DEBUG] Basic Auth - Has smtp_pass:", !!settings.smtp_pass);
+  console.log("[SMTP DEBUG] Basic Auth - Has smtp_pass_encrypted:", !!settings.smtp_pass_encrypted);
   
-  // Decrypt password if it's encrypted
-  const decryptedPass = settings.smtp_pass_encrypted 
-    ? decryptPassword(settings.smtp_pass_encrypted)
-    : settings.smtp_pass;
+  // Decrypt password if it's encrypted, otherwise use plain password
+  let decryptedPass = null;
+  if (settings.smtp_pass_encrypted) {
+    console.log("[SMTP DEBUG] Attempting to decrypt encrypted password...");
+    decryptedPass = decryptPassword(settings.smtp_pass_encrypted);
+    console.log("[SMTP DEBUG] Decryption result:", decryptedPass ? "SUCCESS" : "FAILED");
+  } else if (settings.smtp_pass) {
+    console.log("[SMTP DEBUG] Using plain password from smtp_pass");
+    decryptedPass = settings.smtp_pass;
+  } else {
+    console.log("[SMTP DEBUG] ERROR: No password found in database (neither smtp_pass nor smtp_pass_encrypted)");
+  }
   
   console.log("[SMTP DEBUG] Basic Auth - Pass length:", decryptedPass ? decryptedPass.length : "EMPTY/MISSING");
   console.log("[SMTP DEBUG] Basic Auth - Pass exists:", !!decryptedPass);
