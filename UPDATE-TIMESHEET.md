@@ -51,9 +51,13 @@ cp database.sqlite backups/database-$(date +%Y%m%d-%H%M%S).sqlite
 pm2 stop timesheet || true
 ```
 
-2. Haal de laatste code op en update naar `main`:
+2. Fix git ownership (indien nodig) en haal de laatste code op:
 
 ```bash
+# Fix dubious ownership error (indien van toepassing)
+git config --global --add safe.directory /var/www/timesheet
+
+# Haal de laatste code op en update naar main
 git fetch --all
 git checkout main
 git pull --ff-only origin main
