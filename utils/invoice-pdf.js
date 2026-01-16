@@ -3,6 +3,18 @@ const fs = require("fs");
 const path = require("path");
 const db = require("../config/database");
 
+// Helper function to format date from YYYY-MM-DD to DD-MM-YYYY
+function formatDateDDMMYYYY(dateStr) {
+  if (!dateStr) return dateStr;
+  // If it's already in YYYY-MM-DD format
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateStr.split("-");
+    return `${day}-${month}-${year}`;
+  }
+  // Return as-is if in unexpected format
+  return dateStr;
+}
+
 // Generate a PDF for a given invoice id.
 async function generateInvoicePDF(invoiceId) {
   // Invoice and related data
@@ -169,9 +181,9 @@ async function generateInvoicePDF(invoiceId) {
   // Invoice meta default in top-right
   const metaLines = [
     `Factuurnummer: ${invoice.invoice_number}`,
-    `Factuurdatum: ${invoice.invoice_date}`,
+    `Factuurdatum: ${formatDateDDMMYYYY(invoice.invoice_date)}`,
   ];
-  if (invoice.due_date) metaLines.push(`Vervaldatum: ${invoice.due_date}`);
+  if (invoice.due_date) metaLines.push(`Vervaldatum: ${formatDateDDMMYYYY(invoice.due_date)}`);
   if (topCols[2].length === 0) {
     topCols[2].push({
       element_type: "text",
