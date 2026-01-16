@@ -178,9 +178,14 @@ async function buildTransporter(settings) {
     ? decryptPassword(settings.smtp_pass_encrypted)
     : settings.smtp_pass;
   
-  console.log("[SMTP DEBUG] Basic Auth - Pass length:", decryptedPass ? decryptedPass.length : "empty");
-  console.log("[SMTP DEBUG] Basic Auth - Pass value:", decryptedPass);
+  console.log("[SMTP DEBUG] Basic Auth - Pass length:", decryptedPass ? decryptedPass.length : "EMPTY/MISSING");
+  console.log("[SMTP DEBUG] Basic Auth - Pass exists:", !!decryptedPass);
   console.log("[SMTP DEBUG] Basic Auth - requireTLS:", !useSecure);
+
+  // Validate that credentials exist
+  if (!settings.smtp_user || !decryptedPass) {
+    throw new Error(`Missing SMTP credentials: user=${!!settings.smtp_user}, pass=${!!decryptedPass}`);
+  }
 
   const transporter = nodemailer.createTransport({
     host: settings.smtp_host,
@@ -315,6 +320,15 @@ async function testSMTPConnection() {
     }
 
     console.log("[SMTP TEST] Starting SMTP connection test...");
+    console.log("[SMTP TEST] Settings from DB:", {
+      smtp_host: settings.smtp_host,
+      smtp_port: settings.smtp_port,
+      smtp_user: settings.smtp_user,
+      auth_type: settings.auth_type,
+      has_smtp_pass: !!settings.smtp_pass,
+      has_smtp_pass_encrypted: !!settings.smtp_pass_encrypted,
+      email_from: settings.email_from
+    });
     console.log("[SMTP TEST] Using auth type:", settings.auth_type);
     
     const transporter = await buildTransporter(settings);
