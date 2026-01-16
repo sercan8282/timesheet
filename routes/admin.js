@@ -1392,6 +1392,7 @@ router.post(
     body("smtp_host").trim().notEmpty(),
     body("smtp_port").isInt({ min: 1, max: 65535 }),
     body("smtp_user").trim().notEmpty(),
+    body("smtp_pass").optional().isString(),
     body("email_from").isEmail(),
     body("email_to").isEmail(),
     body("auth_type").optional().isIn(["basic", "oauth2"]),
@@ -1466,9 +1467,9 @@ router.post(
           signature_html || null,
         ];
 
-        if (smtp_pass) {
+        if (smtp_pass && smtp_pass.trim()) {
           updates.splice(4, 0, "smtp_pass_encrypted = ?");
-          values.splice(4, 0, encryptPassword(smtp_pass));
+          values.splice(4, 0, encryptPassword(smtp_pass.trim()));
         }
 
         if (oauth_client_secret) {
