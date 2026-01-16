@@ -8,6 +8,8 @@
   let allUsers = [];
   let allCompanies = [];
   let currentSubmissions = [];
+  // Admin MFA status (global)
+  let currentUserMfaEnabled = false;
 
   // Leave management state
   let allLeaveBalances = [];
@@ -2730,13 +2732,9 @@
       // Fetch current admin MFA status to decide which actions to show
       let adminMfaEnabled = false;
       try {
-        const resp = await fetch(`${API_BASE_URL}/mfa/status`, {
-          headers: { Authorization: `Bearer ${api.getToken()}` },
-        });
-        if (resp.ok) {
-          const json = await resp.json();
-          adminMfaEnabled = !!json.mfaEnabled;
-        }
+        const status = await api.request("/mfa/status");
+        adminMfaEnabled = !!status.mfaEnabled;
+        currentUserMfaEnabled = adminMfaEnabled;
       } catch (e) {
         console.warn("Could not fetch admin MFA status:", e);
       }
@@ -2796,7 +2794,7 @@
                   <button class="btn btn-outline-danger btn-sm px-2" onclick="openResetMfaModal(${user.id}, '${user.username}')" title="Reset MFA">
                     <i class="bi bi-shield-lock"></i>
                   </button>
-                  ${adminMfaEnabled ? `<button class="btn btn-outline-primary btn-sm px-2" onclick="openResetPasswordModal(${user.id}, '${user.username}')" title="Reset Password"><i class="bi bi-key"></i></button>` : ''}
+                    <button class="btn btn-outline-primary btn-sm px-2" onclick="openResetPasswordModal(${user.id}, '${user.username}')" title="Reset Password"><i class="bi bi-key"></i></button>
                   <button class="btn btn-outline-secondary btn-sm px-2" onclick="showBlockUserModal(${user.id}, ${user.is_blocked ? 'true' : 'false'})" title="${user.is_blocked ? 'Unblock' : 'Block'}">
                     <i class="bi ${user.is_blocked ? 'bi-unlock' : 'bi-lock'}"></i>
                   </button>
@@ -2817,7 +2815,7 @@
                     <button class="btn btn-outline-danger btn-sm px-2 flex-grow-1" onclick="openResetMfaModal(${user.id}, '${user.username}')">
                       <i class="bi bi-shield-lock"></i> Reset MFA
                     </button>
-                    ${adminMfaEnabled ? `<button class="btn btn-outline-primary btn-sm px-2 flex-grow-1" onclick="openResetPasswordModal(${user.id}, '${user.username}')"><i class="bi bi-key"></i> Reset Wachtwoord</button>` : ''}
+                      <button class="btn btn-outline-primary btn-sm px-2 flex-grow-1" onclick="openResetPasswordModal(${user.id}, '${user.username}')"><i class="bi bi-key"></i> Reset Wachtwoord</button>
                     <button class="btn btn-outline-secondary btn-sm px-2 flex-grow-1" onclick="showBlockUserModal(${user.id}, ${user.is_blocked ? 'true' : 'false'})">
                       <i class="bi ${user.is_blocked ? 'bi-unlock' : 'bi-lock'}"></i> ${user.is_blocked ? 'Unblock' : 'Block'}
                     </button>
@@ -2996,15 +2994,26 @@
                 </div>
               </div>
               
-              <!-- Step 2: MFA verification (hidden initially) -->
+              <!-- Step 2: MFA verification (shown only if admin has MFA) -->
               <div id="resetPasswordStep2" style="display: none;">
-                <p class="text-muted">Voer jouw eigen MFA-code ter bevestiging in.</p>
-                <div class="mb-3">
-                  <label class="form-label">Admin MFA code</label>
-                  <input type="text" class="form-control text-center" id="resetPasswordMfaToken" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+                <div id="resetPasswordMfaRequired" style="display: none;">
+                  <p class="text-muted">Voer jouw eigen MFA-code ter bevestiging in.</p>
+                  <div class="mb-3">
+                    <label class="form-label">Admin MFA code</label>
+                    <input type="text" class="form-control text-center" id="resetPasswordMfaToken" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
+                  </div>
+                  <div class="mb-3">
+                    <small class="text-muted">Wachtwoord: <strong id="resetPasswordPreview">***</strong></small>
+                  </div>
                 </div>
-                <div class="mb-3">
-                  <small class="text-muted">Wachtwoord: <strong id="resetPasswordPreview">***</strong></small>
+
+                <div id="resetPasswordMfaNotEnabled" style="display: none;">
+                  <div class="alert alert-warning" role="alert">
+                    <i class="bi bi-exclamation-triangle"></i> <strong>Waarschuwing:</strong> U heeft geen MFA ingeschakeld. Voor betere veiligheid wordt MFA aanbevolen.
+                  </div>
+                  <div class="mb-3">
+                    <small class="text-muted">Wachtwoord: <strong id="resetPasswordPreviewNoMfa">***</strong></small>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3057,8 +3066,19 @@
       ? newPassword 
       : "(automatisch gegenereerd)";
     
-    // Show preview
-    document.getElementById("resetPasswordPreview").textContent = passwordPreview;
+      // Determine if admin has MFA enabled
+      const hasAdminMfa = !!currentUserMfaEnabled;
+    
+      // Show preview
+      if (hasAdminMfa) {
+        document.getElementById("resetPasswordPreview").textContent = passwordPreview;
+        document.getElementById("resetPasswordMfaRequired").style.display = "block";
+        document.getElementById("resetPasswordMfaNotEnabled").style.display = "none";
+      } else {
+        document.getElementById("resetPasswordPreviewNoMfa").textContent = passwordPreview;
+        document.getElementById("resetPasswordMfaRequired").style.display = "none";
+        document.getElementById("resetPasswordMfaNotEnabled").style.display = "block";
+      }
     
     // Switch to step 2
     document.getElementById("resetPasswordStep1").style.display = "none";
@@ -3069,7 +3089,9 @@
     
     // Focus on MFA input
     setTimeout(() => {
-      document.getElementById("resetPasswordMfaToken").focus();
+        if (hasAdminMfa) {
+          document.getElementById("resetPasswordMfaToken").focus();
+        }
     }, 100);
   }
 
@@ -3162,7 +3184,7 @@
         const modal = bootstrap.Modal.getInstance(
           document.getElementById("resetMfaModal")
         );
-        modal.hide();
+        if (modal) modal.hide();
         loadAdminUsers();
       }, 1200);
     } catch (error) {

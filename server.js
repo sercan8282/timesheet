@@ -261,7 +261,8 @@ app.use(
           'https://urenregistratie.site',
           'https://localhost',
           'http://localhost',
-          'capacitor://localhost'
+          'capacitor://localhost',
+          'https://cdn.jsdelivr.net'
         ],
         frameSrc: ["'none'"],
         objectSrc: ["'none'"],

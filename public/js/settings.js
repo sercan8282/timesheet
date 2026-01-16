@@ -148,10 +148,11 @@ const Settings = {
     };
 
     testBtn.addEventListener('click', testConnection);
-        currentUrlDisplay.textContent = Config.getBackendUrl();
-        document.getElementById('settingsConnectionStatus').style.display = 'none';
-        app.showNotification('Reset to default URL', 'info');
-      }
+
+    // Clear connection status when URL input changes
+    urlInput.addEventListener('input', () => {
+      const statusDiv = document.getElementById('settingsConnectionStatus');
+      if (statusDiv) statusDiv.style.display = 'none';
     });
   }
 };
