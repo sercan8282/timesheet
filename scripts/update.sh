@@ -93,15 +93,12 @@ else
   log "Installing deps via npm install"; run "npm install"
 fi
 
-# 5) DB init (idempotent; uses INSERT OR IGNORE)
-log "Initializing database..."
-# Get service user from systemd service if available
-SVC_USER=$(sudo systemctl cat timesheet.service 2>/dev/null | grep "^User=" | cut -d= -f2 || echo "root")
-log "Database init user: $SVC_USER"
-sudo -u "$SVC_USER" -H bash -lc "cd '$PROJECT_DIR' && npm run init-db" || true
-
-log "DB init (idempotent; uses INSERT OR IGNORE)"
-log "Running init-db (idempotent)"; run "npm run init-db" || true
+# 5) DB schema migration (SAFE - does not delete data)
+log "Verifying database schema and initial settings..."
+log "Running init-db (idempotent; only adds missing defaults)"
+npm run init-db || {
+  log "WARNING: Database initialization had issues, but continuing..."
+}
 
 # 6) Start/Restart app with proper wait and health check
 if command -v pm2 >/dev/null 2>&1; then
