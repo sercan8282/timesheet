@@ -2,9 +2,16 @@ const crypto = require("crypto");
 
 // Use a fixed encryption key from environment or generate a default
 // In production, this should be a strong key stored securely
-const ENCRYPTION_KEY =
-  process.env.ENCRYPTION_KEY ||
-  crypto.scryptSync("timesheet-default-key-change-in-production", "salt", 32);
+let ENCRYPTION_KEY;
+
+if (process.env.ENCRYPTION_KEY) {
+  // If ENCRYPTION_KEY is provided as hex string (e.g., from .env), convert to Buffer
+  const keyStr = process.env.ENCRYPTION_KEY.trim();
+  ENCRYPTION_KEY = keyStr.length === 64 ? Buffer.from(keyStr, 'hex') : Buffer.from(keyStr);
+} else {
+  // Fallback to generated key
+  ENCRYPTION_KEY = crypto.scryptSync("timesheet-default-key-change-in-production", "salt", 32);
+}
 
 /**
  * Encrypt a string (for SMTP passwords)
