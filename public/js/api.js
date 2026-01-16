@@ -1179,9 +1179,18 @@ class API {
     // Extract file from FormData
     const file = formData.get("pdf");
     
-    // Convert file to base64
+    // Convert file to base64 in chunks to avoid stack overflow
     const arrayBuffer = await file.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const bytes = new Uint8Array(arrayBuffer);
+    
+    // Process in chunks to avoid stack overflow on large files
+    let base64 = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, i + chunkSize);
+      base64 += String.fromCharCode.apply(null, chunk);
+    }
+    base64 = btoa(base64);
     
     // Send as JSON with base64
     const payload = {
@@ -1249,9 +1258,18 @@ class API {
       type: file.type
     });
     
-    // Convert file to base64
+    // Convert file to base64 in chunks to avoid stack overflow
     const arrayBuffer = await file.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const bytes = new Uint8Array(arrayBuffer);
+    
+    // Process in chunks to avoid stack overflow on large files
+    let base64 = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, i + chunkSize);
+      base64 += String.fromCharCode.apply(null, chunk);
+    }
+    base64 = btoa(base64);
     
     const payload = {
       pdf_data: base64,
@@ -1296,9 +1314,18 @@ class API {
     const ai_template_id = formData.get("ai_template_id");
     const invoice_type = formData.get("invoice_type");
     
-    // Convert file to base64
+    // Convert file to base64 in chunks to avoid stack overflow
     const arrayBuffer = await file.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const bytes = new Uint8Array(arrayBuffer);
+    
+    // Process in chunks to avoid stack overflow on large files
+    let base64 = '';
+    const chunkSize = 8192;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, i + chunkSize);
+      base64 += String.fromCharCode.apply(null, chunk);
+    }
+    base64 = btoa(base64);
     
     // Send as JSON with base64
     const payload = {

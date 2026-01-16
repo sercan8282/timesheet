@@ -818,6 +818,142 @@ router.get("/submissions", async (req, res) => {
   }
 });
 
+// Admin creates submission for a user
+router.post("/submissions", async (req, res) => {
+  try {
+    const { userId, timesheetIds, sendEmail } = req.body;
+
+    if (!userId || !Array.isArray(timesheetIds) || timesheetIds.length === 0) {
+      return res.status(400).json({ error: "userId and timesheetIds array required" });
+    }
+
+    // Verify user exists
+    const user = await db.get("SELECT * FROM users WHERE id = ?", [userId]);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Verify all timesheets belong to this user
+    const placeholders = timesheetIds.map(() => "?").join(",");
+    const timesheets = await db.all(
+      `SELECT * FROM timesheets WHERE id IN (${placeholders}) AND user_id = ?`,
+      [...timesheetIds, userId]
+    );
+
+    if (timesheets.length !== timesheetIds.length) {
+      return res.status(400).json({ error: "Some timesheets not found or don't belong to user" });
+    }
+
+    // Calculate totals
+    const totalHours = timesheets.reduce((sum, t) => sum + parseFloat(t.total_hours || 0), 0);
+    const totalKm = timesheets.reduce((sum, t) => sum + parseFloat(t.total_km || 0), 0);
+
+    // Get week numbers
+    const weekNumbers = [...new Set(timesheets.map(t => t.week_number))].sort((a, b) => a - b);
+
+    // Create submission (using same columns as normal submission route)
+    const result = await db.run(
+      `INSERT INTO submissions (user_id, user_name, timesheet_ids, status, week_numbers)
+       VALUES (?, ?, ?, 'submitted', ?)`,
+      [userId, user.full_name || user.username, timesheetIds.join(","), weekNumbers.join(",")]
+    );
+
+    const submissionId = result.lastID;
+
+    // Calculate and add overtime if applicable
+    let overtimeAdded = 0;
+    const STANDARD_HOURS = 40;
+    
+    if (totalHours > STANDARD_HOURS) {
+      overtimeAdded = totalHours - STANDARD_HOURS;
+      const currentBalance = parseFloat(user.leave_balance || 0);
+      const newBalance = currentBalance + overtimeAdded;
+      
+      await db.run(
+        "UPDATE users SET leave_balance = ? WHERE id = ?",
+        [newBalance, userId]
+      );
+    }
+
+    // Send email if requested
+    if (sendEmail) {
+      try {
+        const ExcelJS = require("exceljs");
+        const nodemailer = require("nodemailer");
+        const smtpSettings = await db.get("SELECT * FROM smtp_settings WHERE id = 1");
+        
+        if (smtpSettings) {
+          // Generate XLSX
+          const workbook = new ExcelJS.Workbook();
+          const worksheet = workbook.addWorksheet("Timesheet");
+          
+          worksheet.columns = [
+            { header: "Week", key: "week", width: 10 },
+            { header: "Date", key: "date", width: 12 },
+            { header: "Start Time", key: "startTime", width: 12 },
+            { header: "End Time", key: "endTime", width: 12 },
+            { header: "Pause", key: "pause", width: 10 },
+            { header: "Total Hours", key: "totalHours", width: 12 },
+            { header: "Start KM", key: "startKm", width: 12 },
+            { header: "End KM", key: "endKm", width: 12 },
+            { header: "Total KM", key: "totalKm", width: 12 },
+          ];
+
+          timesheets.forEach(t => {
+            worksheet.addRow({
+              week: t.week_number,
+              date: t.date,
+              startTime: t.start_time,
+              endTime: t.end_time,
+              pause: t.pause_time,
+              totalHours: t.total_hours,
+              startKm: t.start_km,
+              endKm: t.end_km,
+              totalKm: t.total_km,
+            });
+          });
+
+          const buffer = await workbook.xlsx.writeBuffer();
+
+          // Send email
+          const transporter = nodemailer.createTransport({
+            host: smtpSettings.smtp_host,
+            port: smtpSettings.smtp_port,
+            secure: smtpSettings.smtp_port === 465,
+            auth: {
+              user: smtpSettings.smtp_user,
+              pass: smtpSettings.smtp_password,
+            },
+          });
+
+          await transporter.sendMail({
+            from: smtpSettings.sender_email,
+            to: user.email,
+            subject: `Timesheet Submission - Week ${weekNumbers.join(", ")}`,
+            text: `Your timesheet has been submitted.\n\nTotal Hours: ${totalHours.toFixed(2)}\nTotal KM: ${totalKm.toFixed(2)}`,
+            attachments: [{
+              filename: `timesheet-week-${weekNumbers.join("-")}.xlsx`,
+              content: buffer,
+            }],
+          });
+        }
+      } catch (emailError) {
+        console.error("Email send failed:", emailError);
+        // Don't fail the whole request if email fails
+      }
+    }
+
+    res.json({
+      message: "Submission created successfully",
+      submissionId,
+      overtimeAdded: overtimeAdded > 0 ? overtimeAdded.toFixed(2) : null,
+    });
+  } catch (error) {
+    console.error("Error creating submission:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // Get timesheets for a specific submission
 router.get("/submissions/:id/timesheets", async (req, res) => {
   try {

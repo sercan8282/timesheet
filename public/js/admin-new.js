@@ -3528,8 +3528,15 @@
     const container = document.getElementById("adminContent");
 
     if (!submissions || submissions.length === 0) {
-      container.innerHTML =
-        '<div class="alert alert-info">No submissions found</div>';
+      container.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5>Submissions</h5>
+          <button class="btn btn-success" onclick="showAddSubmissionModal()">
+            <i class="bi bi-plus-circle"></i> Nieuwe Submission
+          </button>
+        </div>
+        <div class="alert alert-info">No submissions found</div>
+      `;
       return;
     }
 
@@ -3582,6 +3589,12 @@
 
     // Set initial HTML with filters and empty table structure
     container.innerHTML = `
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5>Submissions</h5>
+      <button class="btn btn-success" onclick="showAddSubmissionModal()">
+        <i class="bi bi-plus-circle"></i> Nieuwe Submission
+      </button>
+    </div>
     ${filtersHtml}
     <div class="table-responsive d-none d-md-block">
       <table class="table table-striped table-hover">
@@ -4093,6 +4106,343 @@
     }
     return "-";
   }
+
+  // ========== ADD SUBMISSION MODAL (DASHBOARD STYLE) ==========
+
+  let adminTimesheets = [];
+  let adminTimesheetCounter = 0;
+
+  async function showAddSubmissionModal() {
+    try {
+      const users = await api.getUsers();
+
+      const modalHtml = `
+      <div class="modal fade" id="addSubmissionModal" tabindex="-1">
+        <div class="modal-dialog modal-fullscreen">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Nieuwe Submission Aanmaken</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row mb-3">
+                <div class="col-md-6">
+                  <label class="form-label">Gebruiker *</label>
+                  <select class="form-select" id="addSubmissionUser" required>
+                    <option value="">Selecteer gebruiker...</option>
+                    ${users.map(u => `<option value="${u.id}">${u.full_name || u.username} (${u.username})</option>`).join('')}
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Bedrijf *</label>
+                  <select class="form-select" id="addSubmissionCompany" required disabled>
+                    <option value="">Selecteer eerst een gebruiker...</option>
+                  </select>
+                </div>
+              </div>
+              
+              <hr>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Timesheet Regels</h6>
+                <button class="btn btn-success btn-sm" id="addAdminTimesheetBtn" disabled>
+                  <i class="bi bi-plus-circle"></i> Rij Toevoegen
+                </button>
+              </div>
+              
+              <div id="adminTimesheetRows"></div>
+              
+              <hr>
+              
+              <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="addSubmissionSendEmail" checked>
+                <label class="form-check-label" for="addSubmissionSendEmail">
+                  Verstuur email naar configuratie adres
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+              <button type="button" class="btn btn-primary" id="submitAddSubmissionBtn" onclick="submitAddSubmission()" disabled>
+                <i class="bi bi-check-circle"></i> Maak Submission Aan
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+      document.body.insertAdjacentHTML("beforeend", modalHtml);
+      const modal = new bootstrap.Modal(document.getElementById("addSubmissionModal"));
+
+      // Handle user change
+      document.getElementById("addSubmissionUser").addEventListener("change", async function() {
+        const userId = this.value;
+        const companySelect = document.getElementById("addSubmissionCompany");
+        const addRowBtn = document.getElementById("addAdminTimesheetBtn");
+
+        if (!userId) {
+          companySelect.innerHTML = '<option value="">Selecteer eerst een gebruiker...</option>';
+          companySelect.disabled = true;
+          addRowBtn.disabled = true;
+          resetAdminTimesheetRows();
+          return;
+        }
+
+        const userCompanies = await api.request(`/admin/users/${userId}/companies`);
+        
+        if (!userCompanies || userCompanies.length === 0) {
+          companySelect.innerHTML = '<option value="">Geen bedrijven gevonden</option>';
+          companySelect.disabled = true;
+          addRowBtn.disabled = true;
+        } else {
+          companySelect.innerHTML = '<option value="">Selecteer bedrijf...</option>' +
+            userCompanies.map(c => `<option value="${c.id}" data-pause="${c.pause_time || '00:30'}">${c.name}</option>`).join('');
+          companySelect.disabled = false;
+        }
+
+        resetAdminTimesheetRows();
+      });
+
+      // Handle company change
+      document.getElementById("addSubmissionCompany").addEventListener("change", function() {
+        const addRowBtn = document.getElementById("addAdminTimesheetBtn");
+        addRowBtn.disabled = !this.value;
+        
+        if (this.value) {
+          adminTimesheets = [];
+          addAdminTimesheetRow();
+        } else {
+          resetAdminTimesheetRows();
+        }
+      });
+
+      // Add row button
+      document.getElementById("addAdminTimesheetBtn").addEventListener("click", addAdminTimesheetRow);
+
+      document.getElementById("addSubmissionModal").addEventListener("hidden.bs.modal", function() {
+        adminTimesheets = [];
+        adminTimesheetCounter = 0;
+        this.remove();
+      });
+
+      modal.show();
+    } catch (error) {
+      alert("Error loading modal: " + error.message);
+    }
+  }
+
+  function resetAdminTimesheetRows() {
+    adminTimesheets = [];
+    adminTimesheetCounter = 0;
+    document.getElementById("adminTimesheetRows").innerHTML = '';
+    document.getElementById("submitAddSubmissionBtn").disabled = true;
+  }
+
+  function addAdminTimesheetRow() {
+    const companySelect = document.getElementById("addSubmissionCompany");
+    const selectedOption = companySelect.options[companySelect.selectedIndex];
+    const pauseDefault = selectedOption.getAttribute("data-pause") || "00:30";
+    const today = new Date().toISOString().split('T')[0];
+
+    adminTimesheets.push({
+      tempId: ++adminTimesheetCounter,
+      ritnumber: "",
+      date: today,
+      startTime: "09:00",
+      endTime: "17:00",
+      startKm: 0,
+      endKm: 0,
+      pauseTime: pauseDefault
+    });
+    
+    renderAdminTimesheetRows();
+    updateAdminSubmitButton();
+  }
+
+  function removeAdminTimesheetRow(index) {
+    adminTimesheets.splice(index, 1);
+    renderAdminTimesheetRows();
+    updateAdminSubmitButton();
+  }
+
+  function updateAdminTimesheet(index, field, value) {
+    adminTimesheets[index][field] = value;
+    renderAdminTimesheetRows();
+  }
+
+  function renderAdminTimesheetRows() {
+    const container = document.getElementById("adminTimesheetRows");
+    const userSelect = document.getElementById("addSubmissionUser");
+    const userName = userSelect.options[userSelect.selectedIndex]?.text || '';
+
+    if (adminTimesheets.length === 0) {
+      container.innerHTML = '<div class="alert alert-info">Klik op "Rij Toevoegen" om te beginnen</div>';
+      return;
+    }
+
+    container.innerHTML = adminTimesheets.map((ts, index) => {
+      const weekNumber = getWeekNumber(new Date(ts.date));
+      const totalHours = calculateHours(ts.startTime, ts.endTime, ts.pauseTime);
+      const totalKm = (ts.endKm - ts.startKm).toFixed(2);
+
+      return `
+        <div class="card mb-2">
+          <div class="card-body p-2">
+            <div class="row g-2 align-items-end">
+              <div class="col-auto" style="width: 60px;">
+                <label class="form-label small mb-1">Week</label>
+                <input type="text" class="form-control form-control-sm" value="${weekNumber}" readonly>
+              </div>
+              <div class="col-auto" style="width: 100px;">
+                <label class="form-label small mb-1">Ritnummer</label>
+                <input type="text" class="form-control form-control-sm" value="${ts.ritnumber}" onchange="updateAdminTimesheet(${index}, 'ritnumber', this.value)">
+              </div>
+              <div class="col-auto" style="width: 150px;">
+                <label class="form-label small mb-1">Naam</label>
+                <input type="text" class="form-control form-control-sm" value="${userName}" readonly>
+              </div>
+              <div class="col-auto" style="width: 140px;">
+                <label class="form-label small mb-1">Datum</label>
+                <input type="date" class="form-control form-control-sm" value="${ts.date}" onchange="updateAdminTimesheet(${index}, 'date', this.value)">
+              </div>
+              <div class="col-auto" style="width: 90px;">
+                <label class="form-label small mb-1">Start</label>
+                <input type="time" class="form-control form-control-sm" value="${ts.startTime}" onchange="updateAdminTimesheet(${index}, 'startTime', this.value)">
+              </div>
+              <div class="col-auto" style="width: 90px;">
+                <label class="form-label small mb-1">Eind</label>
+                <input type="time" class="form-control form-control-sm" value="${ts.endTime}" onchange="updateAdminTimesheet(${index}, 'endTime', this.value)">
+              </div>
+              <div class="col-auto" style="width: 90px;">
+                <label class="form-label small mb-1">Start KM</label>
+                <input type="number" class="form-control form-control-sm" value="${ts.startKm}" step="0.1" onchange="updateAdminTimesheet(${index}, 'startKm', parseFloat(this.value))">
+              </div>
+              <div class="col-auto" style="width: 90px;">
+                <label class="form-label small mb-1">Eind KM</label>
+                <input type="number" class="form-control form-control-sm" value="${ts.endKm}" step="0.1" onchange="updateAdminTimesheet(${index}, 'endKm', parseFloat(this.value))">
+              </div>
+              <div class="col-auto" style="width: 90px;">
+                <label class="form-label small mb-1">Pauze</label>
+                <input type="time" class="form-control form-control-sm" value="${ts.pauseTime}" onchange="updateAdminTimesheet(${index}, 'pauseTime', this.value)">
+              </div>
+              <div class="col-auto" style="width: 80px;">
+                <label class="form-label small mb-1">Uren</label>
+                <input type="text" class="form-control form-control-sm" value="${totalHours}" readonly>
+              </div>
+              <div class="col-auto" style="width: 80px;">
+                <label class="form-label small mb-1">KM</label>
+                <input type="text" class="form-control form-control-sm" value="${totalKm}" readonly>
+              </div>
+              <div class="col-auto">
+                <button class="btn btn-outline-danger btn-sm" onclick="removeAdminTimesheetRow(${index})" title="Delete">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateAdminSubmitButton() {
+    document.getElementById("submitAddSubmissionBtn").disabled = adminTimesheets.length === 0;
+  }
+
+  function getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }
+
+  function calculateHours(startTime, endTime, pauseTime) {
+    if (!startTime || !endTime || !pauseTime) return "0.00";
+    
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    const pause = pauseTime.split(':');
+    const pauseMinutes = parseInt(pause[0]) * 60 + parseInt(pause[1]);
+    
+    const totalMinutes = (end - start) / 60000 - pauseMinutes;
+    return (totalMinutes / 60).toFixed(2);
+  }
+
+  async function submitAddSubmission() {
+    const userId = document.getElementById("addSubmissionUser").value;
+    const companyId = document.getElementById("addSubmissionCompany").value;
+    const sendEmail = document.getElementById("addSubmissionSendEmail").checked;
+
+    if (!userId || !companyId) {
+      alert("Selecteer gebruiker en bedrijf");
+      return;
+    }
+
+    if (adminTimesheets.length === 0) {
+      alert("Voeg minimaal 1 timesheet regel toe");
+      return;
+    }
+
+    const submitBtn = document.getElementById("submitAddSubmissionBtn");
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Bezig...';
+
+    try {
+      const timesheetIds = [];
+
+      // Create each timesheet
+      for (const ts of adminTimesheets) {
+        const totalHours = calculateHours(ts.startTime, ts.endTime, ts.pauseTime);
+        const totalKm = ts.endKm - ts.startKm;
+
+        const payload = {
+          ritnumber: ts.ritnumber,
+          date: ts.date,
+          startTime: ts.startTime,
+          endTime: ts.endTime,
+          startKm: parseFloat(ts.startKm),
+          endKm: parseFloat(ts.endKm),
+          pauseTime: ts.pauseTime,
+          companyId: parseInt(companyId)
+        };
+
+        console.log('[ADMIN SUBMISSION] Creating timesheet with payload:', payload);
+
+        const newTimesheet = await api.createTimesheetForUser(userId, payload);
+
+        console.log('[ADMIN SUBMISSION] Created timesheet:', newTimesheet);
+        timesheetIds.push(newTimesheet.id);
+      }
+
+      // Create submission
+      const result = await api.request("/admin/submissions", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: parseInt(userId),
+          timesheetIds,
+          sendEmail
+        })
+      });
+
+      // Show success message
+      showToast('success', result.message + (result.overtimeAdded ? ` (Overtime toegevoegd: ${result.overtimeAdded}u)` : ''));
+      
+      bootstrap.Modal.getInstance(document.getElementById("addSubmissionModal")).hide();
+      loadAdminSubmissions();
+    } catch (error) {
+      showToast('danger', 'Error: ' + error.message);
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Maak Submission Aan';
+    }
+  }
+
+  function timeToPauseMinutes(pauseTime) {
+    const parts = pauseTime.split(':');
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  }
+
+  // ========== HOURS REPORT ==========
 
   // Hours Report state
   let hoursFilterYear = null;
@@ -6842,6 +7192,12 @@
   window.submitResetPassword = submitResetPassword;
   window.showGeneratePlanningByVehiclesModal =
     showGeneratePlanningByVehiclesModal;
+  // Admin Submission Creation exports
+  window.showAddSubmissionModal = showAddSubmissionModal;
+  window.addAdminTimesheetRow = addAdminTimesheetRow;
+  window.removeAdminTimesheetRow = removeAdminTimesheetRow;
+  window.updateAdminTimesheet = updateAdminTimesheet;
+  window.submitAddSubmission = submitAddSubmission;
   /**
    * Show modal to generate planning by vehicles for a specific company
    */
