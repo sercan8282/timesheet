@@ -35,7 +35,7 @@ const authMiddleware = async (req, res, next) => {
         `SELECT 
             u.id, u.username, u.full_name, u.is_blocked, u.role,
             u.company_id, u.phone, u.ritnumber, u.adr, u.mega_kast,
-            u.mfa_enabled,
+            u.mfa_enabled, u.mfa_required,
             c.name AS company_name, c.pause_time AS company_pause_time
          FROM users u
          LEFT JOIN companies c ON c.id = u.company_id
@@ -82,7 +82,7 @@ const authMiddleware = async (req, res, next) => {
         `SELECT 
             u.id, u.username, u.full_name, u.is_blocked, u.role,
             u.company_id, u.phone, u.ritnumber, u.adr, u.mega_kast,
-            u.mfa_enabled,
+            u.mfa_enabled, u.mfa_required,
             c.name AS company_name, c.pause_time AS company_pause_time
          FROM users u
          LEFT JOIN companies c ON c.id = u.company_id
@@ -99,10 +99,10 @@ const authMiddleware = async (req, res, next) => {
         });
       }
 
-      // Check if MFA setup is required (user exists but MFA not enabled)
+      // Check if MFA setup is required (only if mfa_required is set)
       // Allow access to MFA-related endpoints even if MFA not enabled
       // These endpoints should allow the user to SET UP MFA
-      if (!user.mfa_enabled) {
+      if (!user.mfa_enabled && user.mfa_required === 1) {
         // Build full path including base path for checking
         const fullPath = req.baseUrl + req.path;
         
@@ -123,7 +123,7 @@ const authMiddleware = async (req, res, next) => {
           fullPath.startsWith(ep + '?')
         );
         
-        console.log(`[MFA Check] User ${user.id} (${user.username}) MFA disabled`);
+        console.log(`[MFA Check] User ${user.id} (${user.username}) MFA required but not enabled`);
         console.log(`[MFA Check] req.path: ${req.path}, req.baseUrl: ${req.baseUrl}, fullPath: ${fullPath}`);
         console.log(`[MFA Check] Allowed: ${isAllowedEndpoint}`);
         
