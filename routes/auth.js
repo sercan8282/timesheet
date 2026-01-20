@@ -23,7 +23,7 @@ router.post(
 
       const { username, password } = req.body;
 
-      // Find user (case-insensitive)
+      // Find user (case-insensitive) - include mfa_required field
       const user = await db.get(
         `SELECT u.*, c.name AS company_name, c.pause_time AS company_pause_time
          FROM users u
@@ -122,9 +122,9 @@ router.post(
         primaryCompany = userCompanies[0];
       }
 
-      // MFA setup is required when not enabled; skipping is no longer supported
+      // MFA setup is required only when mfa_required is enabled but user hasn't enabled MFA yet
       const mfaPromptRequired = false;
-      const mfaSetupRequired = !user.mfa_enabled;
+      const mfaSetupRequired = user.mfa_required === 1 && !user.mfa_enabled;
 
       // Generate JWT token
       const token = jwt.sign(

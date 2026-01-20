@@ -95,6 +95,10 @@ class Database {
                   "mfa_prompted_at",
                   "ALTER TABLE users ADD COLUMN mfa_prompted_at DATETIME"
                 );
+                ensure(
+                  "mfa_required",
+                  "ALTER TABLE users ADD COLUMN mfa_required INTEGER DEFAULT 0"
+                );
               }
             });
           }

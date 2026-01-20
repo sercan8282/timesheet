@@ -404,7 +404,7 @@ router.get("/users", async (req, res) => {
          u.id, u.username, u.full_name, u.role, u.is_blocked, u.created_at,
          u.company_id, u.phone, u.ritnumber, u.adr, u.mega_kast, u.note,
          u.can_fill_in, u.fill_in_company_id,
-         u.mfa_enabled, u.mfa_skip_count,
+         u.mfa_enabled, u.mfa_skip_count, u.mfa_required,
          c.name AS company_name,
          fc.name AS fill_in_company_name,
          COALESCE(lb.vacation_hours, 0) AS vacation_hours,
@@ -632,6 +632,11 @@ router.put(
       if (note !== undefined) {
         updates.push("note = ?");
         values.push(note || null);
+      }
+
+      if (req.body.mfaRequired !== undefined) {
+        updates.push("mfa_required = ?");
+        values.push(req.body.mfaRequired ? 1 : 0);
       }
 
       if (password !== undefined) {
