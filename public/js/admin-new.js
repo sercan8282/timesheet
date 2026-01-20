@@ -2033,6 +2033,7 @@
       ? "1"
       : "0";
     document.getElementById("editNote").value = user.note || "";
+    document.getElementById("editMfaRequired").checked = user.mfa_required === 1;
 
     console.log('editNote element value set to:', document.getElementById("editNote").value);
 
@@ -2066,6 +2067,7 @@
         fillInCompanyId:
           document.getElementById("editFillInCompany").value || null,
         note: noteValue,
+        mfaRequired: document.getElementById("editMfaRequired").checked,
       };
       console.log('submitEditUser - payload:', payload);
       
@@ -2563,6 +2565,15 @@
               <div class="mb-3">
                 <label class="form-label">Notes</label>
                 <textarea class="form-control" id="editNote" rows="3" placeholder="Optional notes"></textarea>
+              </div>
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="editMfaRequired">
+                  <label class="form-check-label" for="editMfaRequired">
+                    Require MFA (Multi-Factor Authentication)
+                  </label>
+                  <small class="form-text text-muted d-block">When enabled, this user must set up and use MFA to log in</small>
+                </div>
               </div>
             </form>
           </div>
