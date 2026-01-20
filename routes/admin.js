@@ -2376,37 +2376,34 @@ router.get("/companies", async (req, res) => {
   }
 });
 
-// Reset MFA for a user (admin only) - requires admin's own MFA token
+// Reset MFA for a user (admin only) - requires admin's own MFA token only if mfa_required
 router.post("/users/:id/reset-mfa", async (req, res) => {
   try {
     const { id } = req.params;
     const { mfaToken } = req.body;
 
-    if (!mfaToken) {
-      return res.status(400).json({ error: "Admin MFA token is required" });
-    }
-
-    // Verify admin's own MFA
+    // Verify admin's own MFA if required
     const admin = await db.get(
-      "SELECT mfa_enabled, mfa_secret FROM users WHERE id = ?",
+      "SELECT mfa_enabled, mfa_secret, mfa_required FROM users WHERE id = ?",
       [req.user.id]
     );
 
-    if (!admin || !admin.mfa_enabled || !admin.mfa_secret) {
-      return res
-        .status(403)
-        .json({ error: "Admin MFA must be enabled to reset user MFA" });
-    }
+    if (admin && admin.mfa_enabled && admin.mfa_required === 1 && admin.mfa_secret) {
+      // Admin has MFA required - verify token
+      if (!mfaToken) {
+        return res.status(400).json({ error: "Admin MFA token is required" });
+      }
 
-    const verified = speakeasy.totp.verify({
-      secret: admin.mfa_secret,
-      encoding: "base32",
-      token: mfaToken,
-      window: 2,
-    });
+      const verified = speakeasy.totp.verify({
+        secret: admin.mfa_secret,
+        encoding: "base32",
+        token: mfaToken,
+        window: 2,
+      });
 
-    if (!verified) {
-      return res.status(401).json({ error: "Invalid admin MFA token" });
+      if (!verified) {
+        return res.status(401).json({ error: "Invalid admin MFA token" });
+      }
     }
 
     // Check if target user exists
@@ -2471,14 +2468,14 @@ router.post("/users/:id/reset-password", async (req, res) => {
     }
 
 
-      // Verify admin's own MFA if enabled (optional for backwards compatibility)
+      // Verify admin's own MFA if required (only if mfa_required is set)
       const admin = await db.get(
-        "SELECT mfa_enabled, mfa_secret FROM users WHERE id = ?",
+        "SELECT mfa_enabled, mfa_secret, mfa_required FROM users WHERE id = ?",
         [req.user.id]
       );
 
-      if (admin && admin.mfa_enabled && admin.mfa_secret) {
-        // Admin has MFA enabled - require verification
+      if (admin && admin.mfa_enabled && admin.mfa_required === 1 && admin.mfa_secret) {
+        // Admin has MFA required - require verification
         if (!mfaToken) {
           return res.status(400).json({ error: "Admin MFA token is required" });
         }
@@ -2494,7 +2491,7 @@ router.post("/users/:id/reset-password", async (req, res) => {
           return res.status(401).json({ error: "Invalid admin MFA token" });
         }
       }
-      // If admin doesn't have MFA enabled, proceed without verification (less secure but practical)
+      // If admin doesn't have MFA required, proceed without verification
     // Hash and update
     const hashed = await bcrypt.hash(passwordToSet, 10);
     await db.run(
