@@ -54,8 +54,8 @@ router.post(
         return res.status(401).json({ error: "Invalid credentials" });
       }
 
-      // MFA verification if enabled
-      if (user.mfa_enabled) {
+      // MFA verification - only required if mfa_required is set to 1
+      if (user.mfa_enabled && user.mfa_required === 1) {
         // If no MFA token provided, request it
         if (!mfaToken) {
           return res.status(200).json({
