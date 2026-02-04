@@ -6,7 +6,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
-const authMiddleware = require("../middleware/auth");
+const { authMiddleware } = require("../middleware/auth");
 const AzureService = require("../utils/azure-service");
 const AzureDevOpsService = require("../utils/azure-devops-service");
 
