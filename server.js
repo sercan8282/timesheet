@@ -18,6 +18,8 @@ const planningRoutes = require("./routes/planning");
 const mfaRoutes = require("./routes/mfa");
 const uiRoutes = require("./routes/ui");
 const translateRoutes = require("./routes/translate");
+const azureDeploymentRoutes = require("./routes/azure-deployment");
+const azureDeploymentConfigRoutes = require("./routes/azure-deployment-config");
 const db = require("./config/database");
 const licenseCheck = require("./middleware/license-check");
 
@@ -363,6 +365,12 @@ try {
   console.log('✓ Invoice routes registered');
   app.use("/api/ui", uiRoutes);
   console.log('✓ UI routes loaded');
+  
+  // Azure VM Deployment routes
+  app.use("/api/azure-deployment", azureDeploymentRoutes);
+  console.log('✓ Azure Deployment routes loaded');
+  app.use("/api/azure-deployment-config", azureDeploymentConfigRoutes);
+  console.log('✓ Azure Deployment Config routes loaded');
 } catch (err) {
   console.error('✗ Error loading routes:', err.message);
   console.error(err.stack);
